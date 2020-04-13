@@ -54,13 +54,25 @@ namespace BlazorSignalRApp.Shared
             this.PlayerToStart = 1;
             this.Stock = new Stock();
 
-            this.PlayedCards = new PlayedCard[4];
+            this.SetNewPlayingCards();
             this.Playing = false;
             this.NrCards = 1;
             this.CurrentGame = 0;
             this.GameStarted = false;
             this.CleanTable = false;
             this.Rounds = new bool[] { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+            this.RoundReady = false;
+        }
+
+        public void SetNewPlayingCards()
+        {
+            var playingCards = new PlayedCard[4];
+            for(int i=1; i<=4; i++)
+            {
+                var playingCard = new PlayedCard { PlayerName = "P" + i.ToString(), Card = null };
+                playingCards[i - 1] = playingCard;
+            }
+            this.PlayedCards = playingCards;
         }
 
         public void NextRound()
@@ -71,13 +83,13 @@ namespace BlazorSignalRApp.Shared
                 this.CurrentGame++;
                 this.Rounds[this.CurrentGame] = true;
                 this.ShufflingPlayer = this.ShufflingPlayer < 4 ? this.ShufflingPlayer+1 : 1;
-                this.PlayerToStart = this.PlayerToStart < 4 ? this.PlayerToStart+1 : 1;
+                this.PlayerToStart = this.ShufflingPlayer < 4 ? this.ShufflingPlayer + 1 : 1;
                 this.CurrentPlayer = this.PlayerToStart;
             }
             this.Playing = false;
-            this.PlayedCards = new PlayedCard[4];
+            this.SetNewPlayingCards();
             this.RoundReady = false;
-        }
+        } 
 
         public void Shuffle(int nrCards)
         {

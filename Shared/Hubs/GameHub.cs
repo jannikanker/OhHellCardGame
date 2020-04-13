@@ -39,10 +39,15 @@ namespace BlazorSignalRApp.Server.Hubs
             await Clients.Caller.SendAsync("NewGameCreated", game);
         }
 
-        public async Task JoinGame(string gameId)
+        public async Task JoinGame(string gameId, string selectedPlayer)
         {
             var game = _gameService.GetGame(gameId);
-            await Clients.Caller.SendAsync("JoinedGame", game);
+            if(!string.IsNullOrEmpty(selectedPlayer))
+            {
+                game.Players.Where(p => p.Name == selectedPlayer).First().SignIn = true;
+                await Groups.AddToGroupAsync(Context.ConnectionId, selectedPlayer);
+            }
+            await Clients.All.SendAsync("JoinedGame", game);
         }
 
         public async Task StartGame(string gameId)
@@ -57,10 +62,19 @@ namespace BlazorSignalRApp.Server.Hubs
             await Clients.All.SendAsync("GameResetted", game);
         }
 
+        public async Task GetRunningGames()
+        {
+            var games = _gameService.GetGames();
+            await Clients.All.SendAsync("ReturnRunningGames", games);
+        }
+
         public async Task RoundWinner(string gameId, PlayedCard winningCard)
         {
             var game = _gameService.GetGame(gameId);
+            game.ChooseWinner = false;
             game.CleanTable = true;
+            game.CurrentPlayer = GetPlayerId(winningCard.PlayerName)+1;
+            game.PlayerToStart = GetPlayerId(winningCard.PlayerName) + 1;
             await Clients.All.SendAsync("WinnerRegistered", game);
         }
 
@@ -82,7 +96,7 @@ namespace BlazorSignalRApp.Server.Hubs
                 game.Players[_selectedplayer].Cards.Remove(card2Remove);
             }
 
-            if (game.PlayedCards.Where(c => c == null).Count() == 0)
+            if (game.PlayedCards.Where(c => c.Card == null).Count() == 0)
             {
                 game.ChooseWinner = true;
             }
@@ -140,7 +154,7 @@ namespace BlazorSignalRApp.Server.Hubs
                 game.RoundReady = true;
             }
             game.CleanTable = false;
-            game.PlayedCards = new PlayedCard[4];
+            game.SetNewPlayingCards();
             await Clients.All.SendAsync("CleanedTable", game);
         }
     }

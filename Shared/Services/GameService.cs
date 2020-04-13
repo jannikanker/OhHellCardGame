@@ -56,5 +56,15 @@ namespace BlazorSignalRApp.Server.Services
 
             return (Game)_games[gameId]; ;
         }
+
+        public List<string> GetGames()
+        {
+            var gameIds = new List<string>();
+            foreach(var key in _games.Keys)
+            {
+                gameIds.Add((string)key);
+            }
+            return gameIds;
+        }
     }
 }
