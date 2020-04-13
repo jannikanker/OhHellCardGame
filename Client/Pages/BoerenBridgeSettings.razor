@@ -1,0 +1,78 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.SignalR.Client
+@using BlazorSignalRApp.Shared;
+@using System.Collections;
+@using Microsoft.Extensions.Logging;
+@inject NavigationManager NavigationManager
+
+<h1>Boeren Bridge Settings</h1>
+
+<input type="text" @bind="_newGameName" />
+<button class="btn btn-danger" @onclick="@NewGame">New Game</button>
+<button class="btn btn-danger" @onclick="@GetRunningGames">Get Running Games</button>
+<select @bind="_selectedGame">
+    <option value="">-select game-</option>
+    @foreach (var game in _runningGames)
+    {
+        <option value=@game>@game</option>
+    }
+</select>
+<button class="btn btn-danger" @onclick="@ResetGame">Reset Game</button>
+
+<img src="/CardImages/back_cards-07.png" width="500" />
+
+@code {
+    private HubConnection _hubConnection;
+    private Game _game;
+    private List<string> _runningGames = new List<string>();
+    private string _newGameName = "game1";
+    private string _selectedGame;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+        .WithUrl(NavigationManager.ToAbsoluteUri("/gameHub"))
+        .WithAutomaticReconnect()
+            .ConfigureLogging(logging =>
+            {
+                logging.SetMinimumLevel(LogLevel.Information);
+                logging.AddConsole();
+            })
+        .Build();
+
+        _hubConnection.On<List<string>>("ReturnRunningGames", (games) =>
+        {
+            _runningGames = games;
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("NewGameCreated", (game) =>
+        {
+            _game = game;
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("GameResetted", (game) =>
+        {
+            _game = game;
+            StateHasChanged();
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    private async Task NewGame()
+    {
+        await _hubConnection.SendAsync("NewGame", _newGameName);
+    }
+
+    private async Task ResetGame()
+    {
+        await _hubConnection.SendAsync("ResetGame", _selectedGame);
+    }
+
+    private async Task GetRunningGames()
+    {
+        await _hubConnection.SendAsync("GetRunningGames");
+    }
+}

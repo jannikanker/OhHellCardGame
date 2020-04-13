@@ -42,10 +42,13 @@ namespace BlazorSignalRApp.Server.Hubs
         public async Task JoinGame(string gameId, string selectedPlayer)
         {
             var game = _gameService.GetGame(gameId);
-            if(!string.IsNullOrEmpty(selectedPlayer))
+            if (game != null)
             {
-                game.Players.Where(p => p.Name == selectedPlayer).First().SignIn = true;
-                await Groups.AddToGroupAsync(Context.ConnectionId, selectedPlayer);
+                if (!string.IsNullOrEmpty(selectedPlayer))
+                {
+                    game.Players.Where(p => p.Name == selectedPlayer).First().SignIn = true;
+                    await Groups.AddToGroupAsync(Context.ConnectionId, selectedPlayer);
+                }
             }
             await Clients.All.SendAsync("JoinedGame", game);
         }
@@ -71,7 +74,7 @@ namespace BlazorSignalRApp.Server.Hubs
         public async Task RoundWinner(string gameId, PlayedCard winningCard)
         {
             var game = _gameService.GetGame(gameId);
-            game.ChooseWinner = false;
+            game.ChooseWinner = true;
             game.CleanTable = true;
             game.CurrentPlayer = GetPlayerId(winningCard.PlayerName)+1;
             game.PlayerToStart = GetPlayerId(winningCard.PlayerName) + 1;
@@ -154,6 +157,7 @@ namespace BlazorSignalRApp.Server.Hubs
                 game.RoundReady = true;
             }
             game.CleanTable = false;
+            game.ChooseWinner = false;
             game.SetNewPlayingCards();
             await Clients.All.SendAsync("CleanedTable", game);
         }
