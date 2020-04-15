@@ -1,0 +1,399 @@
+﻿@page "/boerenbridge/{_selectedGame}/{_selectedPlayer}"
+@using Microsoft.AspNetCore.SignalR.Client
+@using BlazorSignalRApp.Shared;
+@using System.Collections;
+@using Microsoft.Extensions.Logging;
+@inject NavigationManager NavigationManager
+
+<style>
+    fieldset.scheduler-border {
+        border: 1px groove #ddd !important;
+        padding: 0 1.4em 1.4em 1.4em !important;
+        margin: 0 0 1.5em 0 !important;
+        -webkit-box-shadow: 0px 0px 0px 0px #000;
+        box-shadow: 0px 0px 0px 0px #000;
+        border-radius: 15px;
+    }
+
+    legend.scheduler-border {
+        font-size: 2.2em !important;
+        font-weight: bold !important;
+        text-align: left !important;
+        width: auto;
+        padding: 0 10px;
+        border-bottom: none;
+    }
+
+    div.gallery {
+        margin: 5px;
+        border: 1px solid #ccc;
+        float: left;
+        width: 120px;
+        border-radius: 15px;
+    }
+
+    div.galleryStarted {
+        margin: 5px;
+        border: 1px solid #f00;
+        float: left;
+        width: 120px;
+        border-radius: 15px;
+    }
+
+    div.galleryWon {
+        margin: 5px;
+        border: 1px solid #f00;
+        float: left;
+        width: 120px;
+        border-radius: 15px;
+        background-color: red;
+    }
+
+    div.gallery:hover {
+        border: 1px solid #808080;
+    }
+
+    div.desc {
+        text-align: center;
+    }
+
+    img.playingColor {
+        position: absolute;
+        right: 20px;
+        top: 50px;
+    }
+</style>
+
+
+<AuthorizeView>
+    <Authorized>
+        <h1>@_selectedGame</h1>
+        @if (_game == null)
+        {
+            <p>The game @_selectedGame does not exist.</p>
+        }
+        else
+        {
+            @if (string.IsNullOrEmpty(_selectedPlayer))
+            {
+                <select @bind="_selectedPlayer" disabled="@(_playerSelected)">
+                    <option value="" selected>Select Player</option>
+                    @foreach (var p in _playerSelections)
+                    {
+                        <option selected="@(p.Id == _selectedPlayer ? true : false)" value="@p.Id">@p.Name</option>
+                    };
+                </select>
+                <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@GetAvailablePlayers">Refresh Players</button>
+                <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@SelectPlayer">Select Player</button>
+            }
+
+            @if (_selectedPlayer == "P1")
+            {
+                <button style="visibility:@(_game.GameStarted ? "hidden" :"visible")" disabled="@(!_game.AllPlayersSignedIn || _game.GameStarted || _selectedPlayer != "P1")" class="btn btn-success" @onclick="@StartGame">Start Game</button>
+            }
+            <div id="PlayColour"><img class="playingColor" src="/CardImages/5@(_game.PlayingColour.ToString()+".png")" width="75" /></div>
+
+            <fieldset class="scheduler-border">
+                <legend>Played Cards [@_nextMoveRemark]</legend>
+                @foreach (var playedCard in _game.PlayedCards)
+                {
+                    <div class=@(playedCard.PlayerName == "P"+_game.PlayerToStart.ToString()? _game.CleanTable ? "galleryWon" : "galleryStarted" : "gallery")>
+                        <div class="desc">
+                            <p>
+                                @(playedCard.PlayerName)
+                                @if ("P" + _game.CurrentPlayer == playedCard.PlayerName)
+                                {
+                                    <b>*</b>
+                                }
+                                [@(_game.Rounds[_game.CurrentRound].Bets[GetPlayerId(playedCard.PlayerName)].ToString()),
+                                @(_game.Rounds[_game.CurrentRound].Wins[GetPlayerId(playedCard.PlayerName)].ToString())]
+                            </p>
+
+                            @if (playedCard.Card != null)
+                            {
+
+                                <div id="PlayCard_@(playedCard.PlayerName)"><img src="/CardImages/@(playedCard.Card == null ? "green_back" : playedCard.Card.Face).png" width="100" /></div>
+                                <button style="visibility:@(_game.ChooseWinner ? "visible" :"hidden")" disabled="@(!_game.ChooseWinner || (_selectedPlayer  != "P1"))" @onclick="@(e => Winner(e, playedCard))">Won</button>
+                            }
+                            else
+                            {
+                                <img src="/CardImages/green_back.png" width="100" />
+                                <button style="visibility:hidden" disabled>X</button>
+                            }
+                        </div>
+                    </div>
+
+                }
+            </fieldset>
+            <button style="visibility:@(_game.CleanTable ? "visible" :"hidden")"
+                    disabled="@(!_game.CleanTable || (_selectedPlayer  != "P1"))"
+                    class="btn btn-success" @onclick="@CleanTable">
+                Clean Table
+            </button>
+
+            <div>
+                <input type="number" min="0" max="@(_game.CurrentRound+1)" size="2" @bind="@_placedBet"><button @onclick="PlaceBet">Bet</button>
+            </div>
+
+            <fieldset class="scheduler-border">
+                <legend>Cards of @_selectedPlayer</legend>
+
+                @foreach (var card in _cards)
+                {
+                    <div class="gallery">
+                        <div class="desc">
+                            <div id="P1_K@_cards.IndexOf(card).ToString()"><img src="/CardImages/@(card.Face).png" width="100" /></div>
+                            <div><button disabled="@(_game.ChooseWinner || _game.CleanTable || ("P"+_game.CurrentPlayer != _selectedPlayer))" class="btn btn-success" @onclick="@(e => Play(e, _selectedPlayer, card))">Play</button></div>
+                        </div>
+                    </div>
+                }
+            </fieldset>
+            @for (int r = 0; r < 16; r++)
+            {
+                <button id="btnForward1" disabled="@((!_game.Rounds[r].Current || _game.Playing) || ("P"+_game.PlayerToStart != _selectedPlayer))" class="@(_game.Rounds[r].Current ? "btn btn-success" : "btn btn-default")" @onclick="@(e => Shuffle())">@(r+1)</button>
+                @if(r==7)
+                {
+                    <br />
+                }
+            }
+            <button disabled="@(!_game.RoundReady || _selectedPlayer != "P1")" class="btn btn-success" @onclick="@NextRound">Next Round</button>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <a href="AzureADB2C/Account/SignIn">Log in before playing.</a>
+    </NotAuthorized>
+</AuthorizeView>
+@code {
+
+    [Parameter]
+    public string _selectedPlayer { get; set; }
+    [Parameter]
+    public string _selectedGame { get; set; }
+
+    private HubConnection _hubConnection;
+    private bool _playerSelected;
+    private Game _game;
+    private List<Card> _cards = new List<Card>();
+    private List<PlayerSelection> _playerSelections = new List<PlayerSelection>();
+    private string _nextMoveRemark = "";
+    private string _placedBet = "0";
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+        .WithUrl(NavigationManager.ToAbsoluteUri("/gameHub"))
+        .WithAutomaticReconnect()
+            .ConfigureLogging(logging =>
+            {
+                logging.SetMinimumLevel(LogLevel.Information);
+                logging.AddConsole();
+            })
+        .Build();
+
+
+        _hubConnection.On<Game>("JoinedGame", (game) =>
+        {
+            _game = game;
+            if (game != null)
+            {
+                if (!string.IsNullOrEmpty(_selectedPlayer))
+                {
+                    _cards = _game.Players[GetPlayerId(_selectedPlayer)].Cards;
+                }
+            }
+
+            if (!_game.AllPlayersSignedIn)
+            {
+                _nextMoveRemark = "Waiting for others to sign in";
+            }
+            else
+            {
+                _nextMoveRemark = "Waiting for P1 to start the game";
+            }
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("GameStarted", (game) =>
+        {
+            _game = game;
+            _nextMoveRemark = string.Format("Waiting for P{0} to shuffle", _game.CurrentPlayer);
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("GameResetted", (game) =>
+        {
+            _game = game;
+            _nextMoveRemark = string.Format("Game Resetted. Waiting for P{0} to shuffle", _game.CurrentPlayer);
+            StateHasChanged();
+        });
+
+
+        _hubConnection.On<Game, string>("PlayerSelected", (game, signedInPlayerID) =>
+        {
+            _game = game;
+            var index = _playerSelections.FindIndex(p => p.Id == signedInPlayerID);
+            if (index > 0)
+                _playerSelections.RemoveAt(index);
+
+            if (_selectedPlayer == signedInPlayerID)
+            {
+                _cards = _game.Players[GetPlayerId(signedInPlayerID)].Cards;
+            }
+
+            StateHasChanged();
+        });
+
+        _hubConnection.On<List<Card>, Game>("Shuffled", (cards, game) =>
+        {
+            _game = game;
+            _cards = cards;
+            _game.Playing = true;
+            _nextMoveRemark = string.Format("Waiting for P{0} to play card", _game.CurrentPlayer);
+            StateHasChanged();
+        });
+
+        _hubConnection.On<List<Card>, Game>("PlayedCard", (cards, game) =>
+        {
+            _game = game;
+            _cards = cards;
+
+            _nextMoveRemark = string.Format("Waiting for P{0} to play card", _game.CurrentPlayer);
+            if (_game.ChooseWinner)
+            {
+                _nextMoveRemark = string.Format("Waiting to choose winner", _game.CurrentPlayer);
+            }
+            StateHasChanged();
+        });
+
+        _hubConnection.On<string[]>("ReturnAvailablePlayers", (rap) =>
+        {
+            _playerSelections = new List<PlayerSelection>();
+            foreach (var p in rap)
+            {
+                _playerSelections.Add(new PlayerSelection { Id = p, Name = p });
+            }
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("WinnerRegistered", (game) =>
+        {
+            _game = game;
+            _nextMoveRemark = string.Format("P{0} has won. Clear table", _game.CurrentPlayer);
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("StartNextRound", (game) =>
+        {
+            _game = game;
+            _nextMoveRemark = string.Format("Waiting for P{0} to shuffle", _game.PlayerToStart);
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("CleanedTable", (game) =>
+        {
+            _game = game;
+            if (_game.RoundReady)
+            {
+                _nextMoveRemark = "Waiting to start next round";
+            }
+            else
+            {
+                _nextMoveRemark = string.Format("Waiting for P{0} to play card", _game.CurrentPlayer);
+            }
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("BetPlaced", (game) =>
+        {
+            _game = game;
+            StateHasChanged();
+        });
+
+        await _hubConnection.StartAsync();
+
+        await JoinGame();
+    }
+
+    private async Task PlaceBet()
+    {
+        await _hubConnection.SendAsync("PlaceBet", _selectedGame, _selectedPlayer, _placedBet);
+    }
+
+    private async Task JoinGame()
+    {
+        if (!string.IsNullOrEmpty(_selectedGame))
+            await _hubConnection.SendAsync("JoinGame", _selectedGame, _selectedPlayer);
+    }
+
+
+    private async Task CleanTable()
+    {
+        await _hubConnection.SendAsync("CleanTable", _game.Id);
+    }
+
+    private async Task StartGame()
+    {
+        if (!String.IsNullOrEmpty(_selectedPlayer))
+        {
+            await _hubConnection.SendAsync("StartGame", _game.Id);
+        }
+    }
+
+    private void NextRound()
+    {
+        _hubConnection.SendAsync("NextRound", _game.Id);
+    }
+
+    private Task Shuffle() =>
+        _hubConnection.SendAsync("Shuffle", _game.Id);
+
+    private void Play(MouseEventArgs e, string player, Card card)
+    {
+        _hubConnection.SendAsync("PlayCard", _game.Id, _selectedPlayer, card);
+    }
+
+    private void Winner(MouseEventArgs e, PlayedCard winningCard)
+    {
+        _hubConnection.SendAsync("RoundWinner", _game.Id, winningCard);
+
+    }
+
+    private async Task SelectPlayer()
+    {
+        _playerSelected = true;
+        await _hubConnection.SendAsync("AddToGroup", _game.Id, _selectedPlayer);
+    }
+
+    private async Task GetAvailablePlayers()
+    {
+        await _hubConnection.SendAsync("GetAvailablePlayers", _game.Id);
+    }
+
+    private int GetPlayerId(string player)
+    {
+        var pId = 0;
+        switch (player)
+        {
+            case "P1":
+                pId = 0;
+                break;
+            case "P2":
+                pId = 1;
+                break;
+            case "P3":
+                pId = 2;
+                break;
+            case "P4":
+                pId = 3;
+                break;
+        }
+        return pId;
+    }
+
+    public class PlayerSelection
+    {
+        public string Id;
+        public string Name;
+    }
+}

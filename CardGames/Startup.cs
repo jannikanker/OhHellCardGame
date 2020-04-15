@@ -1,13 +1,14 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.AzureADB2C.UI;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using BlazorSignalRApp.ServerHosted.Data;
 using BlazorSignalRApp.Server.Services;
 using BlazorSignalRApp.Server.Hubs;
 
-namespace BlazorSignalRApp.ServerHosted
+namespace CardGames
 {
     public class Startup
     {
@@ -22,9 +23,11 @@ namespace BlazorSignalRApp.ServerHosted
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddAuthentication(AzureADB2CDefaults.AuthenticationScheme)
+                .AddAzureADB2C(options => Configuration.Bind("AzureAdB2C", options));
+
             services.AddRazorPages();
             services.AddServerSideBlazor();
-            services.AddSingleton<WeatherForecastService>();
             services.AddSignalR();
             services.AddSingleton<TeamService>(gs =>
             {
@@ -56,8 +59,12 @@ namespace BlazorSignalRApp.ServerHosted
 
             app.UseRouting();
 
+            app.UseAuthentication();
+            app.UseAuthorization();
+
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapControllers();
                 endpoints.MapBlazorHub();
                 endpoints.MapHub<ChatHub>("/chatHub");
                 endpoints.MapHub<GameHub>("/gameHub");

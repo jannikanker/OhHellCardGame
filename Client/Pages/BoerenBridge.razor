@@ -217,6 +217,13 @@ else
             StateHasChanged();
         });
 
+        _hubConnection.On<Game>("GameResetted", (game) =>
+        {
+            _game = game;
+            _nextMoveRemark = string.Format("Game Resetted. Waiting for P{0} to shuffle", _game.CurrentPlayer);
+            StateHasChanged();
+        });
+
 
         _hubConnection.On<Game, string>("PlayerSelected", (game, signedInPlayerID) =>
         {
@@ -284,7 +291,7 @@ else
             _game = game;
             if(_game.RoundReady)
             {
-                _nextMoveRemark = "Wating to start next round";
+                _nextMoveRemark = "Waiting to start next round";
             }
             else
             {

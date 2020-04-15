@@ -1,0 +1,94 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.SignalR.Client
+@using BlazorSignalRApp.Shared;
+@using System.Collections;
+@using Microsoft.Extensions.Logging;
+@inject NavigationManager NavigationManager
+
+<h1>Boeren Bridge Settings</h1>
+
+<AuthorizeView>
+    <Authorized>
+        <img src="/CardImages/back_cards-07.png" width="300" />
+        <input type="text" @bind="_newGameName" />
+        <button class="btn btn-danger" @onclick="@NewGame">New Game</button>
+        <button class="btn btn-danger" @onclick="@GetRunningGames">Get Running Games</button>
+        <select @bind="_selectedGame">
+            <option value="">-select game-</option>
+            @foreach (var game in _runningGames)
+            {
+                <option value=@game>@game</option>
+            }
+        </select>
+        <button class="btn btn-danger" @onclick="@ResetGame">Reset Game</button>
+
+        @if (!string.IsNullOrEmpty(_selectedGame))
+        {
+            <h1>Player links</h1>
+            <a href="/BoerenBridge/@_selectedGame/P1">Player 1</a><br />
+            <a href="/BoerenBridge/@_selectedGame/P2">Player 2</a><br />
+            <a href="/BoerenBridge/@_selectedGame/P3">Player 3</a><br />
+            <a href="/BoerenBridge/@_selectedGame/P4">Player 4</a><br />
+        }
+    </Authorized>
+    <NotAuthorized>
+        <a href="AzureADB2C/Account/SignIn">Log in before playing.</a>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private HubConnection _hubConnection;
+    private Game _game;
+    private List<string> _runningGames = new List<string>();
+    private string _newGameName = "game1";
+    private string _selectedGame;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+        .WithUrl(NavigationManager.ToAbsoluteUri("/gameHub"))
+        .WithAutomaticReconnect()
+            .ConfigureLogging(logging =>
+            {
+                logging.SetMinimumLevel(LogLevel.Information);
+                logging.AddConsole();
+            })
+        .Build();
+
+        _hubConnection.On<List<string>>("ReturnRunningGames", (games) =>
+        {
+            _runningGames = games;
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("NewGameCreated", (game) =>
+        {
+            _game = game;
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("GameResetted", (game) =>
+        {
+            _game = game;
+            StateHasChanged();
+        });
+
+        await _hubConnection.StartAsync();
+        await GetRunningGames();
+    }
+
+    private async Task NewGame()
+    {
+        await _hubConnection.SendAsync("NewGame", _newGameName);
+    }
+
+    private async Task ResetGame()
+    {
+        await _hubConnection.SendAsync("ResetGame", _selectedGame);
+    }
+
+    private async Task GetRunningGames()
+    {
+        await _hubConnection.SendAsync("GetRunningGames");
+    }
+}

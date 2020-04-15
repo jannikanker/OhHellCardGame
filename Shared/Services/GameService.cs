@@ -43,7 +43,7 @@ namespace BlazorSignalRApp.Server.Services
         {
             var game = GetGame(gameId);
             game.GameStarted = true;
-            game.Rounds[0] = true;
+            game.Rounds[0].Current = true;
             _games[gameId] = game;
             return game;
         }

@@ -71,10 +71,19 @@ namespace BlazorSignalRApp.Server.Hubs
             await Clients.All.SendAsync("ReturnRunningGames", games);
         }
 
+        public async Task PlaceBet(string gameId, string selectedPlayer, string placedBet)
+        {
+            var game = _gameService.GetGame(gameId);
+            game.Rounds[game.CurrentRound].Bets[GetPlayerId(selectedPlayer)] = Convert.ToInt32(placedBet);
+
+            await Clients.All.SendAsync("BetPlaced", game);
+        }
+
         public async Task RoundWinner(string gameId, PlayedCard winningCard)
         {
             var game = _gameService.GetGame(gameId);
-            game.ChooseWinner = true;
+            game.Rounds[game.CurrentRound].Wins[GetPlayerId(winningCard.PlayerName)]++;
+            game.ChooseWinner = false;
             game.CleanTable = true;
             game.CurrentPlayer = GetPlayerId(winningCard.PlayerName)+1;
             game.PlayerToStart = GetPlayerId(winningCard.PlayerName) + 1;
@@ -131,10 +140,10 @@ namespace BlazorSignalRApp.Server.Hubs
             return pId;
         }
 
-        public async Task Shuffle(string gameId, int nrCards)
+        public async Task Shuffle(string gameId)
         {
             var game = _gameService.GetGame(gameId);
-            game.Shuffle(nrCards);
+            game.Shuffle();
             game.ChooseWinner = false;
             await Clients.Groups("P1").SendAsync("Shuffled", game.Players[0].Cards, game);
             await Clients.Groups("P2").SendAsync("Shuffled", game.Players[1].Cards, game);
