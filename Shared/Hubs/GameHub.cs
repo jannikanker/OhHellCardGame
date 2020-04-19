@@ -1,5 +1,6 @@
 ﻿using BlazorSignalRApp.Server.Services;
 using BlazorSignalRApp.Shared;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
@@ -14,15 +15,6 @@ namespace BlazorSignalRApp.Server.Hubs
         public GameHub(GameService gameService)
         {
             _gameService = gameService;
-        }
-
-        public async Task AddToGroup(string gameId, string playerId)
-        {
-            var game = _gameService.GetGame(gameId);
-            game.Players.Where(p => p.Name == playerId).First().SignIn = true;
-            await Groups.AddToGroupAsync(Context.ConnectionId, playerId);
-
-            await Clients.All.SendAsync("PlayerSelected", game, playerId);
         }
 
         public async Task GetAvailablePlayers(string gameId)
@@ -47,47 +39,59 @@ namespace BlazorSignalRApp.Server.Hubs
                 if (!string.IsNullOrEmpty(selectedPlayer))
                 {
                     game.Players.Where(p => p.Name == selectedPlayer).First().SignIn = true;
-                    await Groups.AddToGroupAsync(Context.ConnectionId, selectedPlayer);
+                    if(!string.IsNullOrEmpty(game.Connections[GetPlayerId(selectedPlayer)]))
+                    {
+                        await Groups.RemoveFromGroupAsync(game.Connections[GetPlayerId(selectedPlayer)], gameId);
+                    }
+                    game.Connections[GetPlayerId(selectedPlayer)] = Context.ConnectionId;
+                    await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
                 }
             }
-            await Clients.All.SendAsync("JoinedGame", game);
+
+            if (game.GameStarted != true)
+            {
+                game.Status = game.AllPlayersSignedIn ? "Waiting for P1 to start the game" : "Waiting for others to sign in";
+            }
+            await Clients.Group(gameId).SendAsync("JoinedGame", game);
         }
 
         public async Task StartGame(string gameId)
         {
             var game = _gameService.StartGame(gameId);
-            await Clients.All.SendAsync("GameStarted", game);
+            game.Status = string.Format("Waiting for P{0} to shuffle", game.CurrentPlayer);
+            await Clients.Group(gameId).SendAsync("GameStarted", game);
         }
 
         public async Task ResetGame(string gameId)
         {
             var game = _gameService.ResetGame(gameId);
-            await Clients.All.SendAsync("GameResetted", game);
+            game.Status = string.Format("Game Resetted. Waiting for P{0} to shuffle", game.CurrentPlayer);
+            await Clients.Group(gameId).SendAsync("GameResetted", game);
         }
 
         public async Task GetRunningGames()
         {
             var games = _gameService.GetGames();
-            await Clients.All.SendAsync("ReturnRunningGames", games);
+            await Clients.Caller.SendAsync("ReturnRunningGames", games);
         }
 
         public async Task PlaceBet(string gameId, string selectedPlayer, string placedBet)
         {
             var game = _gameService.GetGame(gameId);
             game.Rounds[game.CurrentRound].Bets[GetPlayerId(selectedPlayer)] = Convert.ToInt32(placedBet);
+            if (game.Rounds[game.CurrentRound].AllBetsPlaced)
+            {
+                game.Playing = true;
+                game.Betted = true;
+            }
 
-            await Clients.All.SendAsync("BetPlaced", game);
-        }
+            if (game.CurrentPlayer < 4)
+                game.CurrentPlayer++;
+            else
+                game.CurrentPlayer = 1;
 
-        public async Task RoundWinner(string gameId, PlayedCard winningCard)
-        {
-            var game = _gameService.GetGame(gameId);
-            game.Rounds[game.CurrentRound].Wins[GetPlayerId(winningCard.PlayerName)]++;
-            game.ChooseWinner = false;
-            game.CleanTable = true;
-            game.CurrentPlayer = GetPlayerId(winningCard.PlayerName)+1;
-            game.PlayerToStart = GetPlayerId(winningCard.PlayerName) + 1;
-            await Clients.All.SendAsync("WinnerRegistered", game);
+            game.Status = string.Format("Waiting for P{0} to {1}", game.CurrentPlayer, game.Betted ? "Play" : "Bet");
+            await Clients.Group(gameId).SendAsync("BetPlaced", game);
         }
 
         public async Task PlayCard(string gameId, string player, Card card)
@@ -95,7 +99,7 @@ namespace BlazorSignalRApp.Server.Hubs
             var game = _gameService.GetGame(gameId);
             var _selectedplayer = 0;
             _selectedplayer = GetPlayerId(player);
-            game.PlayedCards[_selectedplayer] = new PlayedCard { PlayerName = player, Card = card };
+            game.Rounds[game.CurrentRound].PlayedCards[_selectedplayer] = new PlayedCard { PlayerName = player, Card = card };
 
             if (game.CurrentPlayer < 4)
                 game.CurrentPlayer++;
@@ -108,15 +112,20 @@ namespace BlazorSignalRApp.Server.Hubs
                 game.Players[_selectedplayer].Cards.Remove(card2Remove);
             }
 
-            if (game.PlayedCards.Where(c => c.Card == null).Count() == 0)
+            if (game.Rounds[game.CurrentRound].PlayedCards.Where(c => c.Card == null).Count() == 0)
             {
                 game.ChooseWinner = true;
             }
 
-            await Clients.Group("P1").SendAsync("PlayedCard", game.Players[0].Cards, game);
-            await Clients.Group("P2").SendAsync("PlayedCard", game.Players[1].Cards, game);
-            await Clients.Group("P3").SendAsync("PlayedCard", game.Players[2].Cards, game);
-            await Clients.Group("P4").SendAsync("PlayedCard", game.Players[3].Cards, game);
+            game.Status = string.Format("Waiting for P{0} to play card", game.CurrentPlayer);
+            if (game.ChooseWinner)
+            {
+                game.Status = string.Format("Waiting to choose winner", game.CurrentPlayer);
+            }
+            await Clients.Client(game.Connections[0]).SendAsync("PlayedCard", game.Players[0].Cards, game);
+            await Clients.Client(game.Connections[1]).SendAsync("PlayedCard", game.Players[1].Cards, game);
+            await Clients.Client(game.Connections[2]).SendAsync("PlayedCard", game.Players[2].Cards, game);
+            await Clients.Client(game.Connections[3]).SendAsync("PlayedCard", game.Players[3].Cards, game);
         }
 
         private static int GetPlayerId(string player)
@@ -144,23 +153,37 @@ namespace BlazorSignalRApp.Server.Hubs
         {
             var game = _gameService.GetGame(gameId);
             game.Shuffle();
+            game.Status = string.Format("Waiting for P{0} to Bet", game.CurrentPlayer);
             game.ChooseWinner = false;
-            await Clients.Groups("P1").SendAsync("Shuffled", game.Players[0].Cards, game);
-            await Clients.Groups("P2").SendAsync("Shuffled", game.Players[1].Cards, game);
-            await Clients.Groups("P3").SendAsync("Shuffled", game.Players[2].Cards, game);
-            await Clients.Groups("P4").SendAsync("Shuffled", game.Players[3].Cards, game);
+            await Clients.Client(game.Connections[0]).SendAsync("Shuffled", game.Players[0].Cards, game);
+            await Clients.Client(game.Connections[1]).SendAsync("Shuffled", game.Players[1].Cards, game);
+            await Clients.Client(game.Connections[2]).SendAsync("Shuffled", game.Players[2].Cards, game);
+            await Clients.Client(game.Connections[3]).SendAsync("Shuffled", game.Players[3].Cards, game);
         }
 
         public async Task NextRound(string gameId)
         {
             var game = _gameService.GetGame(gameId);
             game.NextRound();
+            game.Status = string.Format("Waiting for P{0} to shuffle", game.PlayerToStart);
             await Clients.All.SendAsync("StartNextRound", game);
         }
 
         public async Task CleanTable(string gameId)
         {
             var game = _gameService.GetGame(gameId);
+
+            var winningPlayer = game
+                .Rounds[game.CurrentRound]
+                .PlayedCards.Where(c => c.Winner == true)
+                .FirstOrDefault()
+                .PlayerName;
+            game.Rounds[game.CurrentRound].Wins[GetPlayerId(winningPlayer)]++;
+            game.ChooseWinner = false;
+
+            game.CurrentPlayer = GetPlayerId(winningPlayer) + 1;
+            game.PlayerToStart = GetPlayerId(winningPlayer) + 1;
+
             if (game.Players[0].Cards.Count() == 0)
             {
                 game.RoundReady = true;
@@ -168,7 +191,29 @@ namespace BlazorSignalRApp.Server.Hubs
             game.CleanTable = false;
             game.ChooseWinner = false;
             game.SetNewPlayingCards();
+            if (game.RoundReady)
+            {
+                game.Status = "Waiting to start next round";
+            }
+            else
+            {
+                game.Status = string.Format("Waiting for P{0} to play card", game.CurrentPlayer);
+            }
             await Clients.All.SendAsync("CleanedTable", game);
+        }
+
+        public async Task RoundWinner(string gameId, PlayedCard winningCard)
+        {
+            var game = _gameService.GetGame(gameId);
+            foreach(var card in game.Rounds[game.CurrentRound].PlayedCards)
+            {
+                card.Winner = false;
+            }
+
+            game.Rounds[game.CurrentRound].PlayedCards.Where(c => c.PlayerName == winningCard.PlayerName).FirstOrDefault().Winner = true;
+            game.CleanTable = true;
+            game.Status = string.Format("{0} has won. Clear table", winningCard.PlayerName);
+            await Clients.Group(gameId).SendAsync("WinnerRegistered", game);
         }
     }
 }

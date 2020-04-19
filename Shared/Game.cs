@@ -13,7 +13,7 @@ namespace BlazorSignalRApp.Shared
         public string Id { get; set; }
         public Stock Stock { get; set; }
         public Player[] Players { get; set; }
-        public PlayedCard[] PlayedCards { get; set; }
+        public string[] Connections { get; set; }
         public bool Playing { get; set; }
         public int NrCards { get; set; }
         public int CurrentRound { get; set; }
@@ -26,12 +26,15 @@ namespace BlazorSignalRApp.Shared
         public bool RoundReady { get; set; }
         public bool ChooseWinner { get; set; }
         public bool CleanTable { get; set; }
+        public bool Shuffled { get; set; }
+        public bool Betted { get; set; }
+        public string Status { get; set; }
 
         public bool AllPlayersSignedIn
         {
-            get 
-            { 
-                return this.Players.Where(p => p.SignIn).Count() == 4; 
+            get
+            {
+                return this.Players.Where(p => p.SignIn).Count() == 4;
             }
         }
 
@@ -44,9 +47,10 @@ namespace BlazorSignalRApp.Shared
         {
             this.Id = gameId;
             this.Players = new Player[4];
+            this.Connections = new string[4];
             for (int p = 0; p < 4; p++)
             {
-                this.Players[p] = new Player("P" + (p+1).ToString());
+                this.Players[p] = new Player("P" + (p + 1).ToString());
             }
 
             this.CurrentPlayer = 1;
@@ -54,25 +58,28 @@ namespace BlazorSignalRApp.Shared
             this.PlayerToStart = 1;
             this.Stock = new Stock();
 
-            this.SetNewPlayingCards();
+
             this.Playing = false;
             this.NrCards = 1;
             this.CurrentRound = 0;
             this.GameStarted = false;
             this.CleanTable = false;
             this.Rounds = new Round[] { new Round(1), new Round(2), new Round(3), new Round(4), new Round(5), new Round(6), new Round(7), new Round(8), new Round(8), new Round(7), new Round(6), new Round(5), new Round(4), new Round(3), new Round(2), new Round(1) };
+            this.SetNewPlayingCards();
             this.RoundReady = false;
+            this.Shuffled = false;
+            this.Betted = false;
         }
 
         public void SetNewPlayingCards()
         {
             var playingCards = new PlayedCard[4];
-            for(int i=1; i<=4; i++)
+            for (int i = 1; i <= 4; i++)
             {
                 var playingCard = new PlayedCard { PlayerName = "P" + i.ToString(), Card = null };
                 playingCards[i - 1] = playingCard;
             }
-            this.PlayedCards = playingCards;
+            this.Rounds[this.CurrentRound].PlayedCards = playingCards;
         }
 
         public void NextRound()
@@ -80,16 +87,26 @@ namespace BlazorSignalRApp.Shared
             this.Rounds[this.CurrentRound].Current = false;
             if (this.CurrentRound < this.Rounds.Length - 1)
             {
+                for(int i=0; i<4; i++)
+                {
+                    var playerRoundScore = this.Rounds[this.CurrentRound].Wins[i] - this.Rounds[this.CurrentRound].Bets[i];
+                    var score = playerRoundScore == 0 ? this.Players[i].Score + 5 + this.Rounds[this.CurrentRound].Wins[i] : this.Players[i].Score - 1;
+                    this.Players[i].Score = score;
+                    this.Rounds[this.CurrentRound].Scores[i] = score;
+                }
                 this.CurrentRound++;
                 this.Rounds[this.CurrentRound].Current = true;
-                this.ShufflingPlayer = this.ShufflingPlayer < 4 ? this.ShufflingPlayer+1 : 1;
+                this.ShufflingPlayer = this.ShufflingPlayer < 4 ? this.ShufflingPlayer + 1 : 1;
                 this.PlayerToStart = this.ShufflingPlayer < 4 ? this.ShufflingPlayer + 1 : 1;
                 this.CurrentPlayer = this.PlayerToStart;
+                this.Playing = false;
+                this.Shuffled = false;
+                this.RoundReady = false;
+                this.Betted = false;
+                this.SetNewPlayingCards();
             }
-            this.Playing = false;
-            this.SetNewPlayingCards();
-            this.RoundReady = false;
-        } 
+
+        }
 
         public void Shuffle()
         {
@@ -109,10 +126,11 @@ namespace BlazorSignalRApp.Shared
                     Players[p].Cards.Add(card);
                     Stock.Cards.RemoveAt(cardNr);
                 }
+                Players[p].Cards = Players[p].Cards.OrderBy(c => c.Colour).ThenBy(c => c.Value).ToList();
             }
 
+            this.Shuffled = true;
             this.PlayingColour = RandomEnum<Colours>();
-            Playing = true;
         }
 
         private T RandomEnum<T>()
@@ -127,7 +145,6 @@ namespace BlazorSignalRApp.Shared
             }
         }
     }
-
 
     public enum Colours
     {
@@ -146,7 +163,7 @@ namespace BlazorSignalRApp.Shared
         Jack = 11,
         Queen = 12,
         King = 14,
-        Ace = 1
+        Ace = 15
     }
 
     public class Stock
@@ -188,7 +205,7 @@ namespace BlazorSignalRApp.Shared
             get
             {
                 var v = "";
-                switch(this.Value)
+                switch (this.Value)
                 {
                     case Values.Seven:
                     case Values.Eight:
@@ -200,7 +217,7 @@ namespace BlazorSignalRApp.Shared
                     case Values.Queen:
                     case Values.King:
                     case Values.Ace:
-                        v = this.Value.ToString().Substring(0,1);
+                        v = this.Value.ToString().Substring(0, 1);
                         break;
                 }
                 return v + this.Colour.ToString();
@@ -210,8 +227,14 @@ namespace BlazorSignalRApp.Shared
 
     public class PlayedCard
     {
+        public PlayedCard()
+        {
+            Winner = false;
+        }
         public string PlayerName { get; set; }
         public Card Card { get; set; }
+        public bool Winner { get; set; }
+
     }
 
     public class Player
@@ -225,11 +248,15 @@ namespace BlazorSignalRApp.Shared
         {
             this.Cards = new List<Card>();
             this.Name = name;
+            this.Score = 0;
             this.SignIn = false;
+
         }
         public string Name { get; set; }
         public bool SignIn { get; set; }
+        public int Score { get; set; }
         public List<Card> Cards { get; set; }
+
     }
 
     public class Round
@@ -242,18 +269,25 @@ namespace BlazorSignalRApp.Shared
         public Round(int nrCards)
         {
             this.Current = false;
-            this.Bets = new int[4];
+            this.Bets = new int[4] { -1,-1,-1,-1 };
             this.Wins = new int[4];
             this.NrCards = nrCards;
+            this.Scores = new int[4] { 0, 0, 0, 0 };
+
         }
 
+        public PlayedCard[] PlayedCards { get; set; }
         public bool Current { get; set; }
         public int NrCards { get; set; }
         public int[] Bets { get; set; }
         public int[] Wins { get; set; }
-        public int Points(int player)
+        public int[] Scores { get; set; }
+        public bool AllBetsPlaced
         {
-            return Wins[player] >= Bets[player] ? 5 + Bets[player] - Wins[player] : -1;
+            get
+            {
+                return (Bets.Where(b => b > -1).Count() == 4);
+            }
         }
 
     }

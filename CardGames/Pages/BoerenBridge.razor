@@ -24,6 +24,15 @@
         border-bottom: none;
     }
 
+    div.gallerySelectedPlayer {
+        margin: 5px;
+        border: 1px solid #ccc;
+        float: left;
+        width: 120px;
+        border-radius: 15px;
+        background-color: lightblue;
+    }
+
     div.gallery {
         margin: 5px;
         border: 1px solid #ccc;
@@ -58,105 +67,224 @@
     }
 
     img.playingColor {
-        position: absolute;
-        right: 20px;
-        top: 50px;
+        float: left;
+    }
+
+    header,
+    section,
+    aside,
+    footer {
+        margin: 0 1.5% 24px 1.5%;
+    }
+
+    section {
+        float: left;
+        width: 50%;
+    }
+
+    aside {
+        float: left;
+        width: 20%;
+    }
+
+    footer {
+        clear: both;
+        margin-bottom: 0;
     }
 </style>
 
-
 <AuthorizeView>
     <Authorized>
-        <h1>@_selectedGame</h1>
         @if (_game == null)
         {
-            <p>The game @_selectedGame does not exist.</p>
+            <p>The game @_selectedGame is starting up or does not yet exist. Please wait a moment.</p>
         }
         else
         {
-            @if (string.IsNullOrEmpty(_selectedPlayer))
-            {
-                <select @bind="_selectedPlayer" disabled="@(_playerSelected)">
-                    <option value="" selected>Select Player</option>
-                    @foreach (var p in _playerSelections)
-                    {
-                        <option selected="@(p.Id == _selectedPlayer ? true : false)" value="@p.Id">@p.Name</option>
-                    };
-                </select>
-                <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@GetAvailablePlayers">Refresh Players</button>
-                <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@SelectPlayer">Select Player</button>
-            }
-
-            @if (_selectedPlayer == "P1")
-            {
-                <button style="visibility:@(_game.GameStarted ? "hidden" :"visible")" disabled="@(!_game.AllPlayersSignedIn || _game.GameStarted || _selectedPlayer != "P1")" class="btn btn-success" @onclick="@StartGame">Start Game</button>
-            }
-            <div id="PlayColour"><img class="playingColor" src="/CardImages/5@(_game.PlayingColour.ToString()+".png")" width="75" /></div>
-
-            <fieldset class="scheduler-border">
-                <legend>Played Cards [@_nextMoveRemark]</legend>
-                @foreach (var playedCard in _game.PlayedCards)
+            <header>
+                @if (string.IsNullOrEmpty(_selectedPlayer))
                 {
-                    <div class=@(playedCard.PlayerName == "P"+_game.PlayerToStart.ToString()? _game.CleanTable ? "galleryWon" : "galleryStarted" : "gallery")>
-                        <div class="desc">
-                            <p>
-                                @(playedCard.PlayerName)
-                                @if ("P" + _game.CurrentPlayer == playedCard.PlayerName)
-                                {
-                                    <b>*</b>
-                                }
-                                [@(_game.Rounds[_game.CurrentRound].Bets[GetPlayerId(playedCard.PlayerName)].ToString()),
-                                @(_game.Rounds[_game.CurrentRound].Wins[GetPlayerId(playedCard.PlayerName)].ToString())]
-                            </p>
-
-                            @if (playedCard.Card != null)
-                            {
-
-                                <div id="PlayCard_@(playedCard.PlayerName)"><img src="/CardImages/@(playedCard.Card == null ? "green_back" : playedCard.Card.Face).png" width="100" /></div>
-                                <button style="visibility:@(_game.ChooseWinner ? "visible" :"hidden")" disabled="@(!_game.ChooseWinner || (_selectedPlayer  != "P1"))" @onclick="@(e => Winner(e, playedCard))">Won</button>
-                            }
-                            else
-                            {
-                                <img src="/CardImages/green_back.png" width="100" />
-                                <button style="visibility:hidden" disabled>X</button>
-                            }
-                        </div>
-                    </div>
-
+                    <select @bind="_selectedPlayer" disabled="@(_playerSelected)">
+                        <option value="" selected>Select Player</option>
+                        @foreach (var p in _playerSelections)
+                        {
+                            <option selected="@(p.Id == _selectedPlayer ? true : false)" value="@p.Id">@p.Name</option>
+                        };
+                    </select>
+                    <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@GetAvailablePlayers">Refresh Players</button>
+                    <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@SelectPlayer">Select Player</button>
                 }
-            </fieldset>
-            <button style="visibility:@(_game.CleanTable ? "visible" :"hidden")"
-                    disabled="@(!_game.CleanTable || (_selectedPlayer  != "P1"))"
-                    class="btn btn-success" @onclick="@CleanTable">
-                Clean Table
-            </button>
 
-            <div>
-                <input type="number" min="0" max="@(_game.CurrentRound+1)" size="2" @bind="@_placedBet"><button @onclick="PlaceBet">Bet</button>
-            </div>
-
-            <fieldset class="scheduler-border">
-                <legend>Cards of @_selectedPlayer</legend>
-
-                @foreach (var card in _cards)
+                @if (_selectedPlayer == "P1" && !_game.GameStarted)
                 {
-                    <div class="gallery">
-                        <div class="desc">
-                            <div id="P1_K@_cards.IndexOf(card).ToString()"><img src="/CardImages/@(card.Face).png" width="100" /></div>
-                            <div><button disabled="@(_game.ChooseWinner || _game.CleanTable || ("P"+_game.CurrentPlayer != _selectedPlayer))" class="btn btn-success" @onclick="@(e => Play(e, _selectedPlayer, card))">Play</button></div>
-                        </div>
-                    </div>
+                    <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn || _game.GameStarted || _selectedPlayer != "P1")" class="btn btn-success" @onclick="@StartGame">Start Game</button>
                 }
-            </fieldset>
-            @for (int r = 0; r < 16; r++)
-            {
-                <button id="btnForward1" disabled="@((!_game.Rounds[r].Current || _game.Playing) || ("P"+_game.PlayerToStart != _selectedPlayer))" class="@(_game.Rounds[r].Current ? "btn btn-success" : "btn btn-default")" @onclick="@(e => Shuffle())">@(r+1)</button>
-                @if(r==7)
+
+            </header>
+
+            <aside>
+                <h1>@_selectedGame</h1>
+                @for (int r = 0; r < 8; r++)
                 {
+                    <button id="btnForward1"
+                            disabled="@((!_game.Rounds[r].Current || _game.Playing || _game.Shuffled) || ("P"+_game.PlayerToStart != _selectedPlayer))"
+                            class="@(_game.Rounds[r].Current ? "btn btn-success" : "btn btn-default")"
+                            @onclick="@(e => Shuffle())">
+                        @(r + 1)
+                    </button>
+                    <button id="btnForward1"
+                            disabled="@((!_game.Rounds[r+8].Current || _game.Playing || _game.Shuffled) || ("P"+_game.PlayerToStart != _selectedPlayer))"
+                            class="@(_game.Rounds[r+8].Current ? "btn btn-success" : "btn btn-default")"
+                            @onclick="@(e => Shuffle())">
+                        @((r + 8))
+                    </button>
                     <br />
                 }
-            }
-            <button disabled="@(!_game.RoundReady || _selectedPlayer != "P1")" class="btn btn-success" @onclick="@NextRound">Next Round</button>
+
+                <button style="visibility:@((_selectedPlayer == "P1") ? "visible" : "hidden")"
+                        disabled="@(!_game.CleanTable || (_selectedPlayer != "P1"))"
+                        class="btn btn-success" @onclick="@CleanTable">
+                    Clean Table
+                </button>
+                <p></p>
+                <button style="visibility:@((_selectedPlayer == "P1") ? "visible" : "hidden")"
+                        disabled="@(!_game.RoundReady || _selectedPlayer != "P1")" 
+                        class="btn btn-success" @onclick="@NextRound">
+                    Next Round
+                </button>
+                <p></p>
+                <div>
+                    <p>Betting</p>
+                    @for (int bet = 0; bet <= _game.Rounds[_game.CurrentRound].NrCards; bet++)
+                    {
+                        //Define if player is last and what bet is not allowed
+                        var lastBetter = _game.PlayerToStart - 1;
+                        if (lastBetter < 1)
+                            lastBetter = 4;
+
+                        var notAllowed = false;
+
+                        if(_game.CurrentPlayer == lastBetter)
+                        {
+                            var sum = 0;
+                            for(int b = 0; b < 4; b++)
+                            {
+                                if(_game.Rounds[_game.CurrentRound].Bets[b] > -1)
+                                {
+                                    sum += _game.Rounds[_game.CurrentRound].Bets[b];
+                                }
+                            }
+                            var betNotAllowed = _game.Rounds[_game.CurrentRound].NrCards - sum;
+                            if(bet == betNotAllowed)
+                            {
+                                notAllowed = true;
+                            }
+
+                        }
+
+                        var localBetVar = bet;
+                        <button disabled="@(notAllowed || !_game.Shuffled || _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(_selectedPlayer)] > -1 || ("P" + _game.CurrentPlayer != _selectedPlayer))"
+                                @onclick="@(e => PlaceBet(e, localBetVar.ToString()))">
+                            @bet
+                        </button>
+                        @if(bet == 3)
+                        {
+                            <br />
+                        }
+                    }
+                </div>
+                <p></p>
+                <div id="PlayColour"><img class="playingColor" src="/CardImages/5@(_game.PlayingColour.ToString() + ".png")" width="100" /></div>
+            </aside>
+
+            <section>
+                <p>@_game.Status</p>
+                <fieldset class="scheduler-border">
+                    <legend>Played Cards </legend>
+                    @foreach (var playedCard in _game.Rounds[_game.CurrentRound].PlayedCards)
+                    {
+                        <div class=@(playedCard.Winner ? "galleryWon" : (playedCard.PlayerName == "P" + _game.PlayerToStart.ToString()? "galleryStarted": playedCard.PlayerName == _selectedPlayer ? "gallerySelectedPlayer" : "gallery"))>
+                            <div class="desc">
+                                <p>
+                                    @(playedCard.PlayerName)
+                                    <br />
+                                    [B:@(_game.Rounds[_game.CurrentRound].Bets[GetPlayerId(playedCard.PlayerName)] < 0 ? "?" : _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(playedCard.PlayerName)].ToString()),
+                                    W:@(_game.Rounds[_game.CurrentRound].Wins[GetPlayerId(playedCard.PlayerName)].ToString())]
+                                </p>
+
+                                @if (playedCard.Card != null)
+                                {
+
+                                    <div id="PlayCard_@(playedCard.PlayerName)"><img src="/CardImages/@(playedCard.Card == null ? "green_back" : playedCard.Card.Face).png" width="100" /></div>
+                                    @if (_game.ChooseWinner)
+                                    {
+                                        <button style="visibility:@(_game.ChooseWinner ? "visible" : "hidden")" disabled="@(!_game.ChooseWinner || (_selectedPlayer != "P1"))" @onclick="@(e => Winner(e, playedCard))">Won</button>
+
+                                    }
+                                }
+                                else
+                                {
+                                    <img src="/CardImages/green_back.png" width="100" />
+                                }
+                            </div>
+                        </div>
+
+                    }
+                </fieldset>
+
+                <fieldset class="scheduler-border">
+                    <legend>Cards of @_selectedPlayer</legend>
+
+                    @foreach (var card in _cards)
+                    {
+                        //define what can be played
+                        var canPlayCard = true;
+                        if (("P" + _game.PlayerToStart != _selectedPlayer) 
+                            && 
+                            (_game.Rounds[_game.CurrentRound]
+                            .PlayedCards.Where(pc => pc.Card != null)
+                            .Count() > 0))
+                        {
+                            var playedColour = _game.Rounds[_game.CurrentRound].PlayedCards
+                                .Where(p => p.PlayerName == "P" + _game.PlayerToStart.ToString())
+                                .FirstOrDefault().Card.Colour;
+                            var cardswithPlayingColour = _cards.Where(c => c.Colour == playedColour).Count();
+                            canPlayCard = cardswithPlayingColour > 0 ? (card.Colour == playedColour ? true : false) : true;
+                        }
+                            <div class="gallery">
+                            <div class="desc">
+                                <div id="PlayerCard_@_cards.IndexOf(card).ToString()"><img src="/CardImages/@(card.Face).png" width="100" /></div>
+                                <div><button id="WinButton_@_cards.IndexOf(card).ToString()" disabled="@(! canPlayCard || _game.ChooseWinner || _game.CleanTable || !_game.Betted || ("P" + _game.CurrentPlayer != _selectedPlayer))" class="btn btn-success" @onclick="@(e => Play(e, _selectedPlayer, card))">Play</button></div>
+                            </div>
+                        </div>
+                    }
+                </fieldset>
+            </section>
+            <aside>
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <td></td>
+                            <td>P1</td>
+                            <td>P2</td>
+                            <td>P3</td>
+                            <td>P4</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int round = 0; round < _game.Rounds.Length; round++)
+                        {
+                            <tr>
+                                <td>@(round.ToString())</td>
+                                <td>@(_game.Rounds[round].Scores[0].ToString())</td>
+                                <td>@(_game.Rounds[round].Scores[1].ToString())</td>
+                                <td>@(_game.Rounds[round].Scores[2].ToString())</td>
+                                <td>@(_game.Rounds[round].Scores[3].ToString())</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </aside>
         }
     </Authorized>
     <NotAuthorized>
@@ -175,9 +303,6 @@
     private Game _game;
     private List<Card> _cards = new List<Card>();
     private List<PlayerSelection> _playerSelections = new List<PlayerSelection>();
-    private string _nextMoveRemark = "";
-    private string _placedBet = "0";
-
 
     protected override async Task OnInitializedAsync()
     {
@@ -202,29 +327,19 @@
                     _cards = _game.Players[GetPlayerId(_selectedPlayer)].Cards;
                 }
             }
-
-            if (!_game.AllPlayersSignedIn)
-            {
-                _nextMoveRemark = "Waiting for others to sign in";
-            }
-            else
-            {
-                _nextMoveRemark = "Waiting for P1 to start the game";
-            }
             StateHasChanged();
         });
 
         _hubConnection.On<Game>("GameStarted", (game) =>
         {
             _game = game;
-            _nextMoveRemark = string.Format("Waiting for P{0} to shuffle", _game.CurrentPlayer);
+
             StateHasChanged();
         });
 
         _hubConnection.On<Game>("GameResetted", (game) =>
         {
             _game = game;
-            _nextMoveRemark = string.Format("Game Resetted. Waiting for P{0} to shuffle", _game.CurrentPlayer);
             StateHasChanged();
         });
 
@@ -249,7 +364,6 @@
             _game = game;
             _cards = cards;
             _game.Playing = true;
-            _nextMoveRemark = string.Format("Waiting for P{0} to play card", _game.CurrentPlayer);
             StateHasChanged();
         });
 
@@ -257,12 +371,6 @@
         {
             _game = game;
             _cards = cards;
-
-            _nextMoveRemark = string.Format("Waiting for P{0} to play card", _game.CurrentPlayer);
-            if (_game.ChooseWinner)
-            {
-                _nextMoveRemark = string.Format("Waiting to choose winner", _game.CurrentPlayer);
-            }
             StateHasChanged();
         });
 
@@ -279,28 +387,18 @@
         _hubConnection.On<Game>("WinnerRegistered", (game) =>
         {
             _game = game;
-            _nextMoveRemark = string.Format("P{0} has won. Clear table", _game.CurrentPlayer);
             StateHasChanged();
         });
 
         _hubConnection.On<Game>("StartNextRound", (game) =>
         {
             _game = game;
-            _nextMoveRemark = string.Format("Waiting for P{0} to shuffle", _game.PlayerToStart);
             StateHasChanged();
         });
 
         _hubConnection.On<Game>("CleanedTable", (game) =>
         {
             _game = game;
-            if (_game.RoundReady)
-            {
-                _nextMoveRemark = "Waiting to start next round";
-            }
-            else
-            {
-                _nextMoveRemark = string.Format("Waiting for P{0} to play card", _game.CurrentPlayer);
-            }
             StateHasChanged();
         });
 
@@ -315,9 +413,9 @@
         await JoinGame();
     }
 
-    private async Task PlaceBet()
+    private async Task PlaceBet(MouseEventArgs e, string bet)
     {
-        await _hubConnection.SendAsync("PlaceBet", _selectedGame, _selectedPlayer, _placedBet);
+        await _hubConnection.SendAsync("PlaceBet", _selectedGame, _selectedPlayer, bet);
     }
 
     private async Task JoinGame()
@@ -362,7 +460,7 @@
     private async Task SelectPlayer()
     {
         _playerSelected = true;
-        await _hubConnection.SendAsync("AddToGroup", _game.Id, _selectedPlayer);
+        await _hubConnection.SendAsync("JoinGame", _game.Id, _selectedPlayer);
     }
 
     private async Task GetAvailablePlayers()
