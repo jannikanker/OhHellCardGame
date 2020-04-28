@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Xml.Schema;
 
-namespace BlazorSignalRApp.Shared
+namespace BlazorSignalRApp.Shared.Models
 {
     public class Game
     {
@@ -18,7 +14,7 @@ namespace BlazorSignalRApp.Shared
         public int NrCards { get; set; }
         public int CurrentRound { get; set; }
         public Round[] Rounds { get; set; }
-        public Colours PlayingColour { get; set; }
+        public Card PlayingCard { get; set; }
         public int CurrentPlayer { get; set; }
         public int ShufflingPlayer { get; set; }
         public int PlayerToStart { get; set; }
@@ -28,6 +24,7 @@ namespace BlazorSignalRApp.Shared
         public bool CleanTable { get; set; }
         public bool Shuffled { get; set; }
         public bool Betted { get; set; }
+        public bool GameOver { get; set; }
         public string Status { get; set; }
 
         public bool AllPlayersSignedIn
@@ -52,12 +49,12 @@ namespace BlazorSignalRApp.Shared
             {
                 this.Players[p] = new Player("P" + (p + 1).ToString());
             }
+            this.PlayingCard = new Card { Colour=Colours.H, Value = Values.Four};
 
             this.CurrentPlayer = 1;
             this.ShufflingPlayer = 4;
             this.PlayerToStart = 1;
             this.Stock = new Stock();
-
 
             this.Playing = false;
             this.NrCards = 1;
@@ -69,6 +66,7 @@ namespace BlazorSignalRApp.Shared
             this.RoundReady = false;
             this.Shuffled = false;
             this.Betted = false;
+            this.GameOver = false;
         }
 
         public void SetNewPlayingCards()
@@ -84,28 +82,40 @@ namespace BlazorSignalRApp.Shared
 
         public void NextRound()
         {
-            this.Rounds[this.CurrentRound].Current = false;
-            if (this.CurrentRound < this.Rounds.Length - 1)
+            if(this.GameOver)
             {
-                for(int i=0; i<4; i++)
+                //do nothing.
+                return;
+            }
+
+            if (this.CurrentRound < this.Rounds.Length)
+            {
+                this.Rounds[this.CurrentRound].Current = false;
+                for (int i = 0; i < 4; i++)
                 {
                     var playerRoundScore = this.Rounds[this.CurrentRound].Wins[i] - this.Rounds[this.CurrentRound].Bets[i];
-                    var score = playerRoundScore == 0 ? this.Players[i].Score + 5 + this.Rounds[this.CurrentRound].Wins[i] : this.Players[i].Score - 1;
+                    var score = playerRoundScore == 0 ? this.Players[i].Score + 10 + (this.Rounds[this.CurrentRound].Wins[i] * 2) : this.Players[i].Score - (Math.Abs(playerRoundScore) * 2);
                     this.Players[i].Score = score;
                     this.Rounds[this.CurrentRound].Scores[i] = score;
                 }
-                this.CurrentRound++;
-                this.Rounds[this.CurrentRound].Current = true;
-                this.ShufflingPlayer = this.ShufflingPlayer < 4 ? this.ShufflingPlayer + 1 : 1;
-                this.PlayerToStart = this.ShufflingPlayer < 4 ? this.ShufflingPlayer + 1 : 1;
-                this.CurrentPlayer = this.PlayerToStart;
-                this.Playing = false;
-                this.Shuffled = false;
-                this.RoundReady = false;
-                this.Betted = false;
-                this.SetNewPlayingCards();
+                if (this.CurrentRound == 15)
+                {
+                    this.GameOver = true;
+                }
+                else
+                {
+                    this.CurrentRound++;
+                    this.Rounds[this.CurrentRound].Current = true;
+                    this.ShufflingPlayer = this.ShufflingPlayer < 4 ? this.ShufflingPlayer + 1 : 1;
+                    this.PlayerToStart = this.ShufflingPlayer < 4 ? this.ShufflingPlayer + 1 : 1;
+                    this.CurrentPlayer = this.PlayerToStart;
+                    this.Playing = false;
+                    this.Shuffled = false;
+                    this.RoundReady = false;
+                    this.Betted = false;
+                    this.SetNewPlayingCards();
+                }
             }
-
         }
 
         public void Shuffle()
@@ -130,40 +140,23 @@ namespace BlazorSignalRApp.Shared
             }
 
             this.Shuffled = true;
-            this.PlayingColour = RandomEnum<Colours>();
+            var pCard = new Card();
+            pCard.Colour = RandomEnum<Colours>(4);
+            pCard.Value = RandomEnum<Values>(5);
+            this.PlayingCard = pCard;
         }
 
-        private T RandomEnum<T>()
+        private T RandomEnum<T>(int range)
         {
             Random _RNG = new Random();
             Type type = typeof(T);
             Array values = Enum.GetValues(type);
             lock (_RNG)
             {
-                object value = values.GetValue(_RNG.Next(values.Length));
+                object value = values.GetValue(_RNG.Next(range));
                 return (T)Convert.ChangeType(value, type);
             }
         }
-    }
-
-    public enum Colours
-    {
-        C,
-        S,
-        D,
-        H
-    }
-
-    public enum Values
-    {
-        Seven = 7,
-        Eight = 8,
-        Nine = 9,
-        Ten = 10,
-        Jack = 11,
-        Queen = 12,
-        King = 14,
-        Ace = 15
     }
 
     public class Stock
@@ -171,11 +164,12 @@ namespace BlazorSignalRApp.Shared
         private static Random _RNG = new Random();
 
         public List<Card> Cards = new List<Card>();
+
         public Stock()
         {
             for (int c = 0; c < 4; c++)
             {
-                for (int v = 0; v < 8; v++)
+                for (int v = 5; v < 13; v++)
                 {
                     var card = new Card
                     {
@@ -200,6 +194,7 @@ namespace BlazorSignalRApp.Shared
     {
         public Colours Colour { get; set; }
         public Values Value { get; set; }
+
         public string Face
         {
             get
@@ -207,12 +202,18 @@ namespace BlazorSignalRApp.Shared
                 var v = "";
                 switch (this.Value)
                 {
+                    case Values.Two:
+                    case Values.Three:
+                    case Values.Four:
+                    case Values.Five:
+                    case Values.Six:
                     case Values.Seven:
                     case Values.Eight:
                     case Values.Nine:
                     case Values.Ten:
                         v = ((int)this.Value).ToString();
                         break;
+
                     case Values.Jack:
                     case Values.Queen:
                     case Values.King:
@@ -231,17 +232,16 @@ namespace BlazorSignalRApp.Shared
         {
             Winner = false;
         }
+
         public string PlayerName { get; set; }
         public Card Card { get; set; }
         public bool Winner { get; set; }
-
     }
 
     public class Player
     {
         public Player()
         {
-
         }
 
         public Player(string name)
@@ -250,30 +250,28 @@ namespace BlazorSignalRApp.Shared
             this.Name = name;
             this.Score = 0;
             this.SignIn = false;
-
         }
+
         public string Name { get; set; }
+        public string Email { get; set; }
         public bool SignIn { get; set; }
         public int Score { get; set; }
         public List<Card> Cards { get; set; }
-
     }
 
     public class Round
     {
         public Round()
         {
-
         }
 
         public Round(int nrCards)
         {
             this.Current = false;
-            this.Bets = new int[4] { -1,-1,-1,-1 };
+            this.Bets = new int[4] { -1, -1, -1, -1 };
             this.Wins = new int[4];
             this.NrCards = nrCards;
             this.Scores = new int[4] { 0, 0, 0, 0 };
-
         }
 
         public PlayedCard[] PlayedCards { get; set; }
@@ -282,6 +280,7 @@ namespace BlazorSignalRApp.Shared
         public int[] Bets { get; set; }
         public int[] Wins { get; set; }
         public int[] Scores { get; set; }
+
         public bool AllBetsPlaced
         {
             get
@@ -289,6 +288,5 @@ namespace BlazorSignalRApp.Shared
                 return (Bets.Where(b => b > -1).Count() == 4);
             }
         }
-
     }
 }

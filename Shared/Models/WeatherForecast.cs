@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace BlazorSignalRApp.Shared
+namespace BlazorSignalRApp.Shared.Models
+
 {
     public class WeatherForecast
     {

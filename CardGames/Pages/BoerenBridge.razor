@@ -1,9 +1,14 @@
 ﻿@page "/boerenbridge/{_selectedGame}/{_selectedPlayer}"
 @using Microsoft.AspNetCore.SignalR.Client
 @using BlazorSignalRApp.Shared;
+@using BlazorSignalRApp.Shared.Models;
 @using System.Collections;
 @using Microsoft.Extensions.Logging;
 @inject NavigationManager NavigationManager
+@inject Microsoft.Extensions.Options.IOptions<GameSettings> gameSettings
+@{
+    var settings = gameSettings.Value;
+}
 
 <style>
     fieldset.scheduler-border {
@@ -35,7 +40,7 @@
 
     div.gallery {
         margin: 5px;
-        border: 1px solid #ccc;
+        border: 1px solid #ffffff;
         float: left;
         width: 120px;
         border-radius: 15px;
@@ -79,12 +84,12 @@
 
     section {
         float: left;
-        width: 50%;
+        width: 60%;
     }
 
     aside {
         float: left;
-        width: 20%;
+        width: 15%;
     }
 
     footer {
@@ -101,7 +106,14 @@
         }
         else
         {
+            @if (!(_game.Players[GetPlayerId(_selectedPlayer)].Email == GetUserEmail().Result
+               || GetUserEmail().Result == settings.GameAdmin))
+            {
+                <p>You are not authorized to play this game.</p>
+                return;
+            }
             <header>
+                <h3>Hello @context.User.Identity.Name you are Player @_selectedPlayer</h3>
                 @if (string.IsNullOrEmpty(_selectedPlayer))
                 {
                     <select @bind="_selectedPlayer" disabled="@(_playerSelected)">
@@ -127,34 +139,22 @@
                 @for (int r = 0; r < 8; r++)
                 {
                     <button id="btnForward1"
-                            disabled="@((!_game.Rounds[r].Current || _game.Playing || _game.Shuffled) || ("P"+_game.PlayerToStart != _selectedPlayer))"
+                            disabled="@((!_game.Rounds[r].Current || _game.Playing || _game.Shuffled || _game.GameOver) || ("P"+_game.PlayerToStart != _selectedPlayer))"
                             class="@(_game.Rounds[r].Current ? "btn btn-success" : "btn btn-default")"
                             @onclick="@(e => Shuffle())">
                         @(r + 1)
                     </button>
                     <button id="btnForward1"
-                            disabled="@((!_game.Rounds[r+8].Current || _game.Playing || _game.Shuffled) || ("P"+_game.PlayerToStart != _selectedPlayer))"
+                            disabled="@((!_game.Rounds[r+8].Current || _game.Playing || _game.Shuffled  || _game.GameOver) || ("P"+_game.PlayerToStart != _selectedPlayer))"
                             class="@(_game.Rounds[r+8].Current ? "btn btn-success" : "btn btn-default")"
                             @onclick="@(e => Shuffle())">
-                        @((r + 8))
+                        @((8 - r))
                     </button>
                     <br />
                 }
-
-                <button style="visibility:@((_selectedPlayer == "P1") ? "visible" : "hidden")"
-                        disabled="@(!_game.CleanTable || (_selectedPlayer != "P1"))"
-                        class="btn btn-success" @onclick="@CleanTable">
-                    Clean Table
-                </button>
-                <p></p>
-                <button style="visibility:@((_selectedPlayer == "P1") ? "visible" : "hidden")"
-                        disabled="@(!_game.RoundReady || _selectedPlayer != "P1")" 
-                        class="btn btn-success" @onclick="@NextRound">
-                    Next Round
-                </button>
                 <p></p>
                 <div>
-                    <p>Betting</p>
+                    <h3>Betting</h3>
                     @for (int bet = 0; bet <= _game.Rounds[_game.CurrentRound].NrCards; bet++)
                     {
                         //Define if player is last and what bet is not allowed
@@ -164,18 +164,18 @@
 
                         var notAllowed = false;
 
-                        if(_game.CurrentPlayer == lastBetter)
+                        if (_game.CurrentPlayer == lastBetter)
                         {
                             var sum = 0;
-                            for(int b = 0; b < 4; b++)
+                            for (int b = 0; b < 4; b++)
                             {
-                                if(_game.Rounds[_game.CurrentRound].Bets[b] > -1)
+                                if (_game.Rounds[_game.CurrentRound].Bets[b] > -1)
                                 {
                                     sum += _game.Rounds[_game.CurrentRound].Bets[b];
                                 }
                             }
                             var betNotAllowed = _game.Rounds[_game.CurrentRound].NrCards - sum;
-                            if(bet == betNotAllowed)
+                            if (bet == betNotAllowed)
                             {
                                 notAllowed = true;
                             }
@@ -183,22 +183,36 @@
                         }
 
                         var localBetVar = bet;
-                        <button disabled="@(notAllowed || !_game.Shuffled || _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(_selectedPlayer)] > -1 || ("P" + _game.CurrentPlayer != _selectedPlayer))"
+                        <button class="btn btn-outline-success" disabled="@(notAllowed || !_game.Shuffled || _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(_selectedPlayer)] > -1 || ("P" + _game.CurrentPlayer != _selectedPlayer))"
                                 @onclick="@(e => PlaceBet(e, localBetVar.ToString()))">
                             @bet
                         </button>
-                        @if(bet == 3)
+                        @if (bet == 4)
                         {
                             <br />
                         }
                     }
                 </div>
                 <p></p>
-                <div id="PlayColour"><img class="playingColor" src="/CardImages/5@(_game.PlayingColour.ToString() + ".png")" width="100" /></div>
+                <h3>Colour</h3>
+                <div id="PlayColour"><img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="100" /></div>
+
+                <p></p>
+                <button style="visibility:@((_selectedPlayer == "P1") ? "visible" : "hidden")"
+                        disabled="@(!_game.CleanTable || (_selectedPlayer != "P1"))"
+                        class="btn btn-success" @onclick="@CleanTable">
+                    Clean Table
+                </button>
+                <p></p>
+                <button style="visibility:@((_selectedPlayer == "P1") ? "visible" : "hidden")"
+                        disabled="@(!_game.RoundReady || _game.GameOver || _selectedPlayer != "P1")"
+                        class="btn btn-success" @onclick="@NextRound">
+                    Next Round
+                </button>
             </aside>
 
             <section>
-                <p>@_game.Status</p>
+                <h2 class="active">@_game.Status</h2>
                 <fieldset class="scheduler-border">
                     <legend>Played Cards </legend>
                     @foreach (var playedCard in _game.Rounds[_game.CurrentRound].PlayedCards)
@@ -208,8 +222,8 @@
                                 <p>
                                     @(playedCard.PlayerName)
                                     <br />
-                                    [B:@(_game.Rounds[_game.CurrentRound].Bets[GetPlayerId(playedCard.PlayerName)] < 0 ? "?" : _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(playedCard.PlayerName)].ToString()),
-                                    W:@(_game.Rounds[_game.CurrentRound].Wins[GetPlayerId(playedCard.PlayerName)].ToString())]
+                                    [Bet:@(_game.Rounds[_game.CurrentRound].Bets[GetPlayerId(playedCard.PlayerName)] < 0 ? "?" : _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(playedCard.PlayerName)].ToString()),
+                                    Wins:@(_game.Rounds[_game.CurrentRound].Wins[GetPlayerId(playedCard.PlayerName)].ToString())]
                                 </p>
 
                                 @if (playedCard.Card != null)
@@ -218,7 +232,7 @@
                                     <div id="PlayCard_@(playedCard.PlayerName)"><img src="/CardImages/@(playedCard.Card == null ? "green_back" : playedCard.Card.Face).png" width="100" /></div>
                                     @if (_game.ChooseWinner)
                                     {
-                                        <button style="visibility:@(_game.ChooseWinner ? "visible" : "hidden")" disabled="@(!_game.ChooseWinner || (_selectedPlayer != "P1"))" @onclick="@(e => Winner(e, playedCard))">Won</button>
+                                        <button class="btn btn-outline-info" style="visibility:@(_game.ChooseWinner ? "visible" : "hidden")" disabled="@(!_game.ChooseWinner || (_selectedPlayer != "P1"))" @onclick="@(e => Winner(e, playedCard))">Won</button>
 
                                     }
                                 }
@@ -239,8 +253,8 @@
                     {
                         //define what can be played
                         var canPlayCard = true;
-                        if (("P" + _game.PlayerToStart != _selectedPlayer) 
-                            && 
+                        if (("P" + _game.PlayerToStart != _selectedPlayer)
+                            &&
                             (_game.Rounds[_game.CurrentRound]
                             .PlayedCards.Where(pc => pc.Card != null)
                             .Count() > 0))
@@ -251,10 +265,15 @@
                             var cardswithPlayingColour = _cards.Where(c => c.Colour == playedColour).Count();
                             canPlayCard = cardswithPlayingColour > 0 ? (card.Colour == playedColour ? true : false) : true;
                         }
-                            <div class="gallery">
+                        <div class="gallery">
                             <div class="desc">
                                 <div id="PlayerCard_@_cards.IndexOf(card).ToString()"><img src="/CardImages/@(card.Face).png" width="100" /></div>
-                                <div><button id="WinButton_@_cards.IndexOf(card).ToString()" disabled="@(! canPlayCard || _game.ChooseWinner || _game.CleanTable || !_game.Betted || ("P" + _game.CurrentPlayer != _selectedPlayer))" class="btn btn-success" @onclick="@(e => Play(e, _selectedPlayer, card))">Play</button></div>
+                                <div><button id="PlayButton_@_cards.IndexOf(card).ToString()" 
+                                             disabled="@(!canPlayCard || _game.ChooseWinner || _game.CleanTable || !_game.Betted || ("P" + _game.CurrentPlayer != _selectedPlayer))" 
+                                             class="btn btn-success" @onclick="@(e => Play(e, _selectedPlayer, card, canPlayCard))">
+                                    Play
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     }
@@ -275,7 +294,16 @@
                         @for (int round = 0; round < _game.Rounds.Length; round++)
                         {
                             <tr>
-                                <td>@(round.ToString())</td>
+                                <td>
+                                    @if(round < 8)
+                                    {
+                                        <b>@((round+1).ToString())</b>
+                                    }
+                                    else
+                                    {
+                                        <b>@((16 - round).ToString())</b>
+                                    }
+                                </td>
                                 <td>@(_game.Rounds[round].Scores[0].ToString())</td>
                                 <td>@(_game.Rounds[round].Scores[1].ToString())</td>
                                 <td>@(_game.Rounds[round].Scores[2].ToString())</td>
@@ -297,6 +325,9 @@
     public string _selectedPlayer { get; set; }
     [Parameter]
     public string _selectedGame { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
 
     private HubConnection _hubConnection;
     private bool _playerSelected;
@@ -446,9 +477,10 @@
     private Task Shuffle() =>
         _hubConnection.SendAsync("Shuffle", _game.Id);
 
-    private void Play(MouseEventArgs e, string player, Card card)
+    private void Play(MouseEventArgs e, string player, Card card, bool canPlayCard)
     {
-        _hubConnection.SendAsync("PlayCard", _game.Id, _selectedPlayer, card);
+        if(canPlayCard && !_game.ChooseWinner && !_game.CleanTable && _game.Betted && ("P" + _game.CurrentPlayer == _selectedPlayer))
+            _hubConnection.SendAsync("PlayCard", _game.Id, _selectedPlayer, card);
     }
 
     private void Winner(MouseEventArgs e, PlayedCard winningCard)
@@ -487,6 +519,25 @@
                 break;
         }
         return pId;
+    }
+
+    private async Task<string> GetUserEmail()
+    {
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            var email = ((System.Security.Claims.ClaimsIdentity)user.Identity).Claims.FirstOrDefault(c => c.Type == "emails");
+            if (email != null)
+                return email.Value;
+            else
+                return null;
+        }
+        else
+        {
+            return null;
+        }
     }
 
     public class PlayerSelection

@@ -1,4 +1,5 @@
 ﻿using BlazorSignalRApp.Shared;
+using BlazorSignalRApp.Shared.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;

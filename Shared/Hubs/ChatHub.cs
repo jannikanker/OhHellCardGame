@@ -1,15 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using BlazorSignalRApp.Server.Services;
 using Microsoft.AspNetCore.SignalR;
+using System.Threading.Tasks;
 
 namespace BlazorSignalRApp.Server.Hubs
 {
     public class ChatHub : Hub
     {
         private TeamService _teamService;
+
         public ChatHub(TeamService groupService)
         {
             _teamService = groupService;
@@ -25,6 +23,7 @@ namespace BlazorSignalRApp.Server.Hubs
         {
             await Clients.All.SendAsync("ReceiveMessage", user, message);
         }
+
         public async Task SendEmoji(string teamId, string user, string emoji)
         {
             _teamService.SetMember(teamId, user, emoji);

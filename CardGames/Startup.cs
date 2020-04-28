@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using BlazorSignalRApp.Server.Services;
 using BlazorSignalRApp.Server.Hubs;
+using BlazorSignalRApp.Shared.Models;
 
 namespace CardGames
 {
@@ -26,6 +27,8 @@ namespace CardGames
             services.AddAuthentication(AzureADB2CDefaults.AuthenticationScheme)
                 .AddAzureADB2C(options => Configuration.Bind("AzureAdB2C", options));
 
+            services.Configure<GameSettings>(Configuration.GetSection("GameSettings"));
+
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddSignalR();
@@ -34,10 +37,12 @@ namespace CardGames
                 return TeamService.Instance;
             });
 
-            services.AddSingleton<GameService>(gs =>
-            {
-                return GameService.Instance;
-            });
+            services.AddSingleton<GameService>();
+
+            //services.AddSingleton<GameService>(gs =>
+            //{
+            //    return GameService.Instance;
+            //});
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -4,29 +4,33 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BlazorSignalRApp.Shared.Models;
+using Microsoft.Extensions.Options;
 
 namespace BlazorSignalRApp.Server.Services
 {
     public class GameService
     {
         private Hashtable _games;
+        private GameSettings _settings;
 
-        private static GameService instance;
+        //private static GameService instance;
 
-        private GameService()
+        public GameService(IOptions<GameSettings> settings)
         {
+            _settings = settings.Value;
             _games = new Hashtable();
         }
 
-        public static GameService Instance
-        {
-            get
-            {
-                if (instance == null)
-                    instance = new GameService();
-                return instance;
-            }
-        }
+        //public static GameService Instance
+        //{
+        //    get
+        //    {
+        //        if (instance == null)
+        //            instance = new GameService(_settings);
+        //        return instance;
+        //    }
+        //}
 
         public Game NewGame(string name)
         {
@@ -57,12 +61,24 @@ namespace BlazorSignalRApp.Server.Services
             return (Game)_games[gameId]; ;
         }
 
-        public List<string> GetGames()
+        public List<GamePlayer> GetGames(string userEmail)
         {
-            var gameIds = new List<string>();
-            foreach(var key in _games.Keys)
+            var gameIds = new List<GamePlayer>();
+            foreach (var key in _games.Keys)
             {
-                gameIds.Add((string)key);
+                var gameId = (string)key;
+                var game = (Game)_games[key];
+                foreach (var player in game.Players)
+                {
+                    var userInGame = new GamePlayer();
+                    userInGame.GameId = gameId;
+                    if (player.Email == userEmail || userEmail == _settings.GameAdmin)
+                    {
+                        userInGame.Player = player.Name;
+                        userInGame.Email = player.Email; 
+                        gameIds.Add(userInGame);
+                    }                  
+                }              
             }
             return gameIds;
         }
