@@ -61,6 +61,14 @@ namespace BlazorSignalRApp.Server.Services
             return (Game)_games[gameId]; ;
         }
 
+        public void RemoveGame(string gameId, string userEmail)
+        {
+            if (userEmail == _settings.SystemAdmin)
+            {
+                _games.Remove(gameId);
+            }
+        }
+
         public List<GamePlayer> GetGames(string userEmail)
         {
             var gameIds = new List<GamePlayer>();
@@ -72,7 +80,7 @@ namespace BlazorSignalRApp.Server.Services
                 {
                     var userInGame = new GamePlayer();
                     userInGame.GameId = gameId;
-                    if (player.Email == userEmail || userEmail == _settings.GameAdmin)
+                    if (player.Email == userEmail || userEmail == _settings.SystemAdmin)
                     {
                         userInGame.Player = player.Name;
                         userInGame.Email = player.Email; 

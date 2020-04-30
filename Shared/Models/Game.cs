@@ -31,7 +31,7 @@ namespace BlazorSignalRApp.Shared.Models
         {
             get
             {
-                return this.Players.Where(p => p.SignIn).Count() == 4;
+                return this.Players.Where(p => p.SignedIn).Count() == 4;
             }
         }
 
@@ -249,12 +249,13 @@ namespace BlazorSignalRApp.Shared.Models
             this.Cards = new List<Card>();
             this.Name = name;
             this.Score = 0;
-            this.SignIn = false;
+            this.SignedIn = false;
         }
 
         public string Name { get; set; }
         public string Email { get; set; }
-        public bool SignIn { get; set; }
+        public bool SignedIn { get; set; }
+        public bool IsGameAdmin { get; set; }
         public int Score { get; set; }
         public List<Card> Cards { get; set; }
     }

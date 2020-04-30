@@ -6,6 +6,6 @@ namespace BlazorSignalRApp.Shared.Models
 {
     public class GameSettings
     {
-        public string GameAdmin { get; set; }
+        public string SystemAdmin { get; set; }
     }
 }

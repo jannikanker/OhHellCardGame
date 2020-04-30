@@ -107,7 +107,7 @@
         else
         {
             @if (!(_game.Players[GetPlayerId(_selectedPlayer)].Email == GetUserEmail().Result
-               || GetUserEmail().Result == settings.GameAdmin))
+               || GetUserEmail().Result == settings.SystemAdmin))
             {
                 <p>You are not authorized to play this game.</p>
                 return;

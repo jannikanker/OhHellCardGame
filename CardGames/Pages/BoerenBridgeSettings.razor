@@ -16,7 +16,7 @@
 <AuthorizeView>
     <Authorized>
         <h1>Hello @context.User.Identity.Name</h1>
-        @if (GetUserEmail().Result == settings.GameAdmin)
+        @if (GetUserEmail().Result == settings.SystemAdmin)
         {
             <input type="text" @bind="_newGameName" />
             <button class="btn btn-danger" @onclick="@NewGame">New Game</button>
@@ -24,17 +24,22 @@
             <button class="btn btn-danger" @onclick="@GetRunningGames">Get Running Games</button>
             <select @bind="_selectedGame">
                 <option value="">-select game-</option>
-                @foreach (var game in _runningGames)
+                @foreach (var game in _runningGames.GroupBy(g => g.GameId))
                 {
-                    <option value=@game.GameId>@game.GameId</option>
+                    <option value=@game.Key>@game.Key</option>
                 }
             </select>
             <p></p>
             <button class="btn btn-danger" @onclick="@ResetGame">Reset Game</button>
+            <button class="btn btn-danger" @onclick="@RemoveGame">Remove Game</button>
             <p></p>
             @foreach (var game in _runningGames)
             {
-                <p>@game.GameId:@game.Player <input @bind="game.Email" type="text" /><button class="btn btn-success" @onclick="@(e => SavePlayer(e, game))">Save</button></p>
+            <p>
+                @game.GameId:@game.Player <input @bind="game.Email" type="text" size="100" />
+                <button class="btn btn-success" @onclick="@(e => SavePlayer(e, game))">Save</button> 
+                <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, game))">GoTo @game.GameId as @game.Player</button>
+            </p>
             }
         }
         else
@@ -43,7 +48,7 @@
             @foreach (var game in _runningGames)
             {
                 <p>
-                    <button class="btn-primary" @onclick="@(e => NavigateToGame(e, game))">Click to go to @game.GameId</button>
+                    <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, game))">Click to go to @game.GameId</button>
                 </p>
             }
         }
@@ -81,12 +86,18 @@
         });
 
         _hubConnection.On<List<GamePlayer>>("NewGameCreated", (gamePlayers) =>
-      {
-          _runningGames = gamePlayers;
-          StateHasChanged();
-      });
+        {
+            _runningGames = gamePlayers;
+            StateHasChanged();
+        });
 
         _hubConnection.On<List<GamePlayer>>("GameResetted", (gamePlayers) =>
+        {
+            _runningGames = gamePlayers;
+            StateHasChanged();
+        });
+
+        _hubConnection.On<List<GamePlayer>>("GameRemoved", (gamePlayers) =>
         {
             _runningGames = gamePlayers;
             StateHasChanged();
@@ -130,6 +141,11 @@
     private async Task ResetGame()
     {
         await _hubConnection.SendAsync("ResetGame", _selectedGame, GetUserEmail().Result);
+    }
+
+    private async Task RemoveGame()
+    {
+        await _hubConnection.SendAsync("RemoveGame", _selectedGame, GetUserEmail().Result);
     }
 
     private async Task GetRunningGames()

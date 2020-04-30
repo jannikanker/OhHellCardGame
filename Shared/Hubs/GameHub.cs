@@ -24,7 +24,7 @@ namespace BlazorSignalRApp.Server.Hubs
         public async Task GetAvailablePlayers(string gameId)
         {
             var game = _gameService.GetGame(gameId);
-            var availablePlayers = game.Players.Where(p => p.SignIn == false).Select(p => p.Name).ToArray();
+            var availablePlayers = game.Players.Where(p => p.SignedIn == false).Select(p => p.Name).ToArray();
 
             await Clients.Caller.SendAsync("ReturnAvailablePlayers", availablePlayers);
         }
@@ -43,7 +43,7 @@ namespace BlazorSignalRApp.Server.Hubs
             {
                 if (!string.IsNullOrEmpty(selectedPlayer))
                 {
-                    game.Players.Where(p => p.Name == selectedPlayer).First().SignIn = true;
+                    game.Players.Where(p => p.Name == selectedPlayer).First().SignedIn = true;
                     if(!string.IsNullOrEmpty(game.Connections[GetPlayerId(selectedPlayer)]))
                     {
                         await Groups.RemoveFromGroupAsync(game.Connections[GetPlayerId(selectedPlayer)], gameId);
@@ -51,13 +51,24 @@ namespace BlazorSignalRApp.Server.Hubs
                     game.Connections[GetPlayerId(selectedPlayer)] = Context.ConnectionId;
                     await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
                 }
-            }
 
-            if (game.GameStarted != true)
-            {
-                game.Status = game.AllPlayersSignedIn ? "Waiting for P1 to start the game" : "Waiting for others to sign in";
+                var notsignedinplayer = "";
+                foreach (var player in game.Players.Where(p => p.SignedIn == false))
+                {
+                    notsignedinplayer += player.Name + " ";
+                }
+
+                if (game.GameStarted != true)
+                {
+                    game.Status = game.AllPlayersSignedIn ? "Waiting for P1 to start the game" : string.Format("Waiting for {0}to sign in", notsignedinplayer);
+                }
+
+                await Clients.Group(gameId).SendAsync("JoinedGame", game);
             }
-            await Clients.Group(gameId).SendAsync("JoinedGame", game);
+            else
+            {
+                await Clients.Group(gameId).SendAsync("JoinedGame", null);
+            }
         }
 
         public async Task StartGame(string gameId)
@@ -69,11 +80,19 @@ namespace BlazorSignalRApp.Server.Hubs
 
         public async Task ResetGame(string gameId, string userEmail)
         {
+
             var game = _gameService.ResetGame(gameId);
             var games = _gameService.GetGames(userEmail);
             game.Status = string.Format("Game Resetted. Waiting for P{0} to shuffle", game.CurrentPlayer);
             
             await Clients.Group(gameId).SendAsync("GameResetted", games);
+        }
+
+        public async Task RemoveGame(string gameId, string userEmail)
+        {
+            _gameService.RemoveGame(gameId, userEmail);
+            var games = _gameService.GetGames(userEmail);
+            await Clients.Caller.SendAsync("GameRemoved", games);
         }
 
         public async Task GetRunningGames(string userEmail)
