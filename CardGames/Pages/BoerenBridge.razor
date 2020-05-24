@@ -74,7 +74,7 @@
     }
 
     img.playingColor {
-        float: left;
+        text-align: center;
     }
 
     header,
@@ -91,12 +91,17 @@
 
     aside {
         float: left;
-        width: 15%;
+        width: 10%;
     }
 
     footer {
         clear: both;
         margin-bottom: 0;
+    }
+
+    .betting {
+        display: block;
+        text-align: center;
     }
 </style>
 
@@ -133,84 +138,67 @@
                 {
                     <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn)" class="btn btn-success" @onclick="@StartGame">Start Game</button>
                 }
-
             </header>
 
             <aside>
-                @for (int r = 0; r < 8; r++)
-                {
-                <button id="btnForward1"
-                        disabled="@((!_game.Rounds[r].Current || _game.Playing || _game.Shuffled || _game.GameOver) || (_game.PlayerToStartObj.Id != _selectedPlayer))"
-                        class="@(_game.Rounds[r].Current ? "btn btn-success" : "btn btn-default")"
-                        @onclick="@(e => Shuffle())">
-                    @(r + 1)
-                </button>
-                    <button id="btnForward1"
-                        disabled="@((!_game.Rounds[r+8].Current || _game.Playing || _game.Shuffled  || _game.GameOver) || (_game.PlayerToStartObj.Id != _selectedPlayer))"
-                        class="@(_game.Rounds[r+8].Current ? "btn btn-success" : "btn btn-default")"
-                        @onclick="@(e => Shuffle())">
-                    @((8 - r))
-                </button>
-            <br />
-
-                }
-
-                <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
-                        disabled="@(!_game.CleanTable || !IsGameAdmin())"
-                        class="btn btn-success" @onclick="@CleanTable">
-                    @L["CleanTable"]
-                </button>
-                <p></p>
-                <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
-                        disabled="@(!_game.RoundReady || _game.GameOver || !IsGameAdmin())"
-                        class="btn btn-success" @onclick="@NextRound">
-                    @L["NextRound"]
-                </button>
-
-                <p></p>
-                <div>
-                    <h3>🎰 @L["Betting"]</h3>
-                    @for (int bet = 0; bet <= _game.Rounds[_game.CurrentRound].NrCards; bet++)
-                    {
-                        //Define if player is last and what bet is not allowed
-                        var lastBetter = _game.PlayerToStart - 1;
-                        if (lastBetter < 0)
-                            lastBetter = 3;
-
-                        var notAllowed = false;
-
-                        if (_game.CurrentPlayer == lastBetter)
-                        {
-                            var sum = 0;
-                            for (int b = 0; b < 4; b++)
-                            {
-                                if (_game.Rounds[_game.CurrentRound].Bets[b] > -1)
-                                {
-                                    sum += _game.Rounds[_game.CurrentRound].Bets[b];
-                                }
-                            }
-                            var betNotAllowed = _game.Rounds[_game.CurrentRound].NrCards - sum;
-                            if (bet == betNotAllowed)
-                            {
-                                notAllowed = true;
-                            }
-
-                        }
-
-                        var localBetVar = bet;
-                    <button class="btn btn-outline-success" disabled="@(notAllowed || !_game.Shuffled || _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(_selectedPlayer)] > -1 || (_game.CurrentPlayerObj.Id != _selectedPlayer))"
-                            @onclick="@(e => PlaceBet(e, localBetVar.ToString()))">
-                        @bet
+                <div style="display:block">
+                    <button class="btn btn-outline-success" disabled>@_game.CurrentNrCards</button>
+                    <button id="btnShuffle"
+                            disabled="@((!_game.GameStarted || _game.Playing || _game.Shuffled || _game.GameOver) || (_game.PlayerToStartObj.Id != _selectedPlayer))"
+                            class="btn btn-success"
+                            @onclick="@(e => Shuffle())">
+                        @L["Shuffle"]
                     </button>
-                    @if (bet == 4)
-                        {
-                    <br />
-                        }
-                    }
                 </div>
                 <p></p>
-                <h3>Colour</h3>
-                <div id="PlayColour"><img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="100" /></div>
+                <div class="betting">
+                    <div style="display:block">
+                        <h3>@L["Colour"]</h3>
+                        <img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="100" />
+                    </div>
+                    <p></p>
+                    <div style="display:block">
+                        <div style="display:inline-block"><h3>🎰 @L["Betting"]</h3></div>
+                        <div style="block">
+                            @for (int bet = 0; bet <= _game.Rounds[_game.CurrentRound].NrCards; bet++)
+                            {
+                                //Define if player is last and what bet is not allowed
+                                var lastBetter = _game.PlayerToStart - 1;
+                                if (lastBetter < 0)
+                                    lastBetter = 3;
+
+                                var notAllowed = false;
+
+                                if (_game.CurrentPlayer == lastBetter)
+                                {
+                                    var sum = 0;
+                                    for (int b = 0; b < 4; b++)
+                                    {
+                                        if (_game.Rounds[_game.CurrentRound].Bets[b] > -1)
+                                        {
+                                            sum += _game.Rounds[_game.CurrentRound].Bets[b];
+                                        }
+                                    }
+                                    var betNotAllowed = _game.Rounds[_game.CurrentRound].NrCards - sum;
+                                    if (bet == betNotAllowed)
+                                    {
+                                        notAllowed = true;
+                                    }
+                                }
+
+                                var localBetVar = bet;
+                                <button class="btn btn-outline-success" disabled="@(notAllowed || !_game.Shuffled || _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(_selectedPlayer)] > -1 || (_game.CurrentPlayerObj.Id != _selectedPlayer))"
+                                        @onclick="@(e => PlaceBet(e, localBetVar.ToString()))">
+                                    @bet
+                                </button>
+                                @if (bet == 4)
+                                {
+                                    <br />
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
             </aside>
 
             <section>
@@ -246,6 +234,17 @@
 
                     }
                 </fieldset>
+
+                <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
+                        disabled="@(!_game.CleanTable || !IsGameAdmin())"
+                        class="btn btn-success" @onclick="@CleanTable">
+                    @L["CleanTable"]
+                </button>
+                <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
+                        disabled="@(!_game.RoundReady || _game.GameOver || !IsGameAdmin())"
+                        class="btn btn-success" @onclick="@NextRound">
+                    @L["NextRound"]
+                </button>
 
                 <fieldset class="scheduler-border">
                     <legend>@L["Cards", _game.Players[GetPlayerId(_selectedPlayer)].FirstName]</legend>
@@ -337,6 +336,7 @@
     private Game _game;
     private List<Card> _cards = new List<Card>();
     private List<PlayerSelection> _playerSelections = new List<PlayerSelection>();
+    private bool _inprogress = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -353,6 +353,7 @@
 
         _hubConnection.On<Game>("JoinedGame", (game) =>
         {
+            _inprogress = false;
             _game = game;
             if (game != null)
             {
@@ -366,6 +367,7 @@
 
         _hubConnection.On<Game>("GameStarted", (game) =>
         {
+            _inprogress = false;
             _game = game;
 
             StateHasChanged();
@@ -380,6 +382,7 @@
 
         _hubConnection.On<Game, string>("PlayerSelected", (game, signedInPlayerID) =>
         {
+            _inprogress = false;
             _game = game;
             var index = _playerSelections.FindIndex(p => p.Id == signedInPlayerID);
             if (index > 0)
@@ -395,6 +398,7 @@
 
         _hubConnection.On<List<Card>, Game>("Shuffled", (cards, game) =>
         {
+            _inprogress = false;
             _game = game;
             _cards = cards;
             _game.Playing = true;
@@ -403,6 +407,7 @@
 
         _hubConnection.On<List<Card>, Game>("PlayedCard", (cards, game) =>
         {
+            _inprogress = false;
             _game = game;
             _cards = cards;
             StateHasChanged();
@@ -410,6 +415,7 @@
 
         _hubConnection.On<string[]>("ReturnAvailablePlayers", (rap) =>
         {
+            _inprogress = false;
             _playerSelections = new List<PlayerSelection>();
             foreach (var p in rap)
             {
@@ -420,24 +426,28 @@
 
         _hubConnection.On<Game>("WinnerRegistered", (game) =>
         {
+            _inprogress = false;
             _game = game;
             StateHasChanged();
         });
 
         _hubConnection.On<Game>("StartNextRound", (game) =>
         {
+            _inprogress = false;
             _game = game;
             StateHasChanged();
         });
 
         _hubConnection.On<Game>("CleanedTable", (game) =>
         {
+            _inprogress = false;
             _game = game;
             StateHasChanged();
         });
 
         _hubConnection.On<Game>("BetPlaced", (game) =>
         {
+            _inprogress = false;
             _game = game;
             StateHasChanged();
         });
@@ -453,7 +463,11 @@
 
     private async Task PlaceBet(MouseEventArgs e, string bet)
     {
-        await _hubConnection.SendAsync("PlaceBet", _selectedGame, _selectedPlayer, bet);
+        if (!_inprogress)
+        {
+            await _hubConnection.SendAsync("PlaceBet", _selectedGame, _selectedPlayer, bet);
+            _inprogress = true;
+        }
     }
 
     private async Task JoinGame()
@@ -462,52 +476,90 @@
         var user = authState.User;
 
         if (!string.IsNullOrEmpty(_selectedGame))
-            await _hubConnection.SendAsync("JoinGame", _selectedGame, _selectedPlayer, user.Identity.Name);
+            if (!_inprogress)
+            {
+                await _hubConnection.SendAsync("JoinGame", _selectedGame, _selectedPlayer, user.Identity.Name);
+                _inprogress = true;
+            }
     }
 
 
     private async Task CleanTable()
     {
-        await _hubConnection.SendAsync("CleanTable", _game.Id);
+        if (!_inprogress)
+        {
+            await _hubConnection.SendAsync("CleanTable", _game.Id);
+            _inprogress = true;
+        }
     }
 
     private async Task StartGame()
     {
         if (!String.IsNullOrEmpty(_selectedPlayer))
         {
-            await _hubConnection.SendAsync("StartGame", _game.Id);
+            if (!_inprogress)
+            {
+                await _hubConnection.SendAsync("StartGame", _game.Id);
+                _inprogress = true;
+            }
         }
     }
 
     private void NextRound()
     {
-        _hubConnection.SendAsync("NextRound", _game.Id);
+        if (!_inprogress)
+        {
+            _hubConnection.SendAsync("NextRound", _game.Id);
+            _inprogress = true;
+        }
     }
 
-    private Task Shuffle() =>
-        _hubConnection.SendAsync("Shuffle", _game.Id);
+    private void Shuffle()
+    {
+        if (!_inprogress)
+        {
+            _hubConnection.SendAsync("Shuffle", _game.Id);
+            _inprogress = true;
+        }
+    }
 
     private void Play(MouseEventArgs e, string player, Card card, bool canPlayCard)
     {
         if (canPlayCard && !_game.ChooseWinner && !_game.CleanTable && _game.Betted && (_game.CurrentPlayerObj.Id == _selectedPlayer))
-            _hubConnection.SendAsync("PlayCard", _game.Id, _selectedPlayer, card);
+            if (!_inprogress)
+            {
+                _hubConnection.SendAsync("PlayCard", _game.Id, _selectedPlayer, card);
+                _inprogress = true;
+            }
     }
 
     private void Winner(MouseEventArgs e, PlayedCard winningCard)
     {
-        _hubConnection.SendAsync("RoundWinner", _game.Id, winningCard);
+        if (!_inprogress)
+        {
+            _hubConnection.SendAsync("RoundWinner", _game.Id, winningCard);
+            _inprogress = true;
+        }
 
     }
 
     private async Task SelectPlayer()
     {
-        _playerSelected = true;
-        await _hubConnection.SendAsync("JoinGame", _game.Id, _selectedPlayer);
+        if (!_inprogress)
+        {
+            _playerSelected = true;
+            await _hubConnection.SendAsync("JoinGame", _game.Id, _selectedPlayer);
+            _inprogress = true;
+        }
     }
 
     private async Task GetAvailablePlayers()
     {
-        await _hubConnection.SendAsync("GetAvailablePlayers", _game.Id);
+        if (!_inprogress)
+        {
+            await _hubConnection.SendAsync("GetAvailablePlayers", _game.Id);
+            _inprogress = true;
+        }
     }
 
     private int GetPlayerId(string player)

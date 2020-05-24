@@ -126,6 +126,9 @@
   <data name="CleanTable" xml:space="preserve">
     <value>Tafel Leeg</value>
   </data>
+  <data name="Colour" xml:space="preserve">
+    <value>Troef</value>
+  </data>
   <data name="GameStartingUp" xml:space="preserve">
     <value>Het spel {0} is aan het opstarten of is er nog niet. Wacht aub even.</value>
   </data>
@@ -143,6 +146,9 @@
   </data>
   <data name="PlayedCards" xml:space="preserve">
     <value>Gespeelde kaarten</value>
+  </data>
+  <data name="Shuffle" xml:space="preserve">
+    <value>Delen</value>
   </data>
   <data name="Welcome" xml:space="preserve">
     <value>Hoi {0}, je bent speler {1}</value>

@@ -138,6 +138,33 @@ namespace BlazorSignalRApp.Server.Hubs
             var game = _gameService.GetGame(gameId);
 
             var _selectedplayer = GetPlayerId(player);
+
+            #region getwinner
+            //var playColor = game.Rounds[game.CurrentRound].PlayedCards[game.PlayerToStart].Card.Colour;
+            //var playValue = game.Rounds[game.CurrentRound].PlayedCards[game.PlayerToStart].Card.Value;
+
+            //for (int i = 1; i < 4; i++)
+            //{
+            //    if(game.Rounds[game.CurrentRound].PlayedCards[i] != null)
+            //    {
+            //        if(game.Rounds[game.CurrentRound].PlayedCards[i].Card.Colour == playColor)
+            //        {
+            //            if(game.Rounds[game.CurrentRound].PlayedCards[i].Card.Value > playValue)
+            //            {
+
+            //            }
+            //        }
+            //        else
+            //        {
+            //            if(game.Rounds[game.CurrentRound].PlayedCards[i].Card.Colour == game.PlayingCard.Colour)
+            //            {
+
+            //            }
+            //        }
+            //    }
+            //}
+            #endregion
+
             game.Rounds[game.CurrentRound].PlayedCards[_selectedplayer] = new PlayedCard { PlayerId = player, Card = card };
 
             if (game.CurrentPlayer < 3)

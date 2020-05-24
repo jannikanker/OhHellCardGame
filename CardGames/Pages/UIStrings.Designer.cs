@@ -88,6 +88,15 @@ namespace CardGames.Pages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Troef.
+        /// </summary>
+        public static string Colour {
+            get {
+                return ResourceManager.GetString("Colour", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Het spel {0} is aan het opstarten of is er nog niet. Wacht aub even..
         /// </summary>
         public static string GameStartingUp {
@@ -138,6 +147,15 @@ namespace CardGames.Pages {
         public static string PlayedCards {
             get {
                 return ResourceManager.GetString("PlayedCards", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Delen.
+        /// </summary>
+        public static string Shuffle {
+            get {
+                return ResourceManager.GetString("Shuffle", resourceCulture);
             }
         }
         

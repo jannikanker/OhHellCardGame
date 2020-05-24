@@ -17,6 +17,13 @@ namespace BlazorSignalRApp.Shared.Models
         public Round[] Rounds { get; set; }
         public Card PlayingCard { get; set; }
         public int CurrentPlayer { get; set; }
+        public int CurrentNrCards
+        {
+            get
+            {
+                return this.CurrentRound < 8 ? this.CurrentRound+1 : 8-this.CurrentRound;
+            }
+        }
         public int ShufflingPlayer { get; set; }
         public int PlayerToStart { get; set; }
         public bool GameStarted { get; set; }
