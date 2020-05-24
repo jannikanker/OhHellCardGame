@@ -7,6 +7,7 @@ namespace BlazorSignalRApp.Shared.Models
     public class Game
     {
         public string Id { get; set; }
+        public string GameAdmin { get; set; }
         public Stock Stock { get; set; }
         public Player[] Players { get; set; }
         public string[] Connections { get; set; }
@@ -26,6 +27,22 @@ namespace BlazorSignalRApp.Shared.Models
         public bool Betted { get; set; }
         public bool GameOver { get; set; }
         public string Status { get; set; }
+
+        public Player CurrentPlayerObj
+        {
+            get
+            {
+                return this.Players.Where(p => p.Id == this.Players[CurrentPlayer].Id).First();
+            }
+        }
+
+        public Player PlayerToStartObj
+        {
+            get
+            {
+                return this.Players.Where(p => p.Id == this.Players[PlayerToStart].Id).First();
+            }
+        }
 
         public bool AllPlayersSignedIn
         {
@@ -49,11 +66,13 @@ namespace BlazorSignalRApp.Shared.Models
             {
                 this.Players[p] = new Player("P" + (p + 1).ToString());
             }
+            this.Players[0].IsGameController = true;
+
             this.PlayingCard = new Card { Colour=Colours.H, Value = Values.Four};
 
-            this.CurrentPlayer = 1;
-            this.ShufflingPlayer = 4;
-            this.PlayerToStart = 1;
+            this.CurrentPlayer = 0;
+            this.ShufflingPlayer = 0;
+            this.PlayerToStart = 0;
             this.Stock = new Stock();
 
             this.Playing = false;
@@ -74,7 +93,7 @@ namespace BlazorSignalRApp.Shared.Models
             var playingCards = new PlayedCard[4];
             for (int i = 1; i <= 4; i++)
             {
-                var playingCard = new PlayedCard { PlayerName = "P" + i.ToString(), Card = null };
+                var playingCard = new PlayedCard { PlayerId = "P" + i.ToString(), Card = null };
                 playingCards[i - 1] = playingCard;
             }
             this.Rounds[this.CurrentRound].PlayedCards = playingCards;
@@ -106,8 +125,8 @@ namespace BlazorSignalRApp.Shared.Models
                 {
                     this.CurrentRound++;
                     this.Rounds[this.CurrentRound].Current = true;
-                    this.ShufflingPlayer = this.ShufflingPlayer < 4 ? this.ShufflingPlayer + 1 : 1;
-                    this.PlayerToStart = this.ShufflingPlayer < 4 ? this.ShufflingPlayer + 1 : 1;
+                    this.ShufflingPlayer = this.ShufflingPlayer < 3 ? this.ShufflingPlayer + 1 : 0;
+                    this.PlayerToStart = ShufflingPlayer;
                     this.CurrentPlayer = this.PlayerToStart;
                     this.Playing = false;
                     this.Shuffled = false;
@@ -136,7 +155,7 @@ namespace BlazorSignalRApp.Shared.Models
                     Players[p].Cards.Add(card);
                     Stock.Cards.RemoveAt(cardNr);
                 }
-                Players[p].Cards = Players[p].Cards.OrderBy(c => c.Colour).ThenBy(c => c.Value).ToList();
+                Players[p].Cards = Players[p].Cards.OrderBy(c => c.Colour).ThenByDescending(c => c.Value).ToList();
             }
 
             this.Shuffled = true;
@@ -233,7 +252,7 @@ namespace BlazorSignalRApp.Shared.Models
             Winner = false;
         }
 
-        public string PlayerName { get; set; }
+        public string PlayerId { get; set; }
         public Card Card { get; set; }
         public bool Winner { get; set; }
     }
@@ -244,18 +263,27 @@ namespace BlazorSignalRApp.Shared.Models
         {
         }
 
-        public Player(string name)
+        public Player(string Id)
         {
             this.Cards = new List<Card>();
-            this.Name = name;
+            this.Id = Id;
             this.Score = 0;
             this.SignedIn = false;
+            this.Name = Id;
         }
 
+        public string Id { get; set; }
         public string Name { get; set; }
+        public string FirstName
+        {
+            get
+            {
+                return String.IsNullOrEmpty(Name) ? "" : Name.Split(" ")[0];
+            }
+        }
         public string Email { get; set; }
         public bool SignedIn { get; set; }
-        public bool IsGameAdmin { get; set; }
+        public bool IsGameController { get; set; }
         public int Score { get; set; }
         public List<Card> Cards { get; set; }
     }

@@ -6,6 +6,26 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Localization" Version="5.0.0-preview.3.20215.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Hubs\GameHubStrings.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>GameHubStrings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Hubs\GameHubStrings.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>GameHubStrings.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
 
 </Project>

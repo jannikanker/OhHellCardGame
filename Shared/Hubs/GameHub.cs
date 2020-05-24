@@ -1,12 +1,15 @@
 ﻿using BlazorSignalRApp.Server.Services;
 using BlazorSignalRApp.Shared;
+using BlazorSignalRApp.Shared.Hubs;
 using BlazorSignalRApp.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 
@@ -16,65 +19,65 @@ namespace BlazorSignalRApp.Server.Hubs
     public class GameHub : Hub
     {
         private GameService _gameService;
-        public GameHub(GameService gameService)
+        private IStringLocalizer<GameHubStrings> _localizer;
+        public GameHub(GameService gameService, IStringLocalizer<GameHubStrings> localizer)
         {
             _gameService = gameService;
+            _localizer = localizer;
         }
 
         public async Task GetAvailablePlayers(string gameId)
         {
             var game = _gameService.GetGame(gameId);
-            var availablePlayers = game.Players.Where(p => p.SignedIn == false).Select(p => p.Name).ToArray();
+            var availablePlayers = game.Players.Where(p => p.SignedIn == false).Select(p => p.Id).ToArray();
 
             await Clients.Caller.SendAsync("ReturnAvailablePlayers", availablePlayers);
         }
 
-        public async Task NewGame(string name, string userEmail)
+        public async Task NewGame(string name, string gameAdmin, string userEmail)
         {
             var game = _gameService.NewGame(name);
+            game.GameAdmin = gameAdmin;
             var games = _gameService.GetGames(userEmail);
             await Clients.Caller.SendAsync("NewGameCreated", games);
         }
 
-        public async Task JoinGame(string gameId, string selectedPlayer)
+        public async Task JoinGame(string gameId, string selectedPlayer, string name)
         {
             var game = _gameService.GetGame(gameId);
             if (game != null)
             {
                 if (!string.IsNullOrEmpty(selectedPlayer))
                 {
-                    game.Players.Where(p => p.Name == selectedPlayer).First().SignedIn = true;
-                    if(!string.IsNullOrEmpty(game.Connections[GetPlayerId(selectedPlayer)]))
+                    game.Players.Where(p => p.Id == selectedPlayer).First().SignedIn = true;
+                    game.Players.Where(p => p.Id == selectedPlayer).First().Name = name;
+                    if (!string.IsNullOrEmpty(game.Connections[GetPlayerId(selectedPlayer)]))
                     {
                         await Groups.RemoveFromGroupAsync(game.Connections[GetPlayerId(selectedPlayer)], gameId);
                     }
                     game.Connections[GetPlayerId(selectedPlayer)] = Context.ConnectionId;
                     await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
-                }
 
-                var notsignedinplayer = "";
-                foreach (var player in game.Players.Where(p => p.SignedIn == false))
-                {
-                    notsignedinplayer += player.Name + " ";
-                }
+                    var notsignedinplayer = "";
+                    foreach (var player in game.Players.Where(p => p.SignedIn == false))
+                    {
+                        notsignedinplayer += player.Id + " ";
+                    }
 
-                if (game.GameStarted != true)
-                {
-                    game.Status = game.AllPlayersSignedIn ? "Waiting for P1 to start the game" : string.Format("Waiting for {0}to sign in", notsignedinplayer);
-                }
+                    if (game.GameStarted != true)
+                    {
+                        game.Status = game.AllPlayersSignedIn ? _localizer["GameAdminStart"] : _localizer["WaitingSignIn", notsignedinplayer];
+                    }
 
-                await Clients.Group(gameId).SendAsync("JoinedGame", game);
-            }
-            else
-            {
-                await Clients.Group(gameId).SendAsync("JoinedGame", null);
+                    await Clients.Group(gameId).SendAsync("JoinedGame", game);
+                }
             }
         }
 
         public async Task StartGame(string gameId)
         {
             var game = _gameService.StartGame(gameId);
-            game.Status = string.Format("Waiting for P{0} to shuffle", game.CurrentPlayer);
+            game.Status = _localizer["WaitToShuffle", game.CurrentPlayerObj.FirstName];
             await Clients.Group(gameId).SendAsync("GameStarted", game);
         }
 
@@ -83,8 +86,9 @@ namespace BlazorSignalRApp.Server.Hubs
 
             var game = _gameService.ResetGame(gameId);
             var games = _gameService.GetGames(userEmail);
-            game.Status = string.Format("Game Resetted. Waiting for P{0} to shuffle", game.CurrentPlayer);
-            
+            game.Status = _localizer["GameResetted", game.CurrentPlayerObj.FirstName];
+
+
             await Clients.Group(gameId).SendAsync("GameResetted", games);
         }
 
@@ -105,6 +109,7 @@ namespace BlazorSignalRApp.Server.Hubs
         {
             var game = _gameService.GetGame(gamePlayer.GameId);
             game.Players[GetPlayerId(gamePlayer.Player)].Email = gamePlayer.Email;
+            game.Players[GetPlayerId(gamePlayer.Player)].IsGameController = gamePlayer.IsGameAdmin;
             var games = _gameService.GetGames(userEmail);
             await Clients.Caller.SendAsync("SavedGamePlayer", games);
         }
@@ -119,12 +124,12 @@ namespace BlazorSignalRApp.Server.Hubs
                 game.Betted = true;
             }
 
-            if (game.CurrentPlayer < 4)
+            if (game.CurrentPlayer < 3)
                 game.CurrentPlayer++;
             else
-                game.CurrentPlayer = 1;
+                game.CurrentPlayer = 0;
 
-            game.Status = string.Format("Waiting for P{0} to {1}", game.CurrentPlayer, game.Betted ? "Play" : "Bet");
+            game.Status = _localizer["UserBetted", game.CurrentPlayerObj.FirstName, game.Betted ? _localizer["Play"] : _localizer["Bet"]];
             await Clients.Group(gameId).SendAsync("BetPlaced", game);
         }
 
@@ -133,12 +138,12 @@ namespace BlazorSignalRApp.Server.Hubs
             var game = _gameService.GetGame(gameId);
 
             var _selectedplayer = GetPlayerId(player);
-            game.Rounds[game.CurrentRound].PlayedCards[_selectedplayer] = new PlayedCard { PlayerName = player, Card = card };
+            game.Rounds[game.CurrentRound].PlayedCards[_selectedplayer] = new PlayedCard { PlayerId = player, Card = card };
 
-            if (game.CurrentPlayer < 4)
+            if (game.CurrentPlayer < 3)
                 game.CurrentPlayer++;
             else
-                game.CurrentPlayer = 1;
+                game.CurrentPlayer = 0;
 
             var card2Remove = game.Players[_selectedplayer].Cards.Where(c => c.Colour == card.Colour && c.Value == card.Value).FirstOrDefault();
             if (card2Remove != null)
@@ -151,10 +156,10 @@ namespace BlazorSignalRApp.Server.Hubs
                 game.ChooseWinner = true;
             }
 
-            game.Status = string.Format("Waiting for P{0} to play card", game.CurrentPlayer);
+            game.Status = _localizer["WaitingPlayCard", game.CurrentPlayerObj.FirstName];
             if (game.ChooseWinner)
             {
-                game.Status = string.Format("Waiting to choose winner", game.CurrentPlayer);
+                game.Status = _localizer["WaitingChooseWinner"];
             }
             await Clients.Client(game.Connections[0]).SendAsync("PlayedCard", game.Players[0].Cards, game);
             await Clients.Client(game.Connections[1]).SendAsync("PlayedCard", game.Players[1].Cards, game);
@@ -187,7 +192,7 @@ namespace BlazorSignalRApp.Server.Hubs
         {
             var game = _gameService.GetGame(gameId);
             game.Shuffle();
-            game.Status = string.Format("Waiting for P{0} to Bet", game.CurrentPlayer);
+            game.Status = _localizer["WaitingToBet", game.CurrentPlayerObj.FirstName];
             game.ChooseWinner = false;
             await Clients.Client(game.Connections[0]).SendAsync("Shuffled", game.Players[0].Cards, game);
             await Clients.Client(game.Connections[1]).SendAsync("Shuffled", game.Players[1].Cards, game);
@@ -201,11 +206,11 @@ namespace BlazorSignalRApp.Server.Hubs
             game.NextRound();
             if (game.GameOver)
             {
-                game.Status = string.Format("GameOver !!!", game.PlayerToStart);
+                game.Status = string.Format("GameOver !!!");
             }
             else
             {
-                game.Status = string.Format("Waiting for P{0} to shuffle", game.PlayerToStart);
+                game.Status = _localizer["WaitToShuffle", game.PlayerToStartObj.FirstName];
             }
             await Clients.Group(gameId).SendAsync("StartNextRound", game);
         }
@@ -218,12 +223,12 @@ namespace BlazorSignalRApp.Server.Hubs
                 .Rounds[game.CurrentRound]
                 .PlayedCards.Where(c => c.Winner == true)
                 .FirstOrDefault()
-                .PlayerName;
+                .PlayerId;
             game.Rounds[game.CurrentRound].Wins[GetPlayerId(winningPlayer)]++;
             game.ChooseWinner = false;
 
-            game.CurrentPlayer = GetPlayerId(winningPlayer) + 1;
-            game.PlayerToStart = GetPlayerId(winningPlayer) + 1;
+            game.CurrentPlayer = GetPlayerId(winningPlayer);
+            game.PlayerToStart = GetPlayerId(winningPlayer);
 
             if (game.Players[0].Cards.Count() == 0)
             {
@@ -234,11 +239,11 @@ namespace BlazorSignalRApp.Server.Hubs
             game.SetNewPlayingCards();
             if (game.RoundReady)
             {
-                game.Status = "Waiting to start next round";
+                game.Status = _localizer["WaitNextRound"];
             }
             else
             {
-                game.Status = string.Format("Waiting for P{0} to play card", game.CurrentPlayer);
+                game.Status = _localizer["WaitingPlayCard", game.CurrentPlayerObj.FirstName];
             }
             await Clients.Group(gameId).SendAsync("CleanedTable", game);
         }
@@ -251,9 +256,9 @@ namespace BlazorSignalRApp.Server.Hubs
                 card.Winner = false;
             }
 
-            game.Rounds[game.CurrentRound].PlayedCards.Where(c => c.PlayerName == winningCard.PlayerName).FirstOrDefault().Winner = true;
+            game.Rounds[game.CurrentRound].PlayedCards.Where(c => c.PlayerId == winningCard.PlayerId).FirstOrDefault().Winner = true;
             game.CleanTable = true;
-            game.Status = string.Format("{0} has won. Clear table", winningCard.PlayerName);
+            game.Status = _localizer["PlayerWon", game.Players.Where(p => p.Id == winningCard.PlayerId).First().FirstName];
             await Clients.Group(gameId).SendAsync("WinnerRegistered", game);
         }
     }

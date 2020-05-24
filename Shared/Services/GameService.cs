@@ -80,15 +80,24 @@ namespace BlazorSignalRApp.Server.Services
                 {
                     var userInGame = new GamePlayer();
                     userInGame.GameId = gameId;
-                    if (player.Email == userEmail || userEmail == _settings.SystemAdmin)
+                    if (player.Email == userEmail || userEmail == _settings.SystemAdmin || IsUserGameAdmin(gameId, userEmail))
                     {
-                        userInGame.Player = player.Name;
-                        userInGame.Email = player.Email; 
+                        userInGame.Player = player.Id;
+                        userInGame.Email = player.Email;
+                        userInGame.IsGameAdmin = player.IsGameController;
                         gameIds.Add(userInGame);
                     }                  
                 }              
             }
             return gameIds;
+        }
+
+        private bool IsUserGameAdmin(string gameId, string playerEmail)
+        {
+            var game = (Game)_games[gameId];
+            var gamesAdmin = game.Players.Where(p => p.Email == playerEmail && p.IsGameController);
+            var isAdmin = gamesAdmin.Count() > 0;
+            return isAdmin;
         }
     }
 }

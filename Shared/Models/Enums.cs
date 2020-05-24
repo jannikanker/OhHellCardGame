@@ -6,10 +6,10 @@ namespace BlazorSignalRApp.Shared.Models
 {
     public enum Colours
     {
-        C,
-        S,
-        D,
-        H
+        C, //Clubs
+        D, //Diamonds
+        S, //Shade
+        H  //Hearts
     }
 
     public enum Values

@@ -16,30 +16,51 @@
 <AuthorizeView>
     <Authorized>
         <h1>Hello @context.User.Identity.Name</h1>
-        @if (GetUserEmail().Result == settings.SystemAdmin)
+        @if (GetUserEmail().Result == settings.SystemAdmin || IsGameAdmin())
         {
-            <input type="text" @bind="_newGameName" />
-            <button class="btn btn-danger" @onclick="@NewGame">New Game</button>
-            <br />
-            <button class="btn btn-danger" @onclick="@GetRunningGames">Get Running Games</button>
-            <select @bind="_selectedGame">
-                <option value="">-select game-</option>
-                @foreach (var game in _runningGames.GroupBy(g => g.GameId))
-                {
-                    <option value=@game.Key>@game.Key</option>
-                }
-            </select>
-            <p></p>
-            <button class="btn btn-danger" @onclick="@ResetGame">Reset Game</button>
-            <button class="btn btn-danger" @onclick="@RemoveGame">Remove Game</button>
-            <p></p>
-            @foreach (var game in _runningGames)
+            if (GetUserEmail().Result == settings.SystemAdmin)
             {
-            <p>
-                @game.GameId:@game.Player <input @bind="game.Email" type="text" size="100" />
-                <button class="btn btn-success" @onclick="@(e => SavePlayer(e, game))">Save</button> 
-                <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, game))">GoTo @game.GameId as @game.Player</button>
-            </p>
+                <input type="text" @bind="_newGameName" />
+                <input type="Text" @bind="_newGameAdmin" />
+                <button class="btn btn-danger" @onclick="@NewGame">New Game</button>
+                <br />
+
+                <p>Games</p><button class="btn btn-danger" @onclick="@GetRunningGames"><span class="fa fa-refresh"></span></button>
+                <select @bind="_selectedGame">
+                    <option value="">-select game-</option>
+                    @foreach (var game in _runningGames.GroupBy(g => g.GameId))
+                    {
+                        <option value=@game.Key>@game.Key</option>
+                    }
+                </select>
+                <p></p>
+                <button class="btn btn-danger" @onclick="@RemoveGame">Remove Game</button>
+                <button class="btn btn-danger" @onclick="@ResetGame">Reset Game</button>
+
+                <p></p>
+                @foreach (var game in _runningGames)
+                {
+                    <p>
+                        @game.GameId:@game.Player
+                        <input @bind="game.Email" type="text" size="100" />
+                        Admin <input type="checkbox" @bind="game.IsGameAdmin">
+                        <button class="btn btn-success" @onclick="@(e => SavePlayer(e, game))">Save</button>
+                        <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, game))">GoTo @game.GameId as @game.Player</button>
+                    </p>
+                }
+            }
+            else
+            {
+                @foreach (var game in _runningGames)
+                {
+                    <p>
+                        @game.GameId:@game.Player
+                        <input @bind="game.Email" type="text" size="100" />
+                        Admin <input disabled type="checkbox" @bind="game.IsGameAdmin">
+                        <button class="btn btn-success" @onclick="@(e => SavePlayer(e, game))">Save</button>
+                        <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, game))">GoTo @game.GameId as @game.Player</button>
+                    </p>
+                }
             }
         }
         else
@@ -65,6 +86,7 @@
     private HubConnection _hubConnection;
     private List<GamePlayer> _runningGames = new List<GamePlayer>();
     private string _newGameName = "game1";
+    private string _newGameAdmin = "";
     private string _selectedGame;
 
     protected override async Task OnInitializedAsync()
@@ -110,8 +132,14 @@
         });
 
         await _hubConnection.StartAsync();
-        await GetRunningGames();
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            await GetRunningGames();
+        }
     }
+
 
     private async Task<string> GetUserEmail()
     {
@@ -135,7 +163,7 @@
 
     private async Task NewGame()
     {
-        await _hubConnection.SendAsync("NewGame", _newGameName, GetUserEmail().Result);
+        await _hubConnection.SendAsync("NewGame", _newGameName, _newGameAdmin, GetUserEmail().Result);
     }
 
     private async Task ResetGame()
@@ -164,5 +192,12 @@
     private void NavigateToGame(MouseEventArgs e, GamePlayer gamePlayer)
     {
         NavigationManager.NavigateTo(String.Format("/BoerenBridge/{0}/{1}", gamePlayer.GameId, gamePlayer.Player));
+    }
+
+    private bool IsGameAdmin()
+    {
+        var playerEmail = GetUserEmail().Result;
+        var isAdmin = _runningGames.Where(p => p.Email == playerEmail && p.IsGameAdmin).Count() > 0;
+        return isAdmin;
     }
 }

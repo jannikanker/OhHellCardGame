@@ -29,6 +29,7 @@ namespace CardGames
 
             services.Configure<GameSettings>(Configuration.GetSection("GameSettings"));
 
+            services.AddLocalization();
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddSignalR();
