@@ -1,7 +1,7 @@
-﻿using BlazorSignalRApp.Server.Services;
-using BlazorSignalRApp.Shared;
-using BlazorSignalRApp.Shared.Hubs;
-using BlazorSignalRApp.Shared.Models;
+﻿using CardGames.Server.Services;
+using CardGames.Shared;
+using CardGames.Shared.Hubs;
+using CardGames.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.SignalR;
@@ -13,7 +13,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 
 
-namespace BlazorSignalRApp.Server.Hubs
+namespace CardGames.Server.Hubs
 {
 
     public class GameHub : Hub

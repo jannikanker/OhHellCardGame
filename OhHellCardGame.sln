@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.0.0
 MinimumVisualStudioVersion = 16.0.0.0
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorSignalRApp.Shared", "Shared\BlazorSignalRApp.Shared.csproj", "{3FDEE86A-4283-4D4C-9C9E-DA43A344139B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CardGames.Shared", "Shared\CardGames.Shared.csproj", "{3FDEE86A-4283-4D4C-9C9E-DA43A344139B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CardGames", "CardGames\CardGames.csproj", "{FF376747-E481-40C7-9E5F-3CBBAADD9653}"
 EndProject

@@ -5,9 +5,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using BlazorSignalRApp.Server.Services;
-using BlazorSignalRApp.Server.Hubs;
-using BlazorSignalRApp.Shared.Models;
+using CardGames.Server.Services;
+using CardGames.Server.Hubs;
+using CardGames.Shared.Models;
 
 namespace CardGames
 {

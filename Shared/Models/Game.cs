@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace BlazorSignalRApp.Shared.Models
+namespace CardGames.Shared.Models
 {
     public class Game
     {

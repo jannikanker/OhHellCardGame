@@ -1,8 +1,8 @@
-using BlazorSignalRApp.Server.Services;
+using CardGames.Server.Services;
 using Microsoft.AspNetCore.SignalR;
 using System.Threading.Tasks;
 
-namespace BlazorSignalRApp.Server.Hubs
+namespace CardGames.Server.Hubs
 {
     public class ChatHub : Hub
     {

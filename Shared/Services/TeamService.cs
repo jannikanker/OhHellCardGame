@@ -1,12 +1,12 @@
-﻿using BlazorSignalRApp.Shared;
-using BlazorSignalRApp.Shared.Models;
+﻿using CardGames.Shared;
+using CardGames.Shared.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace BlazorSignalRApp.Server.Services
+namespace CardGames.Server.Services
 {
     public class TeamService
     {
