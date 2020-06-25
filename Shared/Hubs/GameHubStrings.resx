@@ -145,7 +145,7 @@
     <value>Wacht totdat {0} zijn aangemeld</value>
   </data>
   <data name="WaitingToBet" xml:space="preserve">
-    <value>Wachten op {0} op in te zetten</value>
+    <value>Wachten op {0} om in te zetten</value>
   </data>
   <data name="WaitNextRound" xml:space="preserve">
     <value>Wacht totdat volgende ronde is gestart</value>

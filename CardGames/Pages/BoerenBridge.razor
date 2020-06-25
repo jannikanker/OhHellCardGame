@@ -58,7 +58,7 @@
 
     div.galleryWon {
         margin: 5px;
-        border: 1px solid #f00;
+        border: 1px solid #ffd800;
         float: left;
         width: 120px;
         border-radius: 15px;
@@ -142,7 +142,16 @@
 
             <aside>
                 <div style="display:block">
-                    <button class="btn btn-outline-success" disabled>@_game.CurrentNrCards</button>
+                    <button class="btn btn-outline-success" disabled>
+                        @if (_game.CurrentRound < 8)
+                        {
+                            <b>@((_game.CurrentRound + 1).ToString())</b>
+                        }
+                        else
+                        {
+                            <b>@((16 - _game.CurrentRound).ToString())</b>
+                        }
+                    </button>
                     <button id="btnShuffle"
                             disabled="@((!_game.GameStarted || _game.Playing || _game.Shuffled || _game.GameOver) || (_game.PlayerToStartObj.Id != _selectedPlayer))"
                             class="btn btn-success"

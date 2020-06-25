@@ -142,7 +142,7 @@ namespace CardGames.Shared.Hubs {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Wachten op {0} op in te zetten.
+        ///   Looks up a localized string similar to Wachten op {0} om in te zetten.
         /// </summary>
         public static string WaitingToBet {
             get {
