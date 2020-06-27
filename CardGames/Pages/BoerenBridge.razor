@@ -388,6 +388,12 @@
             StateHasChanged();
         });
 
+        _hubConnection.On<Game>("NewGameSet", (game) =>
+        {
+            _game = game;
+            _cards = new List<Card>();
+            StateHasChanged();
+        });
 
         _hubConnection.On<Game, string>("PlayerSelected", (game, signedInPlayerID) =>
         {

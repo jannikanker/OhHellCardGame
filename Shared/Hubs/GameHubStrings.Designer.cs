@@ -88,6 +88,15 @@ namespace CardGames.Shared.Hubs {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Een nieuw spel is begonnen. Wacht totdat game wordt gestart..
+        /// </summary>
+        public static string NewGameSet {
+            get {
+                return ResourceManager.GetString("NewGameSet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to te spelen.
         /// </summary>
         public static string Play {

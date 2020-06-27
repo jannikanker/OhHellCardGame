@@ -87,9 +87,8 @@ namespace CardGames.Server.Hubs
             var game = _gameService.ResetGame(gameId);
             var games = _gameService.GetGames(userEmail);
             game.Status = _localizer["GameResetted", game.CurrentPlayerObj.FirstName];
-
-
-            await Clients.Group(gameId).SendAsync("GameResetted", games);
+            await Clients.Caller.SendAsync("GameResetted", games);
+            //await Clients.Group(gameId).SendAsync("GameResetted", game);
         }
 
         public async Task RemoveGame(string gameId, string userEmail)
@@ -97,6 +96,15 @@ namespace CardGames.Server.Hubs
             _gameService.RemoveGame(gameId, userEmail);
             var games = _gameService.GetGames(userEmail);
             await Clients.Caller.SendAsync("GameRemoved", games);
+        }
+
+        public async Task NewGameSet(string gameId, string userEmail)
+        {
+            var game = _gameService.NewGameSet(gameId);
+            var games = _gameService.GetGames(userEmail);
+            game.Status = _localizer["NewGameSet"];
+            //await Clients.Caller.SendAsync("NewGameSet", games);
+            await Clients.Group(gameId).SendAsync("NewGameSet", game);
         }
 
         public async Task GetRunningGames(string userEmail)

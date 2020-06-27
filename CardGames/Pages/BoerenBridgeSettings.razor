@@ -36,6 +36,7 @@
                 <p></p>
                 <button class="btn btn-danger" @onclick="@RemoveGame">Remove Game</button>
                 <button class="btn btn-danger" @onclick="@ResetGame">Reset Game</button>
+                <button class="btn btn-danger" @onclick="@NewGameSet">New Set</button>
 
                 <p></p>
                 @foreach (var game in _runningGames)
@@ -174,6 +175,11 @@
     private async Task RemoveGame()
     {
         await _hubConnection.SendAsync("RemoveGame", _selectedGame, GetUserEmail().Result);
+    }
+
+    private async Task NewGameSet()
+    {
+        await _hubConnection.SendAsync("NewGameSet", _selectedGame, GetUserEmail().Result);
     }
 
     private async Task GetRunningGames()

@@ -74,8 +74,12 @@ namespace CardGames.Shared.Models
                 this.Players[p] = new Player("P" + (p + 1).ToString());
             }
             this.Players[0].IsGameController = true;
+            StartNewGame();
+        }
 
-            this.PlayingCard = new Card { Colour=Colours.H, Value = Values.Four};
+        private void StartNewGame()
+        {
+            this.PlayingCard = new Card { Colour = Colours.H, Value = Values.Four };
 
             this.CurrentPlayer = 0;
             this.ShufflingPlayer = 0;
@@ -104,6 +108,11 @@ namespace CardGames.Shared.Models
                 playingCards[i - 1] = playingCard;
             }
             this.Rounds[this.CurrentRound].PlayedCards = playingCards;
+        }
+
+        public void NewGameSet()
+        {
+            StartNewGame();
         }
 
         public void NextRound()

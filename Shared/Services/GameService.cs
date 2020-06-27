@@ -58,7 +58,7 @@ namespace CardGames.Server.Services
             var g = new Game(gameId);
             _games.Add(g.Id, g);
 
-            return (Game)_games[gameId]; ;
+            return (Game)_games[gameId];
         }
 
         public void RemoveGame(string gameId, string userEmail)
@@ -67,6 +67,13 @@ namespace CardGames.Server.Services
             {
                 _games.Remove(gameId);
             }
+        }
+
+        public Game NewGameSet(string gameId)
+        {
+            var g = (Game)_games[gameId];
+            g.NewGameSet();
+            return (Game)_games[gameId];
         }
 
         public List<GamePlayer> GetGames(string userEmail)
