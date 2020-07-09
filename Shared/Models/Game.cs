@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace CardGames.Shared.Models
 {
@@ -13,6 +14,8 @@ namespace CardGames.Shared.Models
         public string[] Connections { get; set; }
         public bool Playing { get; set; }
         public int NrCards { get; set; }
+        public int NrPlayers { get; set; }
+        public int NrRounds { get; set; }
         public int CurrentRound { get; set; }
         public Round[] Rounds { get; set; }
         public Card PlayingCard { get; set; }
@@ -21,7 +24,7 @@ namespace CardGames.Shared.Models
         {
             get
             {
-                return this.CurrentRound < 8 ? this.CurrentRound+1 : 8-this.CurrentRound;
+                return this.CurrentRound < NrRounds ? this.CurrentRound+1 : NrRounds - this.CurrentRound;
             }
         }
         public int ShufflingPlayer { get; set; }
@@ -55,7 +58,7 @@ namespace CardGames.Shared.Models
         {
             get
             {
-                return this.Players.Where(p => p.SignedIn).Count() == 4;
+                return this.Players.Where(p => p.SignedIn).Count() == this.NrPlayers;
             }
         }
 
@@ -64,17 +67,15 @@ namespace CardGames.Shared.Models
             //empty
         }
 
-        public Game(string gameId)
+        public Game(string gameId, int nrPlayers)
         {
             this.Id = gameId;
-            this.Players = new Player[4];
-            this.Connections = new string[4];
-            for (int p = 0; p < 4; p++)
-            {
-                this.Players[p] = new Player("P" + (p + 1).ToString());
-            }
-            this.Players[0].IsGameController = true;
+            this.NrPlayers = nrPlayers;
+            this.Players = new Player[NrPlayers];
+            this.Connections = new string[NrPlayers];
+
             StartNewGame();
+
         }
 
         private void StartNewGame()
@@ -84,25 +85,65 @@ namespace CardGames.Shared.Models
             this.CurrentPlayer = 0;
             this.ShufflingPlayer = 0;
             this.PlayerToStart = 0;
-            this.Stock = new Stock();
+            this.Stock = new Stock(GetBeginCard(NrPlayers));
 
             this.Playing = false;
             this.NrCards = 1;
+
+
             this.CurrentRound = 0;
             this.GameStarted = false;
             this.CleanTable = false;
-            this.Rounds = new Round[] { new Round(1), new Round(2), new Round(3), new Round(4), new Round(5), new Round(6), new Round(7), new Round(8), new Round(8), new Round(7), new Round(6), new Round(5), new Round(4), new Round(3), new Round(2), new Round(1) };
+
+            this.NrRounds = 16;
+            PrepareRounds();
+
             this.SetNewPlayingCards();
             this.RoundReady = false;
             this.Shuffled = false;
             this.Betted = false;
             this.GameOver = false;
+
+
+            for (int p = 0; p < NrPlayers; p++)
+            {
+                this.Players[p] = new Player("P" + (p + 1).ToString());
+            }
+
+            this.Players[0].IsGameController = true;
+
+            void PrepareRounds()
+            {
+                var rounds = new Round[NrRounds];
+                for(int i=1; i<=NrRounds; i++)
+                {
+                    rounds[i-1] = new Round(i % ((int)(NrRounds/2)),NrPlayers);
+                }
+                this.Rounds = rounds;
+            }
+        }
+
+        private int GetBeginCard(int nrPlayers)
+        {
+            switch(nrPlayers)
+            {
+                case 2:
+                case 3:
+                case 4:
+                    return 7; //32 cards
+                case 5:
+                    return 5; //40 cards
+                case 6:
+                    return 3; //48 cards
+                default:
+                    return 2; // 52 cards
+            }
         }
 
         public void SetNewPlayingCards()
         {
-            var playingCards = new PlayedCard[4];
-            for (int i = 1; i <= 4; i++)
+            var playingCards = new PlayedCard[NrPlayers];
+            for (int i = 1; i <= NrPlayers; i++)
             {
                 var playingCard = new PlayedCard { PlayerId = "P" + i.ToString(), Card = null };
                 playingCards[i - 1] = playingCard;
@@ -126,14 +167,14 @@ namespace CardGames.Shared.Models
             if (this.CurrentRound < this.Rounds.Length)
             {
                 this.Rounds[this.CurrentRound].Current = false;
-                for (int i = 0; i < 4; i++)
+                for (int i = 0; i < this.NrPlayers; i++)
                 {
                     var playerRoundScore = this.Rounds[this.CurrentRound].Wins[i] - this.Rounds[this.CurrentRound].Bets[i];
                     var score = playerRoundScore == 0 ? this.Players[i].Score + 10 + (this.Rounds[this.CurrentRound].Wins[i] * 2) : this.Players[i].Score - (Math.Abs(playerRoundScore) * 2);
                     this.Players[i].Score = score;
                     this.Rounds[this.CurrentRound].Scores[i] = score;
                 }
-                if (this.CurrentRound == 15)
+                if (this.CurrentRound == this.NrRounds-1)
                 {
                     this.GameOver = true;
                 }
@@ -141,7 +182,7 @@ namespace CardGames.Shared.Models
                 {
                     this.CurrentRound++;
                     this.Rounds[this.CurrentRound].Current = true;
-                    this.ShufflingPlayer = this.ShufflingPlayer < 3 ? this.ShufflingPlayer + 1 : 0;
+                    this.ShufflingPlayer = this.ShufflingPlayer < this.NrPlayers-1 ? this.ShufflingPlayer + 1 : 0;
                     this.PlayerToStart = ShufflingPlayer;
                     this.CurrentPlayer = this.PlayerToStart;
                     this.Playing = false;
@@ -159,9 +200,9 @@ namespace CardGames.Shared.Models
             Rounds[CurrentRound].Current = true;
 
             var nrCards = Rounds[CurrentRound].NrCards;
-            Stock = new Stock();
+            Stock = new Stock(GetBeginCard(NrPlayers));
 
-            for (int p = 0; p < 4; p++)
+            for (int p = 0; p < this.NrPlayers; p++)
             {
                 Players[p].Cards = new List<Card>();
                 for (var s = 0; s < nrCards; s++)
@@ -202,14 +243,20 @@ namespace CardGames.Shared.Models
 
         public Stock()
         {
+
+        }
+
+        public Stock(int beginCardValue)
+        {
+            var beginCardIndex = (Values)beginCardValue;
             for (int c = 0; c < 4; c++)
             {
-                for (int v = 5; v < 13; v++)
+                for (int v = beginCardValue; v < 15; v++)
                 {
                     var card = new Card
                     {
                         Colour = EnumValue<Colours>(c),
-                        Value = EnumValue<Values>(v)
+                        Value = (Values)(v)
                     };
                     Cards.Add(card);
                 }
@@ -310,13 +357,21 @@ namespace CardGames.Shared.Models
         {
         }
 
-        public Round(int nrCards)
+        public Round(int nrCards, int nrPlayers)
         {
             this.Current = false;
-            this.Bets = new int[4] { -1, -1, -1, -1 };
-            this.Wins = new int[4];
+            this.Bets = new int[nrPlayers];
+            for(int i=0; i<nrPlayers; i++)
+            {
+                this.Bets[i] = -1;
+            }
+            this.Wins = new int[nrPlayers];
             this.NrCards = nrCards;
-            this.Scores = new int[4] { 0, 0, 0, 0 };
+            this.Scores = new int[nrPlayers];
+            for (int i = 0; i < nrPlayers; i++)
+            {
+                this.Scores[i] = 0;
+            }
         }
 
         public PlayedCard[] PlayedCards { get; set; }
@@ -330,7 +385,7 @@ namespace CardGames.Shared.Models
         {
             get
             {
-                return (Bets.Where(b => b > -1).Count() == 4);
+                return (Bets.Where(b => b > -1).Count() == this.Bets.Length);
             }
         }
     }

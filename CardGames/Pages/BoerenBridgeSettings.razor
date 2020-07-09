@@ -22,6 +22,7 @@
             {
                 <input type="text" @bind="_newGameName" />
                 <input type="Text" @bind="_newGameAdmin" />
+                <input type="number" @bind="_nrPlayers" min="2"  max="6" />
                 <button class="btn btn-danger" @onclick="@NewGame">New Game</button>
                 <br />
 
@@ -89,6 +90,7 @@
     private string _newGameName = "game1";
     private string _newGameAdmin = "";
     private string _selectedGame;
+    private int _nrPlayers = 4;
 
     protected override async Task OnInitializedAsync()
     {
@@ -164,7 +166,7 @@
 
     private async Task NewGame()
     {
-        await _hubConnection.SendAsync("NewGame", _newGameName, _newGameAdmin, GetUserEmail().Result);
+        await _hubConnection.SendAsync("NewGame", _newGameName, _newGameAdmin, GetUserEmail().Result, _nrPlayers);
     }
 
     private async Task ResetGame()

@@ -174,14 +174,14 @@
                                 //Define if player is last and what bet is not allowed
                                 var lastBetter = _game.PlayerToStart - 1;
                                 if (lastBetter < 0)
-                                    lastBetter = 3;
+                                    lastBetter = _game.NrPlayers-1;
 
                                 var notAllowed = false;
 
                                 if (_game.CurrentPlayer == lastBetter)
                                 {
                                     var sum = 0;
-                                    for (int b = 0; b < 4; b++)
+                                    for (int b = 0; b < _game.NrPlayers; b++)
                                     {
                                         if (_game.Rounds[_game.CurrentRound].Bets[b] > -1)
                                         {
@@ -304,22 +304,22 @@
                     <tbody>
                         @for (int round = 0; round < _game.Rounds.Length; round++)
                         {
-                            <tr>
-                                <td>
-                                    @if (round < 8)
-                                    {
-                                        <b>@((round+1).ToString())</b>
-                                    }
-                                    else
-                                    {
-                                        <b>@((16 - round).ToString())</b>
-                                    }
-                                </td>
-                                <td>@(_game.Rounds[round].Scores[0].ToString())</td>
-                                <td>@(_game.Rounds[round].Scores[1].ToString())</td>
-                                <td>@(_game.Rounds[round].Scores[2].ToString())</td>
-                                <td>@(_game.Rounds[round].Scores[3].ToString())</td>
-                            </tr>
+                        <tr>
+                            <td>
+                                @if (round < 8)
+                                {
+                                    <b>@((round+1).ToString())</b>
+                                }
+                                else
+                                {
+                                    <b>@((16 - round).ToString())</b>
+                                }
+                            </td>
+                            @foreach (var player in _game.Players)
+                            {
+                                <td>@(_game.Rounds[round].Scores[GetPlayerId(player.Id)].ToString())</td>
+                            }
+                        </tr>
                         }
                     </tbody>
                 </table>
@@ -580,21 +580,8 @@
     private int GetPlayerId(string player)
     {
         var pId = 0;
-        switch (player)
-        {
-            case "P1":
-                pId = 0;
-                break;
-            case "P2":
-                pId = 1;
-                break;
-            case "P3":
-                pId = 2;
-                break;
-            case "P4":
-                pId = 3;
-                break;
-        }
+        pId = Convert.ToInt32(player.Substring(1, 1)) - 1;
+
         return pId;
     }
 

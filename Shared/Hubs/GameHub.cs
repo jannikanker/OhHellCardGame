@@ -34,9 +34,9 @@ namespace CardGames.Server.Hubs
             await Clients.Caller.SendAsync("ReturnAvailablePlayers", availablePlayers);
         }
 
-        public async Task NewGame(string name, string gameAdmin, string userEmail)
+        public async Task NewGame(string name, string gameAdmin, string userEmail, int nrPlayers)
         {
-            var game = _gameService.NewGame(name);
+            var game = _gameService.NewGame(name, nrPlayers);
             game.GameAdmin = gameAdmin;
             var games = _gameService.GetGames(userEmail);
             await Clients.Caller.SendAsync("NewGameCreated", games);
@@ -132,7 +132,7 @@ namespace CardGames.Server.Hubs
                 game.Betted = true;
             }
 
-            if (game.CurrentPlayer < 3)
+            if (game.CurrentPlayer < game.NrPlayers-1)
                 game.CurrentPlayer++;
             else
                 game.CurrentPlayer = 0;
@@ -175,7 +175,7 @@ namespace CardGames.Server.Hubs
 
             game.Rounds[game.CurrentRound].PlayedCards[_selectedplayer] = new PlayedCard { PlayerId = player, Card = card };
 
-            if (game.CurrentPlayer < 3)
+            if (game.CurrentPlayer < game.NrPlayers-1)
                 game.CurrentPlayer++;
             else
                 game.CurrentPlayer = 0;
@@ -196,30 +196,17 @@ namespace CardGames.Server.Hubs
             {
                 game.Status = _localizer["WaitingChooseWinner"];
             }
-            await Clients.Client(game.Connections[0]).SendAsync("PlayedCard", game.Players[0].Cards, game);
-            await Clients.Client(game.Connections[1]).SendAsync("PlayedCard", game.Players[1].Cards, game);
-            await Clients.Client(game.Connections[2]).SendAsync("PlayedCard", game.Players[2].Cards, game);
-            await Clients.Client(game.Connections[3]).SendAsync("PlayedCard", game.Players[3].Cards, game);
+            foreach (var pl in game.Players)
+            {
+                var pId = GetPlayerId(pl.Id);
+                await Clients.Client(game.Connections[pId]).SendAsync("PlayedCard", game.Players[pId].Cards, game);
+            }
         }
 
         private static int GetPlayerId(string player)
         {
             var pId = 0;
-            switch (player)
-            {
-                case "P1":
-                    pId = 0;
-                    break;
-                case "P2":
-                    pId = 1;
-                    break;
-                case "P3":
-                    pId = 2;
-                    break;
-                case "P4":
-                    pId = 3;
-                    break;
-            }
+            pId = Convert.ToInt32(player.Substring(1, 1))-1;
             return pId;
         }
 
@@ -229,10 +216,11 @@ namespace CardGames.Server.Hubs
             game.Shuffle();
             game.Status = _localizer["WaitingToBet", game.CurrentPlayerObj.FirstName];
             game.ChooseWinner = false;
-            await Clients.Client(game.Connections[0]).SendAsync("Shuffled", game.Players[0].Cards, game);
-            await Clients.Client(game.Connections[1]).SendAsync("Shuffled", game.Players[1].Cards, game);
-            await Clients.Client(game.Connections[2]).SendAsync("Shuffled", game.Players[2].Cards, game);
-            await Clients.Client(game.Connections[3]).SendAsync("Shuffled", game.Players[3].Cards, game);
+            foreach (var pl in game.Players)
+            {
+                var pId = GetPlayerId(pl.Id);
+                await Clients.Client(game.Connections[pId]).SendAsync("Shuffled", game.Players[pId].Cards, game);
+            }
         }
 
         public async Task NextRound(string gameId)

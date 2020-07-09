@@ -25,8 +25,8 @@ namespace CardGames.Shared.Models
         Ten = 10,
         Jack = 11,
         Queen = 12,
-        King = 14,
-        Ace = 15
+        King = 13,
+        Ace = 14
     }
 
     public enum Players

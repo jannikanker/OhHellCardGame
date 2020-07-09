@@ -32,10 +32,13 @@ namespace CardGames.Server.Services
         //    }
         //}
 
-        public Game NewGame(string name)
+        public Game NewGame(string gameId, int nrPlayers)
         {
-            
-            return ResetGame(name);
+
+            var g = new Game(gameId, nrPlayers);
+            _games.Add(g.Id, g);
+
+            return (Game)_games[gameId];
         }
 
         public Game GetGame(string gameId)
@@ -54,8 +57,10 @@ namespace CardGames.Server.Services
 
         public Game ResetGame(string gameId)
         {
+            var nrPlayers = GetGame(gameId).NrPlayers;
+            
             _games.Remove(gameId);
-            var g = new Game(gameId);
+            var g = new Game(gameId, nrPlayers);
             _games.Add(g.Id, g);
 
             return (Game)_games[gameId];
