@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,10 +21,15 @@ namespace CardGames.Server.Hubs
     {
         private GameService _gameService;
         private IStringLocalizer<GameHubStrings> _localizer;
-        public GameHub(GameService gameService, IStringLocalizer<GameHubStrings> localizer)
+        private readonly ILogger _logger;
+
+        public GameHub(GameService gameService, 
+                       IStringLocalizer<GameHubStrings> localizer,
+                       ILogger<GameHub> logger)
         {
             _gameService = gameService;
             _localizer = localizer;
+            _logger = logger;
         }
 
         public async Task GetAvailablePlayers(string gameId)
@@ -38,8 +44,9 @@ namespace CardGames.Server.Hubs
         {
             var game = _gameService.NewGame(name, nrPlayers);
             game.GameAdmin = gameAdmin;
-            var games = _gameService.GetGames(userEmail);
+            var games = _gameService.GetPlayerGames(userEmail);
             await Clients.Caller.SendAsync("NewGameCreated", games);
+            _logger.LogInformation($"New Game created with name: {name}.");
         }
 
         public async Task JoinGame(string gameId, string selectedPlayer, string name)
@@ -70,6 +77,7 @@ namespace CardGames.Server.Hubs
                     }
 
                     await Clients.Group(gameId).SendAsync("JoinedGame", game);
+                    _logger.LogInformation($"Player {name} joined Game {gameId}.");
                 }
             }
         }
@@ -79,13 +87,14 @@ namespace CardGames.Server.Hubs
             var game = _gameService.StartGame(gameId);
             game.Status = _localizer["WaitToShuffle", game.CurrentPlayerObj.FirstName];
             await Clients.Group(gameId).SendAsync("GameStarted", game);
+            _logger.LogInformation($"Game {gameId} started.");
         }
 
         public async Task ResetGame(string gameId, string userEmail)
         {
 
             var game = _gameService.ResetGame(gameId);
-            var games = _gameService.GetGames(userEmail);
+            var games = _gameService.GetPlayerGames(userEmail);
             game.Status = _localizer["GameResetted", game.CurrentPlayerObj.FirstName];
             await Clients.Caller.SendAsync("GameResetted", games);
             //await Clients.Group(gameId).SendAsync("GameResetted", game);
@@ -94,14 +103,14 @@ namespace CardGames.Server.Hubs
         public async Task RemoveGame(string gameId, string userEmail)
         {
             _gameService.RemoveGame(gameId, userEmail);
-            var games = _gameService.GetGames(userEmail);
+            var games = _gameService.GetPlayerGames(userEmail);
             await Clients.Caller.SendAsync("GameRemoved", games);
         }
 
         public async Task NewGameSet(string gameId, string userEmail)
         {
             var game = _gameService.NewGameSet(gameId);
-            var games = _gameService.GetGames(userEmail);
+            var games = _gameService.GetPlayerGames(userEmail);
             game.Status = _localizer["NewGameSet"];
             //await Clients.Caller.SendAsync("NewGameSet", games);
             await Clients.Group(gameId).SendAsync("NewGameSet", game);
@@ -109,7 +118,7 @@ namespace CardGames.Server.Hubs
 
         public async Task GetRunningGames(string userEmail)
         {
-            var games = _gameService.GetGames(userEmail);
+            var games = _gameService.GetPlayerGames(userEmail);
             await Clients.Caller.SendAsync("ReturnRunningGames", games);
         }
 
@@ -118,7 +127,7 @@ namespace CardGames.Server.Hubs
             var game = _gameService.GetGame(gamePlayer.GameId);
             game.Players[GetPlayerId(gamePlayer.Player)].Email = gamePlayer.Email;
             game.Players[GetPlayerId(gamePlayer.Player)].IsGameController = gamePlayer.IsGameAdmin;
-            var games = _gameService.GetGames(userEmail);
+            var games = _gameService.GetPlayerGames(userEmail);
             await Clients.Caller.SendAsync("SavedGamePlayer", games);
         }
 

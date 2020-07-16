@@ -6,93 +6,84 @@ using System.Linq;
 using System.Threading.Tasks;
 using CardGames.Shared.Models;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 
 namespace CardGames.Server.Services
 {
     public class GameService
     {
-        private Hashtable _games;
+        private List<Game> _games;
         private GameSettings _settings;
+        private ILogger<GameService> _logger;
 
-        //private static GameService instance;
-
-        public GameService(IOptions<GameSettings> settings)
+        public GameService(IOptions<GameSettings> settings, ILogger<GameService> logger, IRedisCacheClient redisCacheClient)
         {
             _settings = settings.Value;
-            _games = new Hashtable();
+            _games = new List<Game>();
+            _logger = logger;
         }
-
-        //public static GameService Instance
-        //{
-        //    get
-        //    {
-        //        if (instance == null)
-        //            instance = new GameService(_settings);
-        //        return instance;
-        //    }
-        //}
 
         public Game NewGame(string gameId, int nrPlayers)
         {
+            _logger.LogInformation($"Adding New Game with id: {gameId}.");
+            var game = new Game(gameId, nrPlayers);
+            _games.Add(game);
 
-            var g = new Game(gameId, nrPlayers);
-            _games.Add(g.Id, g);
-
-            return (Game)_games[gameId];
+            return _games.Where(g => g.Id == gameId).FirstOrDefault();
         }
 
         public Game GetGame(string gameId)
         {
-            return (Game)_games[gameId];
+            return _games.Where(g => g.Id == gameId).FirstOrDefault();
         }
 
         public Game StartGame(string gameId)
         {
-            var game = GetGame(gameId);
-            game.GameStarted = true;
-            game.Rounds[0].Current = true;
-            _games[gameId] = game;
-            return game;
+            _logger.LogInformation($"Starting Game with id: {gameId}.");
+            GetGame(gameId).GameStarted = true;
+            GetGame(gameId).Rounds[0].Current = true;
+            return GetGame(gameId);
         }
 
         public Game ResetGame(string gameId)
         {
+            _logger.LogInformation($"Reset Game with id: {gameId}.");
             var nrPlayers = GetGame(gameId).NrPlayers;
             
-            _games.Remove(gameId);
-            var g = new Game(gameId, nrPlayers);
-            _games.Add(g.Id, g);
+            _games.Remove(_games.Where(g => g.Id == gameId).FirstOrDefault());
+            var game = new Game(gameId, nrPlayers);
+            _games.Add(game);
 
-            return (Game)_games[gameId];
+            return _games.Where(g => g.Id == gameId).FirstOrDefault();
         }
 
         public void RemoveGame(string gameId, string userEmail)
         {
+            _logger.LogInformation($"Removing Game with id: {gameId}.");
             if (userEmail == _settings.SystemAdmin)
             {
-                _games.Remove(gameId);
+                _games.Remove(_games.Where(g => g.Id == gameId).FirstOrDefault());
             }
         }
 
         public Game NewGameSet(string gameId)
         {
-            var g = (Game)_games[gameId];
+            _logger.LogInformation($"New Game Set on Game with id: {gameId}.");
+            var g = _games.Where(g => g.Id == gameId).FirstOrDefault();
             g.NewGameSet();
-            return (Game)_games[gameId];
+            return _games.Where(g => g.Id == gameId).FirstOrDefault();
         }
 
-        public List<GamePlayer> GetGames(string userEmail)
+        public List<GamePlayer> GetPlayerGames(string userEmail)
         {
             var gameIds = new List<GamePlayer>();
-            foreach (var key in _games.Keys)
+            foreach (var game in _games)
             {
-                var gameId = (string)key;
-                var game = (Game)_games[key];
                 foreach (var player in game.Players)
                 {
                     var userInGame = new GamePlayer();
-                    userInGame.GameId = gameId;
-                    if (player.Email == userEmail || userEmail == _settings.SystemAdmin || IsUserGameAdmin(gameId, userEmail))
+                    userInGame.GameId = game.Id;
+                    if (player.Email == userEmail || userEmail == _settings.SystemAdmin || IsUserGameAdmin(game.Id, userEmail))
                     {
                         userInGame.Player = player.Id;
                         userInGame.Email = player.Email;
@@ -106,7 +97,7 @@ namespace CardGames.Server.Services
 
         private bool IsUserGameAdmin(string gameId, string playerEmail)
         {
-            var game = (Game)_games[gameId];
+            var game = GetGame(gameId);
             var gamesAdmin = game.Players.Where(p => p.Email == playerEmail && p.IsGameController);
             var isAdmin = gamesAdmin.Count() > 0;
             return isAdmin;

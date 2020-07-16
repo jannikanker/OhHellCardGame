@@ -8,6 +8,8 @@ using Microsoft.Extensions.Hosting;
 using CardGames.Server.Services;
 using CardGames.Server.Hubs;
 using CardGames.Shared.Models;
+using StackExchange.Redis.Extensions.Core.Configuration;
+using StackExchange.Redis.Extensions.Newtonsoft;
 
 namespace CardGames
 {
@@ -33,17 +35,10 @@ namespace CardGames
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddSignalR();
-            services.AddSingleton<TeamService>(gs =>
-            {
-                return TeamService.Instance;
-            });
-
             services.AddSingleton<GameService>();
 
-            //services.AddSingleton<GameService>(gs =>
-            //{
-            //    return GameService.Instance;
-            //});
+            var redisConfiguration = Configuration.GetSection("Redis").Get<RedisConfiguration>();
+            services.AddStackExchangeRedisExtensions<NewtonsoftSerializer>(redisConfiguration);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -72,7 +67,6 @@ namespace CardGames
             {
                 endpoints.MapControllers();
                 endpoints.MapBlazorHub();
-                endpoints.MapHub<ChatHub>("/chatHub");
                 endpoints.MapHub<GameHub>("/gameHub");
                 endpoints.MapFallbackToPage("/_Host");
             });

@@ -352,13 +352,7 @@
         _hubConnection = new HubConnectionBuilder()
         .WithUrl(NavigationManager.ToAbsoluteUri("/gameHub"))
         .WithAutomaticReconnect()
-            .ConfigureLogging(logging =>
-            {
-                logging.SetMinimumLevel(LogLevel.Information);
-                logging.AddConsole();
-            })
         .Build();
-
 
         _hubConnection.On<Game>("JoinedGame", (game) =>
         {
