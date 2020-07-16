@@ -7,54 +7,69 @@ using System.Threading.Tasks;
 using CardGames.Shared.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
+using StackExchange.Redis.Extensions.Core.Abstractions;
+using System.Text.Json;
 
 namespace CardGames.Server.Services
 {
     public class GameService
     {
-        private List<Game> _games;
         private GameSettings _settings;
         private ILogger<GameService> _logger;
+        private readonly IRedisCacheClient _redisCacheClient;
 
         public GameService(IOptions<GameSettings> settings, ILogger<GameService> logger, IRedisCacheClient redisCacheClient)
         {
             _settings = settings.Value;
-            _games = new List<Game>();
             _logger = logger;
+            _redisCacheClient = redisCacheClient;
         }
 
         public Game NewGame(string gameId, int nrPlayers)
         {
             _logger.LogInformation($"Adding New Game with id: {gameId}.");
             var game = new Game(gameId, nrPlayers);
-            _games.Add(game);
+            _redisCacheClient.Db0.AddAsync(gameId, game).Wait();
 
-            return _games.Where(g => g.Id == gameId).FirstOrDefault();
+            return game;
+        }
+
+        public void SaveGame(Game game)
+        {
+            _logger.LogInformation($"Saving Game with id: {game.Id}.");
+            _redisCacheClient.Db0.RemoveAsync(game.Id);
+            _redisCacheClient.Db0.AddAsync(game.Id, game);
         }
 
         public Game GetGame(string gameId)
         {
-            return _games.Where(g => g.Id == gameId).FirstOrDefault();
+            var gameData = _redisCacheClient.Db0.Database.StringGetAsync(gameId).Result;
+            var game = JsonSerializer.Deserialize<Game>(gameData);
+            return game;
         }
 
         public Game StartGame(string gameId)
         {
             _logger.LogInformation($"Starting Game with id: {gameId}.");
-            GetGame(gameId).GameStarted = true;
-            GetGame(gameId).Rounds[0].Current = true;
-            return GetGame(gameId);
+
+            var game = GetGame(gameId);
+            game.GameStarted = true;
+            game.Rounds[0].Current = true;
+            SaveGame(game);
+
+            return game;
         }
 
         public Game ResetGame(string gameId)
         {
             _logger.LogInformation($"Reset Game with id: {gameId}.");
             var nrPlayers = GetGame(gameId).NrPlayers;
-            
-            _games.Remove(_games.Where(g => g.Id == gameId).FirstOrDefault());
-            var game = new Game(gameId, nrPlayers);
-            _games.Add(game);
 
-            return _games.Where(g => g.Id == gameId).FirstOrDefault();
+            _redisCacheClient.Db0.RemoveAsync(gameId).Wait();
+            var game = new Game(gameId, nrPlayers);
+            _redisCacheClient.Db0.AddAsync(gameId,game).Wait();
+
+            return game;
         }
 
         public void RemoveGame(string gameId, string userEmail)
@@ -62,23 +77,26 @@ namespace CardGames.Server.Services
             _logger.LogInformation($"Removing Game with id: {gameId}.");
             if (userEmail == _settings.SystemAdmin)
             {
-                _games.Remove(_games.Where(g => g.Id == gameId).FirstOrDefault());
+                _redisCacheClient.Db0.RemoveAsync(gameId).Wait();
             }
         }
 
         public Game NewGameSet(string gameId)
         {
             _logger.LogInformation($"New Game Set on Game with id: {gameId}.");
-            var g = _games.Where(g => g.Id == gameId).FirstOrDefault();
-            g.NewGameSet();
-            return _games.Where(g => g.Id == gameId).FirstOrDefault();
+            var game = GetGame(gameId);
+            game.NewGameSet();
+            SaveGame(game);
+            return game;
         }
 
         public List<GamePlayer> GetPlayerGames(string userEmail)
         {
             var gameIds = new List<GamePlayer>();
-            foreach (var game in _games)
+            var listOfKeys = _redisCacheClient.Db0.SearchKeysAsync("*").Result;
+            foreach (var key in listOfKeys)
             {
+                var game = GetGame(key);
                 foreach (var player in game.Players)
                 {
                     var userInGame = new GamePlayer();

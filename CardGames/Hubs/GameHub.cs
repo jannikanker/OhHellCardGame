@@ -1,6 +1,6 @@
-﻿using CardGames.Server.Services;
+﻿using CardGames.Hubs;
+using CardGames.Server.Services;
 using CardGames.Shared;
-using CardGames.Shared.Hubs;
 using CardGames.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -14,7 +14,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 
 
-namespace CardGames.Server.Hubs
+namespace CardGames.Hubs
 {
 
     public class GameHub : Hub
@@ -76,6 +76,7 @@ namespace CardGames.Server.Hubs
                         game.Status = game.AllPlayersSignedIn ? _localizer["GameAdminStart"] : _localizer["WaitingSignIn", notsignedinplayer];
                     }
 
+                    _gameService.SaveGame(game);
                     await Clients.Group(gameId).SendAsync("JoinedGame", game);
                     _logger.LogInformation($"Player {name} joined Game {gameId}.");
                 }
@@ -86,6 +87,8 @@ namespace CardGames.Server.Hubs
         {
             var game = _gameService.StartGame(gameId);
             game.Status = _localizer["WaitToShuffle", game.CurrentPlayerObj.FirstName];
+            _gameService.SaveGame(game);
+
             await Clients.Group(gameId).SendAsync("GameStarted", game);
             _logger.LogInformation($"Game {gameId} started.");
         }
@@ -96,6 +99,8 @@ namespace CardGames.Server.Hubs
             var game = _gameService.ResetGame(gameId);
             var games = _gameService.GetPlayerGames(userEmail);
             game.Status = _localizer["GameResetted", game.CurrentPlayerObj.FirstName];
+            _gameService.SaveGame(game);
+
             await Clients.Caller.SendAsync("GameResetted", games);
             //await Clients.Group(gameId).SendAsync("GameResetted", game);
         }
@@ -112,6 +117,7 @@ namespace CardGames.Server.Hubs
             var game = _gameService.NewGameSet(gameId);
             var games = _gameService.GetPlayerGames(userEmail);
             game.Status = _localizer["NewGameSet"];
+            _gameService.SaveGame(game);
             //await Clients.Caller.SendAsync("NewGameSet", games);
             await Clients.Group(gameId).SendAsync("NewGameSet", game);
         }
@@ -127,6 +133,8 @@ namespace CardGames.Server.Hubs
             var game = _gameService.GetGame(gamePlayer.GameId);
             game.Players[GetPlayerId(gamePlayer.Player)].Email = gamePlayer.Email;
             game.Players[GetPlayerId(gamePlayer.Player)].IsGameController = gamePlayer.IsGameAdmin;
+            _gameService.SaveGame(game);
+
             var games = _gameService.GetPlayerGames(userEmail);
             await Clients.Caller.SendAsync("SavedGamePlayer", games);
         }
@@ -147,6 +155,8 @@ namespace CardGames.Server.Hubs
                 game.CurrentPlayer = 0;
 
             game.Status = _localizer["UserBetted", game.CurrentPlayerObj.FirstName, game.Betted ? _localizer["Play"] : _localizer["Bet"]];
+
+            _gameService.SaveGame(game);
             await Clients.Group(gameId).SendAsync("BetPlaced", game);
         }
 
@@ -205,6 +215,9 @@ namespace CardGames.Server.Hubs
             {
                 game.Status = _localizer["WaitingChooseWinner"];
             }
+
+            _gameService.SaveGame(game);
+
             foreach (var pl in game.Players)
             {
                 var pId = GetPlayerId(pl.Id);
@@ -225,6 +238,9 @@ namespace CardGames.Server.Hubs
             game.Shuffle();
             game.Status = _localizer["WaitingToBet", game.CurrentPlayerObj.FirstName];
             game.ChooseWinner = false;
+
+            _gameService.SaveGame(game);
+
             foreach (var pl in game.Players)
             {
                 var pId = GetPlayerId(pl.Id);
@@ -244,6 +260,9 @@ namespace CardGames.Server.Hubs
             {
                 game.Status = _localizer["WaitToShuffle", game.PlayerToStartObj.FirstName];
             }
+
+            _gameService.SaveGame(game);
+
             await Clients.Group(gameId).SendAsync("StartNextRound", game);
         }
 
@@ -277,6 +296,8 @@ namespace CardGames.Server.Hubs
             {
                 game.Status = _localizer["WaitingPlayCard", game.CurrentPlayerObj.FirstName];
             }
+
+            _gameService.SaveGame(game);
             await Clients.Group(gameId).SendAsync("CleanedTable", game);
         }
 
@@ -291,6 +312,9 @@ namespace CardGames.Server.Hubs
             game.Rounds[game.CurrentRound].PlayedCards.Where(c => c.PlayerId == winningCard.PlayerId).FirstOrDefault().Winner = true;
             game.CleanTable = true;
             game.Status = _localizer["PlayerWon", game.Players.Where(p => p.Id == winningCard.PlayerId).First().FirstName];
+
+            _gameService.SaveGame(game);
+
             await Clients.Group(gameId).SendAsync("WinnerRegistered", game);
         }
     }

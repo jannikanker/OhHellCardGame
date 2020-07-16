@@ -6,10 +6,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using CardGames.Server.Services;
-using CardGames.Server.Hubs;
 using CardGames.Shared.Models;
 using StackExchange.Redis.Extensions.Core.Configuration;
 using StackExchange.Redis.Extensions.Newtonsoft;
+using CardGames.Hubs;
 
 namespace CardGames
 {
