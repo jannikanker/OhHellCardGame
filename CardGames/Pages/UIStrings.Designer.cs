@@ -169,7 +169,7 @@ namespace CardGames.Pages {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Gewonnen.
+        ///   Looks up a localized string similar to 🥇.
         /// </summary>
         public static string Won {
             get {

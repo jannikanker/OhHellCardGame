@@ -154,6 +154,6 @@
     <value>Hoi {0}, je bent speler {1}</value>
   </data>
   <data name="Won" xml:space="preserve">
-    <value>Gewonnen</value>
+    <value>🥇</value>
   </data>
 </root>

@@ -15,11 +15,11 @@
 <style>
     fieldset.scheduler-border {
         border: 1px groove #ddd !important;
-        padding: 0 1.4em 1.4em 1.4em !important;
+        padding: 0 0.4em 0.4em 0.4em !important;
         margin: 0 auto;
         -webkit-box-shadow: 0px 0px 0px 0px #000;
         box-shadow: 0px 0px 0px 0px #000;
-        border-radius: 15px;
+        border-radius: 5px;
     }
 
     legend.scheduler-border {
@@ -27,41 +27,41 @@
         font-weight: bold !important;
         text-align: left !important;
         width: auto;
-        padding: 0 10px;
+        padding: 0 0px;
         border-bottom: none;
     }
 
     div.gallerySelectedPlayer {
-        margin: 5px;
+        margin: 2px;
         border: 1px solid #ccc;
         float: left;
-        width: 120px;
-        border-radius: 15px;
+        width: 90px;
+        border-radius: 5px;
         background-color: lightblue;
     }
 
     div.gallery {
-        margin: 5px;
+        margin: 2px;
         border: 1px solid #ffffff;
         float: left;
-        width: 120px;
-        border-radius: 15px;
+        width: 90px;
+        border-radius: 5px;
     }
 
     div.galleryStarted {
-        margin: 5px;
+        margin: 2px;
         border: 1px solid #f00;
         float: left;
-        width: 120px;
-        border-radius: 15px;
+        width: 90px;
+        border-radius: 5px;
     }
 
     div.galleryWon {
-        margin: 5px;
-        border: 1px solid #ffd800;
+        margin: 2px;
+        border: 1px solid red;
         float: left;
-        width: 120px;
-        border-radius: 15px;
+        width: 90px;
+        border-radius: 5px;
         background-color: red;
     }
 
@@ -85,8 +85,8 @@
     }
 
     section {
-        float: left;
-        width: 90%;
+        float: initial;
+        width: 99%;
     }
 
     aside {
@@ -140,6 +140,7 @@
                     }
                 </button>
 
+                <br />
                 🎰 @L["Betting"]: 
                 @for (int bet = 0; bet <= _game.Rounds[_game.CurrentRound].NrCards; bet++)
                 {
@@ -189,7 +190,7 @@
 
                 @if (IsGameAdmin() && !_game.GameStarted)
                 {
-                    <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn)" class="btn btn-success" @onclick="@StartGame">Start Game</button>
+            <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn)" class="btn btn-success" @onclick="@StartGame">🃏</button>
                 }
             </header>
 
@@ -203,8 +204,8 @@
                                 <p>
                                     @(_game.Players[GetPlayerId(playedCard.PlayerId)].FirstName)
                                     <br />
-                                    🎰:@(_game.Rounds[_game.CurrentRound].Bets[GetPlayerId(playedCard.PlayerId)] < 0 ? "?" : _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(playedCard.PlayerId)].ToString()),
-                                    🏆:@(_game.Rounds[_game.CurrentRound].Wins[GetPlayerId(playedCard.PlayerId)].ToString())
+                                    🎰@(_game.Rounds[_game.CurrentRound].Bets[GetPlayerId(playedCard.PlayerId)] < 0 ? "?" : _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(playedCard.PlayerId)].ToString())
+                                    🏆@(_game.Rounds[_game.CurrentRound].Wins[GetPlayerId(playedCard.PlayerId)].ToString())
                                 </p>
 
                                 @if (playedCard.Card != null)
@@ -239,8 +240,8 @@
                 </button>
 
                 <fieldset class="scheduler-border">
-                    <legend>@L["Cards", _game.Players[GetPlayerId(_selectedPlayer)].FirstName], @L["Colour"]: @(GetColourChar(_game.PlayingCard.Colour.ToString()))</legend>
-                    <h2 class="active">@_game.Status</h2>
+                    <legend>@L["Cards", _game.Players[GetPlayerId(_selectedPlayer)].FirstName] | @L["Colour"]: @(GetColourChar(_game.PlayingCard.Colour.ToString()))</legend>
+                    <h5 class="active">@_game.Status</h5>
 
                     @foreach (var card in _cards)
                     {
@@ -627,13 +628,13 @@
         switch (colour)
         {
             case "S":
-                return "♠";
+                return "♠️";
             case "H":
-                return "♥";
+                return "♥️";
             case "D":
                 return "♦";
             case "C":
-                return "♣";
+                return "♣️";
             default:
                 return "";
         }
