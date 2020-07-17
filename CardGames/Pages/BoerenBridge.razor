@@ -116,15 +116,15 @@
         else
         {
             @if (!(_game.Players[GetPlayerId(_selectedPlayer)].Email == GetUserEmail().Result
-             || GetUserEmail().Result == settings.SystemAdmin))
+           || GetUserEmail().Result == settings.SystemAdmin))
             {
                 <p>@L["NotAuthorized"]</p>
                 return;
             }
             <header>
-                <h3>@L["Welcome", @context.User.Identity.Name.Split(" ")[0], _selectedPlayer] @(IsGameAdmin() ? "[Game Admin]" : "")</h3>
-                <button class="btn btn-success" @onclick="() => Open()">Score</button>
-                <button class="btn btn-outline-success">@L["Colour"]: @(GetColourChar(_game.PlayingCard.Colour.ToString()))</button>
+                <h3>@L["Welcome", @context.User.Identity.Name.Split(" ")[0], _selectedPlayer] @(IsGameAdmin() ? "✏️" : "")</h3>
+                <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
+                <button class="btn btn-success" @onclick="() => OpenTrump()">@(GetColourChar(_game.PlayingCard.Colour.ToString()))</button>
                 <button id="btnShuffle"
                         disabled="@((!_game.GameStarted || _game.Playing || _game.Shuffled || _game.GameOver) || (_game.PlayerToStartObj.Id != _selectedPlayer))"
                         class="btn btn-success"
@@ -141,7 +141,7 @@
                 </button>
 
                 <br />
-                🎰 @L["Betting"]: 
+                🎰 @L["Betting"]:
                 @for (int bet = 0; bet <= _game.Rounds[_game.CurrentRound].NrCards; bet++)
                 {
                     //Define if player is last and what bet is not allowed
@@ -190,7 +190,7 @@
 
                 @if (IsGameAdmin() && !_game.GameStarted)
                 {
-            <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn)" class="btn btn-success" @onclick="@StartGame">🃏</button>
+                    <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn)" class="btn btn-success" @onclick="@StartGame">🃏</button>
                 }
             </header>
 
@@ -228,16 +228,7 @@
                     }
                 </fieldset>
 
-                <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
-                        disabled="@(!_game.CleanTable || !IsGameAdmin())"
-                        class="btn btn-success" @onclick="@CleanTable">
-                    @L["CleanTable"]
-                </button>
-                <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
-                        disabled="@(!_game.RoundReady || _game.GameOver || !IsGameAdmin())"
-                        class="btn btn-success" @onclick="@NextRound">
-                    @L["NextRound"]
-                </button>
+                <hr />
 
                 <fieldset class="scheduler-border">
                     <legend>@L["Cards", _game.Players[GetPlayerId(_selectedPlayer)].FirstName] | @L["Colour"]: @(GetColourChar(_game.PlayingCard.Colour.ToString()))</legend>
@@ -275,12 +266,23 @@
                 </fieldset>
             </section>
 
+            <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
+                    disabled="@(!_game.CleanTable || !IsGameAdmin())"
+                    class="btn btn-success" @onclick="@CleanTable">
+                @L["CleanTable"]
+            </button>
+            <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
+                    disabled="@(!_game.RoundReady || _game.GameOver || !IsGameAdmin())"
+                    class="btn btn-success" @onclick="@NextRound">
+                @L["NextRound"]
+            </button>
+
             <div class="modal @_modalClass" role="dialog" style="display: @_modalDisplay; overflow: auto">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title">ScoreBoard</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => Close()">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => CloseScoreBoard()">
                                 <span aria-hidden="true">&times;</span>
                             </button>
                         </div>
@@ -321,6 +323,24 @@
                     </div>
                 </div>
             </div>
+
+            <div class="modal @_modalClassTrump" role="dialog" style="display: @_modalDisplayTrump; overflow: auto">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">@L["Colour"]</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => CloseTrump()">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" style="text-align:center">
+                            <img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="200" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
         }
     </Authorized>
     <NotAuthorized>
@@ -329,13 +349,13 @@
 </AuthorizeView>
 @code {
 
-        [Parameter]
-        public string _selectedPlayer { get; set; }
-        [Parameter]
-        public string _selectedGame { get; set; }
+    [Parameter]
+    public string _selectedPlayer { get; set; }
+    [Parameter]
+    public string _selectedGame { get; set; }
 
-        [CascadingParameter]
-        private Task<AuthenticationState> authenticationStateTask { get; set; }
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
 
     private HubConnection _hubConnection;
     private bool _playerSelected;
@@ -346,6 +366,9 @@
 
     private string _modalClass = "";
     private string _modalDisplay = "none;";
+
+    private string _modalClassTrump = "";
+    private string _modalDisplayTrump = "none;";
 
     protected override async Task OnInitializedAsync()
     {
@@ -471,17 +494,31 @@
     }
 
 
-    public void Open()
+    public void OpenScoreBoard()
     {
         _modalDisplay = "block;";
         _modalClass = "Show";
         StateHasChanged();
     }
 
-    public void Close()
+    public void CloseScoreBoard()
     {
         _modalDisplay = "none";
         _modalClass = "";
+        StateHasChanged();
+    }
+
+    public void OpenTrump()
+    {
+        _modalDisplayTrump = "block;";
+        _modalClassTrump = "Show";
+        StateHasChanged();
+    }
+
+    public void CloseTrump()
+    {
+        _modalDisplayTrump = "none";
+        _modalClassTrump = "";
         StateHasChanged();
     }
 
