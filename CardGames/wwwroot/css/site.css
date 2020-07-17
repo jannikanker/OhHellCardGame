@@ -38,7 +38,7 @@ app {
 
         .main .top-row > a, .main .top-row .btn-link {
             white-space: nowrap;
-            margin-left: 1.5rem;
+            margin-left: 0.5rem;
         }
 
 .main .top-row a:first-child {
@@ -168,8 +168,8 @@ app {
     }
 
     .main > div {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
     }
 
     .navbar-toggler {
