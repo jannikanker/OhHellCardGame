@@ -124,7 +124,7 @@
     <value>Kaarten van {0}</value>
   </data>
   <data name="CleanTable" xml:space="preserve">
-    <value>Tafel Leeg</value>
+    <value>✅</value>
   </data>
   <data name="Colour" xml:space="preserve">
     <value>Troef</value>
@@ -136,13 +136,13 @@
     <value>Login voor je kan spelen</value>
   </data>
   <data name="NextRound" xml:space="preserve">
-    <value>Volgende Ronde</value>
+    <value>🔄</value>
   </data>
   <data name="NotAuthorized" xml:space="preserve">
     <value>Je bent niet geauthorizeerd om dit spel te spelen</value>
   </data>
   <data name="Play" xml:space="preserve">
-    <value>Speel</value>
+    <value>▶</value>
   </data>
   <data name="PlayedCards" xml:space="preserve">
     <value>Gespeelde kaarten</value>
@@ -151,7 +151,7 @@
     <value>Delen</value>
   </data>
   <data name="Welcome" xml:space="preserve">
-    <value>Hoi {0}, je bent speler {1}</value>
+    <value>Hoi {0}</value>
   </data>
   <data name="Won" xml:space="preserve">
     <value>🥇</value>

@@ -121,78 +121,89 @@
                 <p>@L["NotAuthorized"]</p>
                 return;
             }
-            <header>
-                <h3>@L["Welcome", @context.User.Identity.Name.Split(" ")[0], _selectedPlayer] @(IsGameAdmin() ? "✏️" : "")</h3>
-                <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
-                <button class="btn btn-success" @onclick="() => OpenTrump()">@(GetColourChar(_game.PlayingCard.Colour.ToString()))</button>
-                <button id="btnShuffle"
-                        disabled="@((!_game.GameStarted || _game.Playing || _game.Shuffled || _game.GameOver) || (_game.PlayerToStartObj.Id != _selectedPlayer))"
-                        class="btn btn-success"
-                        @onclick="@(e => Shuffle())">
-                    @L["Shuffle"]
-                    @if (_game.CurrentRound < 8)
-                    {
-                        <b> ( @((_game.CurrentRound + 1).ToString()) )</b>
-                    }
-                    else
-                    {
-                        <b> ( @((16 - _game.CurrentRound).ToString()) )</b>
-                    }
-                </button>
+    <header>
+        <h3>@L["Welcome", @context.User.Identity.Name.Split(" ")[0]] @(IsGameAdmin() ? "✏️" : "")</h3>
+        <h5 class="active">@_game.Status</h5>
+        <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
+        <button class="btn btn-success" @onclick="() => OpenTrump()">@(GetColourChar(_game.PlayingCard.Colour.ToString()))</button>
+        <button id="btnShuffle"
+                disabled="@((!_game.GameStarted || _game.Playing || _game.Shuffled || _game.GameOver) || (_game.PlayerToStartObj.Id != _selectedPlayer))"
+                class="btn btn-success"
+                @onclick="@(e => Shuffle())">
+            @L["Shuffle"]
+            @if (_game.CurrentRound < 8)
+            {
+                <b> ( @((_game.CurrentRound + 1).ToString()) )</b>
+            }
+            else
+            {
+                <b> ( @((16 - _game.CurrentRound).ToString()) )</b>
+            }
+        </button>
+        <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
+                disabled="@(!_game.CleanTable || !IsGameAdmin())"
+                class="btn btn-success" @onclick="@CleanTable">
+            @L["CleanTable"]
+        </button>
+        <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
+                disabled="@(!_game.RoundReady || _game.GameOver || !IsGameAdmin())"
+                class="btn btn-success" @onclick="@NextRound">
+            @L["NextRound"]
+        </button>
 
-                <br />
-                🎰 @L["Betting"]:
-                @for (int bet = 0; bet <= _game.Rounds[_game.CurrentRound].NrCards; bet++)
+        <br />
+        🎰
+        @for (int bet = 0; bet <= _game.Rounds[_game.CurrentRound].NrCards; bet++)
+        {
+            //Define if player is last and what bet is not allowed
+            var lastBetter = _game.PlayerToStart - 1;
+            if (lastBetter < 0)
+                lastBetter = _game.NrPlayers - 1;
+
+            var notAllowed = false;
+
+            if (_game.CurrentPlayer == lastBetter)
+            {
+                var sum = 0;
+                for (int b = 0; b < _game.NrPlayers; b++)
                 {
-                    //Define if player is last and what bet is not allowed
-                    var lastBetter = _game.PlayerToStart - 1;
-                    if (lastBetter < 0)
-                        lastBetter = _game.NrPlayers - 1;
-
-                    var notAllowed = false;
-
-                    if (_game.CurrentPlayer == lastBetter)
+                    if (_game.Rounds[_game.CurrentRound].Bets[b] > -1)
                     {
-                        var sum = 0;
-                        for (int b = 0; b < _game.NrPlayers; b++)
-                        {
-                            if (_game.Rounds[_game.CurrentRound].Bets[b] > -1)
-                            {
-                                sum += _game.Rounds[_game.CurrentRound].Bets[b];
-                            }
-                        }
-                        var betNotAllowed = _game.Rounds[_game.CurrentRound].NrCards - sum;
-                        if (bet == betNotAllowed)
-                        {
-                            notAllowed = true;
-                        }
+                        sum += _game.Rounds[_game.CurrentRound].Bets[b];
                     }
-
-                    var localBetVar = bet;
-                    <button class="btn btn-outline-success" disabled="@(notAllowed || !_game.Shuffled || _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(_selectedPlayer)] > -1 || (_game.CurrentPlayerObj.Id != _selectedPlayer))"
-                            @onclick="@(e => PlaceBet(e, localBetVar.ToString()))">
-                        @bet
-                    </button>
                 }
-
-                @if (string.IsNullOrEmpty(_selectedPlayer))
+                var betNotAllowed = _game.Rounds[_game.CurrentRound].NrCards - sum;
+                if (bet == betNotAllowed)
                 {
-                    <select @bind="_selectedPlayer" disabled="@(_playerSelected)">
-                        <option value="" selected>Select Player</option>
-                        @foreach (var p in _playerSelections)
-                        {
-                            <option selected="@(p.Id == _selectedPlayer ? true : false)" value="@p.Id">@p.Name</option>
-                        };
-                    </select>
-                    <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@GetAvailablePlayers">Refresh Players</button>
-                    <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@SelectPlayer">Select Player</button>
+                    notAllowed = true;
                 }
+            }
 
-                @if (IsGameAdmin() && !_game.GameStarted)
+            var localBetVar = bet;
+            <button class="btn btn-outline-success" disabled="@(notAllowed || !_game.Shuffled || _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(_selectedPlayer)] > -1 || (_game.CurrentPlayerObj.Id != _selectedPlayer))"
+                    @onclick="@(e => PlaceBet(e, localBetVar.ToString()))">
+                @bet
+            </button>
+        }
+
+        @if (string.IsNullOrEmpty(_selectedPlayer))
+        {
+            <select @bind="_selectedPlayer" disabled="@(_playerSelected)">
+                <option value="" selected>Select Player</option>
+                @foreach (var p in _playerSelections)
                 {
-                    <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn)" class="btn btn-success" @onclick="@StartGame">🃏</button>
-                }
-            </header>
+                    <option selected="@(p.Id == _selectedPlayer ? true : false)" value="@p.Id">@p.Name</option>
+                };
+            </select>
+            <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@GetAvailablePlayers">Refresh Players</button>
+            <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@SelectPlayer">Select Player</button>
+        }
+
+        @if (IsGameAdmin() && !_game.GameStarted)
+        {
+            <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn)" class="btn btn-success" @onclick="@StartGame">🃏</button>
+        }
+    </header>
 
             <section>
                 <fieldset class="scheduler-border">
@@ -232,8 +243,6 @@
 
                 <fieldset class="scheduler-border">
                     <legend>@L["Cards", _game.Players[GetPlayerId(_selectedPlayer)].FirstName] | @L["Colour"]: @(GetColourChar(_game.PlayingCard.Colour.ToString()))</legend>
-                    <h5 class="active">@_game.Status</h5>
-
                     @foreach (var card in _cards)
                     {
                         //define what can be played
@@ -265,17 +274,6 @@
                     }
                 </fieldset>
             </section>
-
-            <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
-                    disabled="@(!_game.CleanTable || !IsGameAdmin())"
-                    class="btn btn-success" @onclick="@CleanTable">
-                @L["CleanTable"]
-            </button>
-            <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
-                    disabled="@(!_game.RoundReady || _game.GameOver || !IsGameAdmin())"
-                    class="btn btn-success" @onclick="@NextRound">
-                @L["NextRound"]
-            </button>
 
             <div class="modal @_modalClass" role="dialog" style="display: @_modalDisplay; overflow: auto">
                 <div class="modal-dialog" role="document">

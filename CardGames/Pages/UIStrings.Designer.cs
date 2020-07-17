@@ -79,7 +79,7 @@ namespace CardGames.Pages {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Tafel Leeg.
+        ///   Looks up a localized string similar to ✅.
         /// </summary>
         public static string CleanTable {
             get {
@@ -115,7 +115,7 @@ namespace CardGames.Pages {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Volgende Ronde.
+        ///   Looks up a localized string similar to 🔄.
         /// </summary>
         public static string NextRound {
             get {
@@ -133,7 +133,7 @@ namespace CardGames.Pages {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Speel.
+        ///   Looks up a localized string similar to ▶.
         /// </summary>
         public static string Play {
             get {
@@ -160,7 +160,7 @@ namespace CardGames.Pages {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Hoi {0}, je bent speler {1}.
+        ///   Looks up a localized string similar to Hoi {0}.
         /// </summary>
         public static string Welcome {
             get {
