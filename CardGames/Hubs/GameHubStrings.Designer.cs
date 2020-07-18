@@ -106,7 +106,7 @@ namespace CardGames.Hubs {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {0} heeft gewonnen. Maak tafel leeg.
+        ///   Looks up a localized string similar to {0} heeft gewonnen. Maak tafel leeg ✅.
         /// </summary>
         public static string PlayerWon {
             get {
@@ -160,7 +160,7 @@ namespace CardGames.Hubs {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Wacht totdat volgende ronde is gestart.
+        ///   Looks up a localized string similar to Wacht totdat volgende ronde is gestart 🔄.
         /// </summary>
         public static string WaitNextRound {
             get {

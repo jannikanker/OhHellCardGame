@@ -133,7 +133,7 @@
     <value>te spelen</value>
   </data>
   <data name="PlayerWon" xml:space="preserve">
-    <value>{0} heeft gewonnen. Maak tafel leeg</value>
+    <value>{0} heeft gewonnen. Maak tafel leeg ✅</value>
   </data>
   <data name="UserBetted" xml:space="preserve">
     <value>Wacht op {0} om {1}</value>
@@ -151,7 +151,7 @@
     <value>Wachten op {0} om in te zetten</value>
   </data>
   <data name="WaitNextRound" xml:space="preserve">
-    <value>Wacht totdat volgende ronde is gestart</value>
+    <value>Wacht totdat volgende ronde is gestart 🔄</value>
   </data>
   <data name="WaitToShuffle" xml:space="preserve">
     <value>Wacht voor {0} om uit te delen</value>

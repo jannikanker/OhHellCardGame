@@ -126,6 +126,9 @@
   <data name="CleanTable" xml:space="preserve">
     <value>✅</value>
   </data>
+  <data name="CleanTableText" xml:space="preserve">
+    <value>Tafel Leeg</value>
+  </data>
   <data name="Colour" xml:space="preserve">
     <value>Troef</value>
   </data>
@@ -137,6 +140,9 @@
   </data>
   <data name="NextRound" xml:space="preserve">
     <value>🔄</value>
+  </data>
+  <data name="NextRoundText" xml:space="preserve">
+    <value>Volgende Ronde</value>
   </data>
   <data name="NotAuthorized" xml:space="preserve">
     <value>Je bent niet geauthorizeerd om dit spel te spelen</value>

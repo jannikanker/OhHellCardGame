@@ -88,6 +88,15 @@ namespace CardGames.Pages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Tafel Leeg.
+        /// </summary>
+        public static string CleanTableText {
+            get {
+                return ResourceManager.GetString("CleanTableText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Troef.
         /// </summary>
         public static string Colour {
@@ -120,6 +129,15 @@ namespace CardGames.Pages {
         public static string NextRound {
             get {
                 return ResourceManager.GetString("NextRound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Volgende Ronde.
+        /// </summary>
+        public static string NextRoundText {
+            get {
+                return ResourceManager.GetString("NextRoundText", resourceCulture);
             }
         }
         
