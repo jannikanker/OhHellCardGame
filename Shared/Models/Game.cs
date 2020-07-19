@@ -91,7 +91,7 @@ namespace CardGames.Shared.Models
             this.NrCards = 1;
 
 
-            this.CurrentRound = 0;
+            this.CurrentRound = 7;
             this.GameStarted = false;
             this.CleanTable = false;
 
@@ -115,9 +115,13 @@ namespace CardGames.Shared.Models
             void PrepareRounds()
             {
                 var rounds = new Round[NrRounds];
-                for(int i=1; i<=NrRounds; i++)
+                var midPoint = (int)(NrRounds / 2);
+                for (int i=1; i<=NrRounds; i++)
                 {
-                    rounds[i-1] = new Round(i % ((int)(NrRounds/2)),NrPlayers);
+                    if(i <= midPoint)
+                        rounds[i-1] = new Round(i,NrPlayers);
+                    else
+                        rounds[i - 1] = new Round(NrRounds-i+1, NrPlayers);
                 }
                 this.Rounds = rounds;
             }
