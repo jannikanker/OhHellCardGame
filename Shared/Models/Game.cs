@@ -91,7 +91,7 @@ namespace CardGames.Shared.Models
             this.NrCards = 1;
 
 
-            this.CurrentRound = 7;
+            this.CurrentRound = 0;
             this.GameStarted = false;
             this.CleanTable = false;
 
