@@ -160,6 +160,15 @@ namespace CardGames.Hubs
             await Clients.Group(gameId).SendAsync("BetPlaced", game);
         }
 
+        public async Task PlayRandomCard(string gameId, string player)
+        {
+            var game = _gameService.GetGame(gameId);
+            var _selectedplayer = GetPlayerId(player);
+            var card = game.Players[_selectedplayer].Cards.First();
+            await PlayCard(gameId, player, card);
+
+        }
+
         public async Task PlayCard(string gameId, string player, Card card)
         {
             var game = _gameService.GetGame(gameId);
