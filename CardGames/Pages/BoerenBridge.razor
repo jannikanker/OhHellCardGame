@@ -602,7 +602,7 @@
     {
         if (!_inprogress)
         {
-            _hubConnection.SendAsync("RoundWinner", _game.Id, winningCard);
+            _hubConnection.SendAsync("RoundWinner", _game.Id, winningCard.PlayerId);
             _inprogress = true;
         }
 

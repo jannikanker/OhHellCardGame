@@ -310,7 +310,7 @@ namespace CardGames.Hubs
             await Clients.Group(gameId).SendAsync("CleanedTable", game);
         }
 
-        public async Task RoundWinner(string gameId, PlayedCard winningCard)
+        public async Task RoundWinner(string gameId, string winningPlayer)
         {
             var game = _gameService.GetGame(gameId);
             foreach(var card in game.Rounds[game.CurrentRound].PlayedCards)
@@ -318,9 +318,9 @@ namespace CardGames.Hubs
                 card.Winner = false;
             }
 
-            game.Rounds[game.CurrentRound].PlayedCards.Where(c => c.PlayerId == winningCard.PlayerId).FirstOrDefault().Winner = true;
+            game.Rounds[game.CurrentRound].PlayedCards.Where(c => c.PlayerId == winningPlayer).FirstOrDefault().Winner = true;
             game.CleanTable = true;
-            game.Status = _localizer["PlayerWon", game.Players.Where(p => p.Id == winningCard.PlayerId).First().FirstName];
+            game.Status = _localizer["PlayerWon", game.Players.Where(p => p.Id == winningPlayer).First().FirstName];
 
             _gameService.SaveGame(game);
 
