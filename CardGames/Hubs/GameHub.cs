@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -103,6 +104,23 @@ namespace CardGames.Hubs
 
             await Clients.Caller.SendAsync("GameResetted", games);
             //await Clients.Group(gameId).SendAsync("GameResetted", game);
+        }
+
+        
+        public async Task GetGameSettings(string gameId, string userEmail)
+        {
+            var game = _gameService.GetGame(gameId);
+            var json = JsonConvert.SerializeObject(game);
+            await Clients.Caller.SendAsync("GameSettings", json);
+            //await Clients.Group(gameId).SendAsync("GameResetted", game);
+
+        }
+
+        public async Task SaveGameSettings(string gameId, string userEmail, string gameSettings)
+        {
+            var game = JsonConvert.DeserializeObject<Game>(gameSettings);
+            _gameService.SaveGame(game);
+            await Clients.Group(gameId).SendAsync("GameSettingsResetted", game);
         }
 
         public async Task RemoveGame(string gameId, string userEmail)

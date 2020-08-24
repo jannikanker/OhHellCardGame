@@ -22,7 +22,7 @@
             {
                 <input type="text" @bind="_newGameName" />
                 <input type="Text" @bind="_newGameAdmin" />
-                <input type="number" @bind="_nrPlayers" min="2"  max="6" />
+                <input type="number" @bind="_nrPlayers" min="2" max="6" />
                 <button class="btn btn-danger" @onclick="@NewGame">New Game</button>
                 <br />
 
@@ -38,6 +38,13 @@
                 <button class="btn btn-danger" @onclick="@RemoveGame">Remove Game</button>
                 <button class="btn btn-danger" @onclick="@ResetGame">Reset Game</button>
                 <button class="btn btn-danger" @onclick="@NewGameSet">New Set</button>
+                <button class="btn btn-danger" @onclick="@GetGameSettings">Get Game Settings</button>
+                <button class="btn btn-danger" @onclick="@SaveGameSettings">Save Game Settings</button>
+
+                <div class="form-group">
+                    <label for="comment">Comment:</label>
+                    <textarea class="form-control" rows="5" id="gameSettings" @bind="_gameSettings"></textarea>
+                </div>
 
                 <p></p>
                 @foreach (var game in _runningGames)
@@ -50,6 +57,7 @@
                         <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, game))">GoTo @game.GameId as @game.Player</button>
                     </p>
                 }
+
             }
             else
             {
@@ -91,6 +99,7 @@
     private string _newGameAdmin = "";
     private string _selectedGame;
     private int _nrPlayers = 4;
+    private string _gameSettings;
 
     protected override async Task OnInitializedAsync()
     {
@@ -119,6 +128,12 @@
         _hubConnection.On<List<GamePlayer>>("GameResetted", (gamePlayers) =>
         {
             _runningGames = gamePlayers;
+            StateHasChanged();
+        });
+
+        _hubConnection.On<string>("GameSettings", (gameSettings) =>
+        {
+            _gameSettings = gameSettings;
             StateHasChanged();
         });
 
@@ -177,6 +192,17 @@
     private async Task RemoveGame()
     {
         await _hubConnection.SendAsync("RemoveGame", _selectedGame, GetUserEmail().Result);
+    }
+
+    private async Task GetGameSettings()
+    {
+        await _hubConnection.SendAsync("GetGameSettings", _selectedGame, GetUserEmail().Result);
+    }
+
+    private async Task SaveGameSettings()
+    {
+        var settings = _gameSettings;
+        await _hubConnection.SendAsync("SaveGameSettings", _selectedGame, GetUserEmail().Result, settings);
     }
 
     private async Task NewGameSet()
