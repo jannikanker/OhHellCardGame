@@ -196,9 +196,9 @@
             }
 
             var localBetVar = bet;
-            <button class="btn btn-outline-success" disabled="@(notAllowed || !_game.Shuffled || _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(_selectedPlayer)] > -1 || (_game.CurrentPlayerObj.Id != _selectedPlayer))"
+            <button class=@(notAllowed && _game.CurrentPlayerObj.Id == _selectedPlayer ? "btn btn-outline-danger" : "btn btn-outline-success")  disabled="@(notAllowed || !_game.Shuffled || _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(_selectedPlayer)] > -1 || (_game.CurrentPlayerObj.Id != _selectedPlayer))"
                     @onclick="@(e => PlaceBet(e, localBetVar.ToString()))">
-                @bet
+                @(notAllowed && _game.CurrentPlayerObj.Id == _selectedPlayer ? "X" : bet.ToString())
             </button>
         }
 

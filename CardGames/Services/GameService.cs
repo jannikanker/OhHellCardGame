@@ -37,8 +37,8 @@ namespace CardGames.Server.Services
         public void SaveGame(Game game)
         {
             _logger.LogInformation($"Saving Game with id: {game.Id}.");
-            _redisCacheClient.Db0.RemoveAsync(game.Id);
-            _redisCacheClient.Db0.AddAsync(game.Id, game);
+            _redisCacheClient.Db0.RemoveAsync(game.Id).Wait();
+            _redisCacheClient.Db0.AddAsync(game.Id, game).Wait();
         }
 
         public Game GetGame(string gameId)
