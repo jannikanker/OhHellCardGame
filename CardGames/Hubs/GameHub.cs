@@ -103,7 +103,7 @@ namespace CardGames.Hubs
             _gameService.SaveGame(game);
 
             await Clients.Caller.SendAsync("GameResetted", games);
-            //await Clients.Group(gameId).SendAsync("GameResetted", game);
+            await Clients.Group(gameId).SendAsync("GameResetted", game);
         }
 
         

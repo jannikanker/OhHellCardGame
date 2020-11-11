@@ -78,7 +78,7 @@ namespace CardGames.Shared.Models
 
         }
 
-        private void StartNewGame()
+        public void StartNewGame(bool keepPlayer = false)
         {
             this.PlayingCard = new Card { Colour = Colours.H, Value = Values.Four };
 
@@ -104,13 +104,23 @@ namespace CardGames.Shared.Models
             this.Betted = false;
             this.GameOver = false;
 
-
-            for (int p = 0; p < NrPlayers; p++)
+            if (!keepPlayer)
             {
-                this.Players[p] = new Player("P" + (p + 1).ToString());
+                for (int p = 0; p < NrPlayers; p++)
+                {
+                    this.Players[p] = new Player("P" + (p + 1).ToString());
+                }
+                this.Players[0].IsGameController = true;
             }
-
-            this.Players[0].IsGameController = true;
+            else
+            {
+                for (int p = 0; p < NrPlayers; p++)
+                {
+                    this.Players[p].SignedIn = false;
+                    this.Players[p].Score = 0;
+                    this.Players[p].Cards = new List<Card>();
+                }
+            }
 
             void PrepareRounds()
             {
@@ -177,6 +187,7 @@ namespace CardGames.Shared.Models
                     var score = playerRoundScore == 0 ? this.Players[i].Score + 10 + (this.Rounds[this.CurrentRound].Wins[i] * 2) : this.Players[i].Score - (Math.Abs(playerRoundScore) * 2);
                     this.Players[i].Score = score;
                     this.Rounds[this.CurrentRound].Scores[i] = score;
+                    this.Rounds[this.CurrentRound].Winners[i] = playerRoundScore == 0; //true for players that win their bet.
                 }
                 if (this.CurrentRound == this.NrRounds-1)
                 {
@@ -370,6 +381,7 @@ namespace CardGames.Shared.Models
                 this.Bets[i] = -1;
             }
             this.Wins = new int[nrPlayers];
+            this.Winners = new bool[nrPlayers];
             this.NrCards = nrCards;
             this.Scores = new int[nrPlayers];
             for (int i = 0; i < nrPlayers; i++)
@@ -384,6 +396,7 @@ namespace CardGames.Shared.Models
         public int[] Bets { get; set; }
         public int[] Wins { get; set; }
         public int[] Scores { get; set; }
+        public bool[] Winners { get; set; }
 
         public bool AllBetsPlaced
         {

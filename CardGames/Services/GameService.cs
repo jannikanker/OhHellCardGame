@@ -63,10 +63,11 @@ namespace CardGames.Server.Services
         public Game ResetGame(string gameId)
         {
             _logger.LogInformation($"Reset Game with id: {gameId}.");
+            var game = GetGame(gameId);
             var nrPlayers = GetGame(gameId).NrPlayers;
 
             _redisCacheClient.Db0.RemoveAsync(gameId).Wait();
-            var game = new Game(gameId, nrPlayers);
+            game.StartNewGame(true);
             _redisCacheClient.Db0.AddAsync(gameId,game).Wait();
 
             return game;

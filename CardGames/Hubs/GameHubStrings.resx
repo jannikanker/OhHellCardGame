@@ -124,7 +124,7 @@
     <value>Wacht voor GameAdmin om spel te starten</value>
   </data>
   <data name="GameResetted" xml:space="preserve">
-    <value>Game gereset. Wacht voor {0} om uit te delen</value>
+    <value>Game gereset. Refresh de Applicatie (F5) of 🔄.</value>
   </data>
   <data name="NewGameSet" xml:space="preserve">
     <value>Een nieuw spel is begonnen. Wacht totdat game wordt gestart.</value>

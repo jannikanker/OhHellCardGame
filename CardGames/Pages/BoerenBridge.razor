@@ -314,22 +314,29 @@
                                 <tbody>
                                     @for (int round = 0; round < _game.Rounds.Length; round++)
                                     {
-                                        <tr>
-                                            <td>
-                                                @if (round < 8)
-                                                {
-                                                    <b>@((round+1).ToString())</b>
-                                                }
-                                                else
-                                                {
-                                                    <b>@((16 - round).ToString())</b>
-                                                }
-                                            </td>
-                                            @foreach (var player in _game.Players)
+                                    <tr>
+                                        <td>
+                                            @if (round < 8)
+                                            {
+                                                <b>@((round+1).ToString())</b>
+                                            }
+                                            else
+                                            {
+                                                <b>@((16 - round).ToString())</b>
+                                            }
+                                        </td>
+                                        @foreach (var player in _game.Players)
+                                        {
+                                            @if (round < _game.CurrentRound || _game.GameOver)
+                                            {
+                                                <td style="background-color:@(_game.Rounds[round].Winners[GetPlayerId(player.Id)] ? "lightgreen" : "lightcoral")">@(_game.Rounds[round].Scores[GetPlayerId(player.Id)].ToString())</td>
+                                            }
+                                            else
                                             {
                                                 <td>@(_game.Rounds[round].Scores[GetPlayerId(player.Id)].ToString())</td>
                                             }
-                                        </tr>
+                                        }
+                                    </tr>
                                     }
                                 </tbody>
                             </table>

@@ -79,7 +79,7 @@ namespace CardGames.Hubs {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Game gereset. Wacht voor {0} om uit te delen.
+        ///   Looks up a localized string similar to Game gereset. Refresh de Applicatie (F5) of 🔄..
         /// </summary>
         public static string GameResetted {
             get {
