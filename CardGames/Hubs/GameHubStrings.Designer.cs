@@ -70,6 +70,15 @@ namespace CardGames.Hubs {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Round is gereset. De ronde begint opnieuw. Wacht voor {0} om te delen..
+        /// </summary>
+        public static string CurrentRoundResetted {
+            get {
+                return ResourceManager.GetString("CurrentRoundResetted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Wacht voor GameAdmin om spel te starten.
         /// </summary>
         public static string GameAdminStart {

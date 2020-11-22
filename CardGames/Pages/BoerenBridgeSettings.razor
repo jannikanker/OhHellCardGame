@@ -37,6 +37,7 @@
                 <p></p>
                 <button class="btn btn-danger" @onclick="@RemoveGame">Remove Game</button>
                 <button class="btn btn-danger" @onclick="@ResetGame">Reset Game</button>
+                <button class="btn btn-danger" @onclick="@ResetCurrentRound">Reset Round</button>
                 <button class="btn btn-danger" @onclick="@NewGameSet">New Set</button>
                 <button class="btn btn-danger" @onclick="@GetGameSettings">Get Game Settings</button>
                 <button class="btn btn-danger" @onclick="@SaveGameSettings">Save Game Settings</button>
@@ -125,6 +126,12 @@
             StateHasChanged();
         });
 
+        _hubConnection.On<List<GamePlayer>>("CurrentRoundResetted", (gamePlayers) =>
+        {
+            _runningGames = gamePlayers;
+            StateHasChanged();
+        });
+
         _hubConnection.On<List<GamePlayer>>("GameResetted", (gamePlayers) =>
         {
             _runningGames = gamePlayers;
@@ -187,6 +194,11 @@
     private async Task ResetGame()
     {
         await _hubConnection.SendAsync("ResetGame", _selectedGame, GetUserEmail().Result);
+    }
+
+    private async Task ResetCurrentRound()
+    {
+        await _hubConnection.SendAsync("ResetCurrentRound", _selectedGame, GetUserEmail().Result);
     }
 
     private async Task RemoveGame()

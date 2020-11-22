@@ -106,7 +106,18 @@ namespace CardGames.Hubs
             await Clients.Group(gameId).SendAsync("GameResetted", game);
         }
 
-        
+        public async Task ResetCurrentRound(string gameId, string userEmail)
+        {
+
+            var game = _gameService.ResetCurrentRound(gameId);
+            var games = _gameService.GetPlayerGames(userEmail);
+            game.Status = _localizer["CurrentRoundResetted", game.CurrentPlayerObj.FirstName];
+            _gameService.SaveGame(game);
+
+            await Clients.Caller.SendAsync("GameResetted", games);
+            await Clients.Group(gameId).SendAsync("GameResetted", game);
+        }
+
         public async Task GetGameSettings(string gameId, string userEmail)
         {
             var game = _gameService.GetGame(gameId);

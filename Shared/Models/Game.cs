@@ -114,6 +114,7 @@ namespace CardGames.Shared.Models
             }
             else
             {
+                this.Connections = new string[NrPlayers];
                 for (int p = 0; p < NrPlayers; p++)
                 {
                     this.Players[p].SignedIn = false;
@@ -168,6 +169,27 @@ namespace CardGames.Shared.Models
         public void NewGameSet()
         {
             StartNewGame();
+        }
+
+        public void ResetCurrentRound()
+        {
+            this.Rounds[this.CurrentRound].Current = true;
+            this.PlayerToStart = ShufflingPlayer;
+            this.CurrentPlayer = this.PlayerToStart;
+            this.Playing = false;
+            this.Shuffled = false;
+            this.RoundReady = false;
+            this.CleanTable = false;
+            this.ChooseWinner = false;
+            this.Betted = false;
+            for(int p = 0; p < this.NrPlayers; p++)
+            {
+                this.Players[p].Cards = new List<Card>();
+                this.Rounds[this.CurrentRound].Bets[p] = -1;
+                this.Rounds[this.CurrentRound].Wins[p] = 0;
+                this.Rounds[this.CurrentRound].Winners[p] = false;
+            }
+            this.SetNewPlayingCards();
         }
 
         public void NextRound()

@@ -73,6 +73,15 @@ namespace CardGames.Server.Services
             return game;
         }
 
+        public Game ResetCurrentRound(string gameId)
+        {
+            _logger.LogInformation($"Reset Round with id: {gameId}.");
+            var game = GetGame(gameId);
+            game.ResetCurrentRound();
+
+            return game;
+        }
+
         public void RemoveGame(string gameId, string userEmail)
         {
             _logger.LogInformation($"Removing Game with id: {gameId}.");

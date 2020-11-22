@@ -424,8 +424,9 @@
         _hubConnection.On<Game>("GameResetted", (game) =>
         {
             _game = game;
+            _cards = _game.Players[GetPlayerId(_selectedPlayer)].Cards;
             StateHasChanged();
-        });
+        }); 
 
         _hubConnection.On<Game>("NewGameSet", (game) =>
         {
