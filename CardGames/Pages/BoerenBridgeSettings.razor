@@ -41,6 +41,7 @@
                 <button class="btn btn-danger" @onclick="@NewGameSet">New Set</button>
                 <button class="btn btn-danger" @onclick="@GetGameSettings">Get Game Settings</button>
                 <button class="btn btn-danger" @onclick="@SaveGameSettings">Save Game Settings</button>
+                <button class="btn btn-danger" @onclick="@GameSavedToDB">Save Game to DB</button>
 
                 <div class="form-group">
                     <label for="comment">Comment:</label>
@@ -215,6 +216,12 @@
     {
         var settings = _gameSettings;
         await _hubConnection.SendAsync("SaveGameSettings", _selectedGame, GetUserEmail().Result, settings);
+    }
+
+    private async Task GameSavedToDB()
+    {
+        var settings = _gameSettings;
+        await _hubConnection.SendAsync("SaveGameToDb", _selectedGame, GetUserEmail().Result);
     }
 
     private async Task NewGameSet()

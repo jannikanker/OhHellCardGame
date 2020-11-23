@@ -30,6 +30,7 @@ namespace CardGames
                 .AddAzureADB2C(options => Configuration.Bind("AzureAdB2C", options));
 
             services.Configure<GameSettings>(Configuration.GetSection("GameSettings"));
+            services.Configure<CosmosSettings>(Configuration.GetSection("CosmosSettings"));
 
             services.AddLocalization();
             services.AddRazorPages();

@@ -1,14 +1,13 @@
-﻿using CardGames.Shared;
-using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using CardGames.Shared.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 using System.Text.Json;
+using Microsoft.Azure.Cosmos;
+using System;
+using System.Threading.Tasks;
 
 namespace CardGames.Server.Services
 {
@@ -17,12 +16,14 @@ namespace CardGames.Server.Services
         private GameSettings _settings;
         private ILogger<GameService> _logger;
         private readonly IRedisCacheClient _redisCacheClient;
+        private CosmosSettings _cosmosSettings;
 
-        public GameService(IOptions<GameSettings> settings, ILogger<GameService> logger, IRedisCacheClient redisCacheClient)
+        public GameService(IOptions<GameSettings> settings, ILogger<GameService> logger, IRedisCacheClient redisCacheClient, IOptions<CosmosSettings> cosmosSettings)
         {
             _settings = settings.Value;
             _logger = logger;
             _redisCacheClient = redisCacheClient;
+            _cosmosSettings = cosmosSettings.Value;
         }
 
         public Game NewGame(string gameId, int nrPlayers)
@@ -39,6 +40,25 @@ namespace CardGames.Server.Services
             _logger.LogInformation($"Saving Game with id: {game.Id}.");
             _redisCacheClient.Db0.RemoveAsync(game.Id).Wait();
             _redisCacheClient.Db0.AddAsync(game.Id, game).Wait();
+        }
+
+        public async Task SaveGamePersistent(Game game, bool overwrite = false)
+        {
+            try
+            {
+                game.GameOverDateTime = DateTime.UtcNow;
+                game.Key = Guid.NewGuid().ToString();
+                using (var client = new CosmosClient(_cosmosSettings.EndpointUrl, _cosmosSettings.Key))
+                {
+                    var database = await client.CreateDatabaseIfNotExistsAsync(_cosmosSettings.DatabaseName);
+                    var container = database.Database.GetContainer(_cosmosSettings.DatabaseContainer);
+                    await container.CreateItemAsync<Game>(game);
+                }
+            }
+            catch(Exception ex)
+            {
+                var msg = ex.Message;
+            }
         }
 
         public Game GetGame(string gameId)

@@ -134,6 +134,13 @@ namespace CardGames.Hubs
             await Clients.Group(gameId).SendAsync("GameSettingsResetted", game);
         }
 
+        public async Task SaveGameToDb(string gameId, string userEmail)
+        {
+            var game = _gameService.GetGame(gameId);
+            await _gameService.SaveGamePersistent(game,false);
+            await Clients.Caller.SendAsync("GameSavedToDB");
+        }
+
         public async Task RemoveGame(string gameId, string userEmail)
         {
             _gameService.RemoveGame(gameId, userEmail);
@@ -201,35 +208,7 @@ namespace CardGames.Hubs
         public async Task PlayCard(string gameId, string player, Card card)
         {
             var game = _gameService.GetGame(gameId);
-
             var _selectedplayer = GetPlayerId(player);
-
-            #region getwinner
-            //var playColor = game.Rounds[game.CurrentRound].PlayedCards[game.PlayerToStart].Card.Colour;
-            //var playValue = game.Rounds[game.CurrentRound].PlayedCards[game.PlayerToStart].Card.Value;
-
-            //for (int i = 1; i < 4; i++)
-            //{
-            //    if(game.Rounds[game.CurrentRound].PlayedCards[i] != null)
-            //    {
-            //        if(game.Rounds[game.CurrentRound].PlayedCards[i].Card.Colour == playColor)
-            //        {
-            //            if(game.Rounds[game.CurrentRound].PlayedCards[i].Card.Value > playValue)
-            //            {
-
-            //            }
-            //        }
-            //        else
-            //        {
-            //            if(game.Rounds[game.CurrentRound].PlayedCards[i].Card.Colour == game.PlayingCard.Colour)
-            //            {
-
-            //            }
-            //        }
-            //    }
-            //}
-            #endregion
-
             game.Rounds[game.CurrentRound].PlayedCards[_selectedplayer] = new PlayedCard { PlayerId = player, Card = card };
 
             if (game.CurrentPlayer < game.NrPlayers-1)
@@ -245,6 +224,45 @@ namespace CardGames.Hubs
 
             if (game.Rounds[game.CurrentRound].PlayedCards.Where(c => c.Card == null).Count() == 0)
             {
+                var winningcard = game.Rounds[game.CurrentRound].PlayedCards[game.PlayerToStart];
+
+                for (int i = 0; i < game.NrPlayers; i++)
+                {
+                    if (game.Rounds[game.CurrentRound].PlayedCards[i].Card.Colour == winningcard.Card.Colour)
+                    {
+                        //normal check
+                        if (game.Rounds[game.CurrentRound].PlayedCards[i].Card.Value > winningcard.Card.Value)
+                        {
+                            winningcard = game.Rounds[game.CurrentRound].PlayedCards[i];
+                        }
+                    }
+                    else
+                    {
+                        if (game.Rounds[game.CurrentRound].PlayedCards[i].Card.Colour == game.PlayingCard.Colour)
+                        {
+                            //check in case of Trump
+                            if (winningcard.Card.Colour == game.PlayingCard.Colour)
+                            {
+                                //if both are Trump check highest
+                                if (game.Rounds[game.CurrentRound].PlayedCards[i].Card.Value > winningcard.Card.Value)
+                                {
+                                    winningcard = game.Rounds[game.CurrentRound].PlayedCards[i];
+                                }
+                            }
+                            else
+                            {
+                                //if this card is first Trump than it is the winner
+                                winningcard = game.Rounds[game.CurrentRound].PlayedCards[i];
+                            }
+                        }
+                    }
+                    for (int c = 0; c < game.NrPlayers; c++)
+                    {
+                        game.Rounds[game.CurrentRound].PlayedCards[c].Winner = false;
+                    }
+                    game.Rounds[game.CurrentRound].PlayedCards[GetPlayerId(winningcard.PlayerId)].Winner = true;
+                }
+                game.CleanTable = true;
                 game.ChooseWinner = true;
             }
 
@@ -293,6 +311,7 @@ namespace CardGames.Hubs
             if (game.GameOver)
             {
                 game.Status = string.Format("GameOver !!!");
+                await _gameService.SaveGamePersistent(game, false);
             }
             else
             {
@@ -325,6 +344,7 @@ namespace CardGames.Hubs
             }
             game.CleanTable = false;
             game.ChooseWinner = false;
+            game.Rounds[game.CurrentRound].PlayHistory.Add(game.Rounds[game.CurrentRound].PlayedCards);
             game.SetNewPlayingCards();
             if (game.RoundReady)
             {

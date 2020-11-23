@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -7,7 +8,10 @@ namespace CardGames.Shared.Models
 {
     public class Game
     {
+        [Newtonsoft.Json.JsonProperty(PropertyName = "id")]
+        public string Key { get; set; }
         public string Id { get; set; }
+        public DateTime GameOverDateTime { get; set; }
         public string GameAdmin { get; set; }
         public Stock Stock { get; set; }
         public Player[] Players { get; set; }
@@ -69,6 +73,7 @@ namespace CardGames.Shared.Models
 
         public Game(string gameId, int nrPlayers)
         {
+            this.Key = Guid.NewGuid().ToString();
             this.Id = gameId;
             this.NrPlayers = nrPlayers;
             this.Players = new Player[NrPlayers];
@@ -410,9 +415,11 @@ namespace CardGames.Shared.Models
             {
                 this.Scores[i] = 0;
             }
+            this.PlayHistory = new List<PlayedCard[]>();
         }
 
         public PlayedCard[] PlayedCards { get; set; }
+        public List<PlayedCard[]> PlayHistory { get; set; }
         public bool Current { get; set; }
         public int NrCards { get; set; }
         public int[] Bets { get; set; }
