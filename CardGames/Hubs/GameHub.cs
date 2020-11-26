@@ -59,11 +59,11 @@ namespace CardGames.Hubs
                 {
                     game.Players.Where(p => p.Id == selectedPlayer).First().SignedIn = true;
                     game.Players.Where(p => p.Id == selectedPlayer).First().Name = name;
-                    if (!string.IsNullOrEmpty(game.Connections[GetPlayerId(selectedPlayer)]))
+                    if (!string.IsNullOrEmpty(game.Connections[Player.GetPlayerId(selectedPlayer)]))
                     {
-                        await Groups.RemoveFromGroupAsync(game.Connections[GetPlayerId(selectedPlayer)], gameId);
+                        await Groups.RemoveFromGroupAsync(game.Connections[Player.GetPlayerId(selectedPlayer)], gameId);
                     }
-                    game.Connections[GetPlayerId(selectedPlayer)] = Context.ConnectionId;
+                    game.Connections[Player.GetPlayerId(selectedPlayer)] = Context.ConnectionId;
                     await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
 
                     var notsignedinplayer = "";
@@ -167,8 +167,8 @@ namespace CardGames.Hubs
         public async Task SaveGamePlayer(GamePlayer gamePlayer, string userEmail)
         {
             var game = _gameService.GetGame(gamePlayer.GameId);
-            game.Players[GetPlayerId(gamePlayer.Player)].Email = gamePlayer.Email;
-            game.Players[GetPlayerId(gamePlayer.Player)].IsGameController = gamePlayer.IsGameAdmin;
+            game.Players[Player.GetPlayerId(gamePlayer.Player)].Email = gamePlayer.Email;
+            game.Players[Player.GetPlayerId(gamePlayer.Player)].IsGameController = gamePlayer.IsGameAdmin;
             _gameService.SaveGame(game);
 
             var games = _gameService.GetPlayerGames(userEmail);
@@ -178,7 +178,7 @@ namespace CardGames.Hubs
         public async Task PlaceBet(string gameId, string selectedPlayer, string placedBet)
         {
             var game = _gameService.GetGame(gameId);
-            game.Rounds[game.CurrentRound].Bets[GetPlayerId(selectedPlayer)] = Convert.ToInt32(placedBet);
+            game.Rounds[game.CurrentRound].Bets[Player.GetPlayerId(selectedPlayer)] = Convert.ToInt32(placedBet);
             if (game.Rounds[game.CurrentRound].AllBetsPlaced)
             {
                 game.Playing = true;
@@ -199,7 +199,7 @@ namespace CardGames.Hubs
         public async Task PlayRandomCard(string gameId, string player)
         {
             var game = _gameService.GetGame(gameId);
-            var _selectedplayer = GetPlayerId(player);
+            var _selectedplayer = Player.GetPlayerId(player);
             var card = game.Players[_selectedplayer].Cards.First();
             await PlayCard(gameId, player, card);
 
@@ -208,60 +208,14 @@ namespace CardGames.Hubs
         public async Task PlayCard(string gameId, string player, Card card)
         {
             var game = _gameService.GetGame(gameId);
-            var _selectedplayer = GetPlayerId(player);
-            game.Rounds[game.CurrentRound].PlayedCards[_selectedplayer] = new PlayedCard { PlayerId = player, Card = card };
-
-            if (game.CurrentPlayer < game.NrPlayers-1)
-                game.CurrentPlayer++;
-            else
-                game.CurrentPlayer = 0;
-
-            var card2Remove = game.Players[_selectedplayer].Cards.Where(c => c.Colour == card.Colour && c.Value == card.Value).FirstOrDefault();
-            if (card2Remove != null)
-            {
-                game.Players[_selectedplayer].Cards.Remove(card2Remove);
-            }
+            var selectedplayer = Player.GetPlayerId(player);
+            game.ArchivePlayCard(player, card, selectedplayer);
+            game.SetNextPlayer();
+            game.RemovePlayedCardFromPlayer(card, selectedplayer);
 
             if (game.Rounds[game.CurrentRound].PlayedCards.Where(c => c.Card == null).Count() == 0)
             {
-                var winningcard = game.Rounds[game.CurrentRound].PlayedCards[game.PlayerToStart];
-
-                for (int i = 0; i < game.NrPlayers; i++)
-                {
-                    if (game.Rounds[game.CurrentRound].PlayedCards[i].Card.Colour == winningcard.Card.Colour)
-                    {
-                        //normal check
-                        if (game.Rounds[game.CurrentRound].PlayedCards[i].Card.Value > winningcard.Card.Value)
-                        {
-                            winningcard = game.Rounds[game.CurrentRound].PlayedCards[i];
-                        }
-                    }
-                    else
-                    {
-                        if (game.Rounds[game.CurrentRound].PlayedCards[i].Card.Colour == game.PlayingCard.Colour)
-                        {
-                            //check in case of Trump
-                            if (winningcard.Card.Colour == game.PlayingCard.Colour)
-                            {
-                                //if both are Trump check highest
-                                if (game.Rounds[game.CurrentRound].PlayedCards[i].Card.Value > winningcard.Card.Value)
-                                {
-                                    winningcard = game.Rounds[game.CurrentRound].PlayedCards[i];
-                                }
-                            }
-                            else
-                            {
-                                //if this card is first Trump than it is the winner
-                                winningcard = game.Rounds[game.CurrentRound].PlayedCards[i];
-                            }
-                        }
-                    }
-                    for (int c = 0; c < game.NrPlayers; c++)
-                    {
-                        game.Rounds[game.CurrentRound].PlayedCards[c].Winner = false;
-                    }
-                    game.Rounds[game.CurrentRound].PlayedCards[GetPlayerId(winningcard.PlayerId)].Winner = true;
-                }
+                game.FindWinningCard();
                 game.CleanTable = true;
                 game.ChooseWinner = true;
             }
@@ -276,16 +230,9 @@ namespace CardGames.Hubs
 
             foreach (var pl in game.Players)
             {
-                var pId = GetPlayerId(pl.Id);
+                var pId = Player.GetPlayerId(pl.Id);
                 await Clients.Client(game.Connections[pId]).SendAsync("PlayedCard", game.Players[pId].Cards, game);
             }
-        }
-
-        private static int GetPlayerId(string player)
-        {
-            var pId = 0;
-            pId = Convert.ToInt32(player.Substring(1, 1))-1;
-            return pId;
         }
 
         public async Task Shuffle(string gameId)
@@ -299,7 +246,7 @@ namespace CardGames.Hubs
 
             foreach (var pl in game.Players)
             {
-                var pId = GetPlayerId(pl.Id);
+                var pId = Player.GetPlayerId(pl.Id);
                 await Clients.Client(game.Connections[pId]).SendAsync("Shuffled", game.Players[pId].Cards, game);
             }
         }
@@ -332,11 +279,11 @@ namespace CardGames.Hubs
                 .PlayedCards.Where(c => c.Winner == true)
                 .FirstOrDefault()
                 .PlayerId;
-            game.Rounds[game.CurrentRound].Wins[GetPlayerId(winningPlayer)]++;
+            game.Rounds[game.CurrentRound].Wins[Player.GetPlayerId(winningPlayer)]++;
             game.ChooseWinner = false;
 
-            game.CurrentPlayer = GetPlayerId(winningPlayer);
-            game.PlayerToStart = GetPlayerId(winningPlayer);
+            game.CurrentPlayer = Player.GetPlayerId(winningPlayer);
+            game.PlayerToStart = Player.GetPlayerId(winningPlayer);
 
             if (game.Players[0].Cards.Count() == 0)
             {

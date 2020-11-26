@@ -264,6 +264,70 @@ namespace CardGames.Shared.Models
             this.PlayingCard = pCard;
         }
 
+        public void ArchivePlayCard(string player, Card card, int _selectedplayer)
+        {
+            this.Rounds[this.CurrentRound].PlayedCards[_selectedplayer] = new PlayedCard { PlayerId = player, Card = card };
+        }
+
+        public void SetNextPlayer()
+        {
+            if (this.CurrentPlayer < this.NrPlayers - 1)
+                this.CurrentPlayer++;
+            else
+                this.CurrentPlayer = 0;
+        }
+
+        public void RemovePlayedCardFromPlayer(Card card, int _selectedplayer)
+        {
+            var card2Remove = this.Players[_selectedplayer].Cards.Where(c => c.Colour == card.Colour && c.Value == card.Value).FirstOrDefault();
+            if (card2Remove != null)
+            {
+                this.Players[_selectedplayer].Cards.Remove(card2Remove);
+            }
+        }
+
+        public void FindWinningCard()
+        {
+            var winningcard = this.Rounds[this.CurrentRound].PlayedCards[this.PlayerToStart];
+
+            for (int i = 0; i < this.NrPlayers; i++)
+            {
+                if (this.Rounds[this.CurrentRound].PlayedCards[i].Card.Colour == winningcard.Card.Colour)
+                {
+                    //normal check
+                    if (this.Rounds[this.CurrentRound].PlayedCards[i].Card.Value > winningcard.Card.Value)
+                    {
+                        winningcard = this.Rounds[this.CurrentRound].PlayedCards[i];
+                    }
+                }
+                else
+                {
+                    if (this.Rounds[this.CurrentRound].PlayedCards[i].Card.Colour == this.PlayingCard.Colour)
+                    {
+                        //check in case of Trump
+                        if (winningcard.Card.Colour == this.PlayingCard.Colour)
+                        {
+                            //if both are Trump check highest
+                            if (this.Rounds[this.CurrentRound].PlayedCards[i].Card.Value > winningcard.Card.Value)
+                            {
+                                winningcard = this.Rounds[this.CurrentRound].PlayedCards[i];
+                            }
+                        }
+                        else
+                        {
+                            //if this card is first Trump than it is the winner
+                            winningcard = this.Rounds[this.CurrentRound].PlayedCards[i];
+                        }
+                    }
+                }
+                for (int c = 0; c < this.NrPlayers; c++)
+                {
+                    this.Rounds[this.CurrentRound].PlayedCards[c].Winner = false;
+                }
+                this.Rounds[this.CurrentRound].PlayedCards[Player.GetPlayerId(winningcard.PlayerId)].Winner = true;
+            }
+        }
+
         private T RandomEnum<T>(int range)
         {
             Random _RNG = new Random();
@@ -364,6 +428,13 @@ namespace CardGames.Shared.Models
 
     public class Player
     {
+        public static int GetPlayerId(string id)
+        {
+            var pId = 0;
+            pId = Convert.ToInt32(id.Substring(1, 1)) - 1;
+            return pId;
+        }
+
         public Player()
         {
         }
