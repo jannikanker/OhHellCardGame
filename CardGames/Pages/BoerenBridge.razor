@@ -123,7 +123,7 @@
         else
         {
             @if (!(_game.Players[GetPlayerId(_selectedPlayer)].Email == GetUserEmail().Result
-          || GetUserEmail().Result == settings.SystemAdmin))
+         || GetUserEmail().Result == settings.SystemAdmin))
             {
                 <p>@L["NotAuthorized"]</p>
                 return;
@@ -139,6 +139,7 @@
 
         <h5 class="active">@_game.Status</h5>
         <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
+        <button class="btn btn-success" @onclick="() => OpenTopScoreBoard()">Top Scores</button>
         <button class="btn btn-success" @onclick="() => OpenTrump()">@(GetColourChar(_game.PlayingCard.Colour.ToString()))</button>
         <button id="btnShuffle"
                 disabled="@((!_game.GameStarted || _game.Playing || _game.Shuffled || _game.GameOver) || (_game.PlayerToStartObj.Id != _selectedPlayer))"
@@ -196,7 +197,7 @@
             }
 
             var localBetVar = bet;
-            <button class=@(notAllowed && _game.CurrentPlayerObj.Id == _selectedPlayer ? "btn btn-outline-danger" : "btn btn-outline-success")  disabled="@(notAllowed || !_game.Shuffled || _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(_selectedPlayer)] > -1 || (_game.CurrentPlayerObj.Id != _selectedPlayer))"
+            <button class=@(notAllowed && _game.CurrentPlayerObj.Id == _selectedPlayer ? "btn btn-outline-danger" : "btn btn-outline-success") disabled="@(notAllowed || !_game.Shuffled || _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(_selectedPlayer)] > -1 || (_game.CurrentPlayerObj.Id != _selectedPlayer))"
                     @onclick="@(e => PlaceBet(e, localBetVar.ToString()))">
                 @(notAllowed && _game.CurrentPlayerObj.Id == _selectedPlayer ? "X" : bet.ToString())
             </button>
@@ -314,29 +315,29 @@
                                 <tbody>
                                     @for (int round = 0; round < _game.Rounds.Length; round++)
                                     {
-                                    <tr>
-                                        <td>
-                                            @if (round < 8)
+                                        <tr>
+                                            <td>
+                                                @if (round < 8)
+                                                {
+                                                    <b>@((round+1).ToString())</b>
+                                                }
+                                                else
+                                                {
+                                                    <b>@((16 - round).ToString())</b>
+                                                }
+                                            </td>
+                                            @foreach (var player in _game.Players)
                                             {
-                                                <b>@((round+1).ToString())</b>
+                                                @if (round < _game.CurrentRound || _game.GameOver)
+                                                {
+                                                    <td style="background-color:@(_game.Rounds[round].Winners[GetPlayerId(player.Id)] ? "lightgreen" : "lightcoral")">@(_game.Rounds[round].Scores[GetPlayerId(player.Id)].ToString())</td>
+                                                }
+                                                else
+                                                {
+                                                    <td>@(_game.Rounds[round].Scores[GetPlayerId(player.Id)].ToString())</td>
+                                                }
                                             }
-                                            else
-                                            {
-                                                <b>@((16 - round).ToString())</b>
-                                            }
-                                        </td>
-                                        @foreach (var player in _game.Players)
-                                        {
-                                            @if (round < _game.CurrentRound || _game.GameOver)
-                                            {
-                                                <td style="background-color:@(_game.Rounds[round].Winners[GetPlayerId(player.Id)] ? "lightgreen" : "lightcoral")">@(_game.Rounds[round].Scores[GetPlayerId(player.Id)].ToString())</td>
-                                            }
-                                            else
-                                            {
-                                                <td>@(_game.Rounds[round].Scores[GetPlayerId(player.Id)].ToString())</td>
-                                            }
-                                        }
-                                    </tr>
+                                        </tr>
                                     }
                                 </tbody>
                             </table>
@@ -356,6 +357,44 @@
                         </div>
                         <div class="modal-body" style="text-align:center">
                             <img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="200" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal @_modalClassTopscores" role="dialog" style="display: @_modalDisplayTopscores; overflow: auto">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Top Scores</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => CloseTopScoreBoard()">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" style="text-align:center">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <td></td>
+                                        <td>Name</td>
+                                        <td>Game</td>
+                                        <td>Date</td>
+                                        <td>Score</td>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach(var score in _topScores)
+                                    {
+                                    <tr>
+                                        <td></td>
+                                        <td>@(score.Name)</td>
+                                        <td>@(score.Id)</td>
+                                        <td>@(score.GameOverDateTime.ToShortDateString())</td>
+                                        <td>@(score.Score)</td>
+                                    </tr>
+                                    }
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -383,6 +422,7 @@
     private Game _game;
     private List<Card> _cards = new List<Card>();
     private List<PlayerSelection> _playerSelections = new List<PlayerSelection>();
+    private List<GameScore> _topScores;
     private bool _inprogress = false;
 
     private string _modalClass = "";
@@ -390,6 +430,8 @@
 
     private string _modalClassTrump = "";
     private string _modalDisplayTrump = "none;";
+    private string _modalClassTopscores = "";
+    private string _modalDisplayTopscores = "none;";
     private string _sideView = "show;";
 
     protected override async Task OnInitializedAsync()
@@ -399,10 +441,11 @@
         .WithAutomaticReconnect()
         .Build();
 
-        _hubConnection.On<Game>("JoinedGame", (game) =>
+        _hubConnection.On<Game, List<GameScore>>("JoinedGame", (game,topScores) =>
         {
             _inprogress = false;
             _game = game;
+            _topScores = topScores;
             if (game != null)
             {
                 if (!string.IsNullOrEmpty(_selectedPlayer))
@@ -426,7 +469,7 @@
             _game = game;
             _cards = _game.Players[GetPlayerId(_selectedPlayer)].Cards;
             StateHasChanged();
-        }); 
+        });
 
         _hubConnection.On<Game>("NewGameSet", (game) =>
         {
@@ -514,9 +557,9 @@
             StateHasChanged();
         });
 
-        
 
-    await _hubConnection.StartAsync();
+
+        await _hubConnection.StartAsync();
         var authState = await authenticationStateTask;
         var user = authState.User;
         if (user.Identity.IsAuthenticated)
@@ -539,6 +582,21 @@
         _modalClass = "";
         StateHasChanged();
     }
+
+    public void OpenTopScoreBoard()
+    {
+        _modalDisplayTopscores = "block;";
+        _modalClassTopscores = "Show";
+        StateHasChanged();
+    }
+
+    public void CloseTopScoreBoard()
+    {
+        _modalDisplayTopscores = "none";
+        _modalClassTopscores = "";
+        StateHasChanged();
+    }
+
 
     public void OpenTrump()
     {

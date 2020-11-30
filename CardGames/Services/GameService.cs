@@ -61,6 +61,37 @@ namespace CardGames.Server.Services
             }
         }
 
+        public async Task<List<GameScore>> GetTopScores()
+        {
+            List<GameScore> gameScores = new List<GameScore>();
+            try
+            {
+                var sqlQueryText = "SELECT g.Id, g.GameOverDateTime, p.Name, p.Score FROM Games g JOIN p in g.Players";
+                using (var client = new CosmosClient(_cosmosSettings.EndpointUrl, _cosmosSettings.Key))
+                {
+                    var database = client.GetDatabase(_cosmosSettings.DatabaseName);
+                    var container = database.GetContainer(_cosmosSettings.DatabaseContainer);
+                    QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
+                    var scores = container.GetItemQueryIterator<GameScore>(queryDefinition);
+
+
+                    while (scores.HasMoreResults)
+                    {
+                        foreach (var score in await scores.ReadNextAsync())
+                        {
+                            gameScores.Add(score);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.Message;
+            }
+
+            return gameScores.OrderByDescending(g => g.Score).Take(10).ToList();
+        }
+
         public Game GetGame(string gameId)
         {
             var gameData = _redisCacheClient.Db0.Database.StringGetAsync(gameId).Result;

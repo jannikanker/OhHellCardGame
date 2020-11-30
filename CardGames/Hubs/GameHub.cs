@@ -77,8 +77,10 @@ namespace CardGames.Hubs
                         game.Status = game.AllPlayersSignedIn ? _localizer["GameAdminStart"] : _localizer["WaitingSignIn", notsignedinplayer];
                     }
 
+                    var gameScores = await _gameService.GetTopScores();
+
                     _gameService.SaveGame(game);
-                    await Clients.Group(gameId).SendAsync("JoinedGame", game);
+                    await Clients.Group(gameId).SendAsync("JoinedGame", game, gameScores);
                     _logger.LogInformation($"Player {name} joined Game {gameId}.");
                 }
             }
