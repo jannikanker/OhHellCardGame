@@ -125,7 +125,7 @@
         else
         {
             @if (!(_game.Players[GetPlayerId(_selectedPlayer)].Email == GetUserEmail().Result
-         || GetUserEmail().Result == settings.SystemAdmin))
+|| GetUserEmail().Result == settings.SystemAdmin))
             {
                 <p>@L["NotAuthorized"]</p>
                 return;
@@ -230,7 +230,7 @@
                     <legend>@L["PlayedCards"] </legend>
                     @foreach (var playedCard in _game.Rounds[_game.CurrentRound].PlayedCards)
                     {
-                        <div class=@(playedCard.Winner ? "galleryWon" : (playedCard.PlayerId == _game.PlayerToStartObj.Id? "galleryStarted": playedCard.PlayerId == _selectedPlayer ? "gallerySelectedPlayer" : "gallery"))>
+                        <div class=@(playedCard.Winner ? "galleryWon" : (playedCard.PlayerId == _game.PlayerToStartObj.Id ? "galleryStarted" : playedCard.PlayerId == _selectedPlayer ? "gallerySelectedPlayer" : "gallery"))>
                             <div class="desc">
                                 <p>
                                     @(_game.Players[GetPlayerId(playedCard.PlayerId)].FirstName)
@@ -319,9 +319,25 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @for (int s=0; s<_game.Players.Length; s++)
+                                    @for (int s = 0; s < _game.Players.Length; s++)
                                     {
                                         _inputSeries[s] = "0,";
+                                    }
+
+                                    @{_xAxisLabels = "0,";}
+
+                                    @for (int r = 0; r <= _game.CurrentRound; r++)
+                                    {
+                                        _xAxisLabels += (r + 1).ToString();
+                                        if (r < _game.CurrentRound - 1)
+                                            _xAxisLabels += ",";
+
+                                        foreach (var player in _game.Players)
+                                        {
+                                            _inputSeries[GetPlayerId(player.Id)] += _game.Rounds[r].Scores[GetPlayerId(player.Id)].ToString();
+                                            if (r < _game.CurrentRound - 1)
+                                                _inputSeries[GetPlayerId(player.Id)] += ",";
+                                        }
                                     }
 
                                     @for (int round = 0; round < _game.Rounds.Length; round++)
@@ -339,9 +355,6 @@
                                             </td>
                                             @foreach (var player in _game.Players)
                                             {
-                                                _inputSeries[GetPlayerId(player.Id)] += _game.Rounds[round].Scores[GetPlayerId(player.Id)].ToString();
-                                                if (round < _game.Rounds.Length - 1)
-                                                    _inputSeries[GetPlayerId(player.Id)] += ",";
                                                 @if (round < _game.CurrentRound || _game.GameOver)
                                                 {
                                                     <td style="background-color:@(_game.Rounds[round].Winners[GetPlayerId(player.Id)] ? "lightgreen" : "lightcoral")">@(_game.Rounds[round].Scores[GetPlayerId(player.Id)].ToString())</td>
@@ -353,7 +366,7 @@
                                             }
                                         </tr>
                                     }
-                                </tbody>
+                                 </tbody>
                             </table>
                             <LineChart InputSeries1="@(_inputSeries[0])"
                                        InputSeries2="@(_inputSeries[1])"
@@ -456,6 +469,7 @@
 
     private string _inputLabels = "";
     private string[] _inputSeries;
+    private string _xAxisLabels;
 
     protected override async Task OnInitializedAsync()
     {
