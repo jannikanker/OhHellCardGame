@@ -4,7 +4,9 @@
 @using CardGames.Shared.Models;
 @using System.Collections;
 @using Microsoft.Extensions.Logging;
-@using CardGames.Pages; 
+@using CardGames.Pages;
+@using WebAssemblyMan;
+
 @inject NavigationManager NavigationManager
 @inject Microsoft.Extensions.Options.IOptions<GameSettings> gameSettings
 @inject IStringLocalizer<UIStrings> L;
@@ -306,13 +308,22 @@
                                 <thead>
                                     <tr>
                                         <td></td>
+                                        @(_inputLabels = "")
                                         @foreach (var player in _game.Players)
                                         {
                                             <td><p style="color: @(IsGameAdmin(player.Id) ? "red" : "black")">@(player.Name == null ? player.Id : player.Name.Split(" ")[0])</p></td>
+                                            _inputLabels += player.FirstName;
+                                            if (!_game.Players.Last().Equals(player))
+                                                _inputLabels += ",";
                                         }
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    @for (int s=0; s<_game.Players.Length; s++)
+                                    {
+                                        _inputSeries[s] = "0,";
+                                    }
+
                                     @for (int round = 0; round < _game.Rounds.Length; round++)
                                     {
                                         <tr>
@@ -328,6 +339,9 @@
                                             </td>
                                             @foreach (var player in _game.Players)
                                             {
+                                                _inputSeries[GetPlayerId(player.Id)] += _game.Rounds[round].Scores[GetPlayerId(player.Id)].ToString();
+                                                if (round < _game.Rounds.Length - 1)
+                                                    _inputSeries[GetPlayerId(player.Id)] += ",";
                                                 @if (round < _game.CurrentRound || _game.GameOver)
                                                 {
                                                     <td style="background-color:@(_game.Rounds[round].Winners[GetPlayerId(player.Id)] ? "lightgreen" : "lightcoral")">@(_game.Rounds[round].Scores[GetPlayerId(player.Id)].ToString())</td>
@@ -341,6 +355,12 @@
                                     }
                                 </tbody>
                             </table>
+                            <LineChart InputSeries1="@(_inputSeries[0])"
+                                       InputSeries2="@(_inputSeries[1])"
+                                       InputSeries3="@(_inputSeries[2])"
+                                       InputSeries4="@(_inputSeries[3])"
+                                       XAxisLabels="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+                                       InputLabels="@(_inputLabels)"> </LineChart>
                         </div>
                     </div>
                 </div>
@@ -386,7 +406,7 @@
                                     @foreach(var score in _topScores)
                                     {
                                     <tr>
-                                        <td></td>
+                                        <td>@(_topScores.IndexOf(score))</td>
                                         <td>@(score.Name)</td>
                                         <td>@(score.Id)</td>
                                         <td>@(score.GameOverDateTime.ToShortDateString())</td>
@@ -434,6 +454,9 @@
     private string _modalDisplayTopscores = "none;";
     private string _sideView = "show;";
 
+    private string _inputLabels = "";
+    private string[] _inputSeries;
+
     protected override async Task OnInitializedAsync()
     {
         _hubConnection = new HubConnectionBuilder()
@@ -452,6 +475,7 @@
                 {
                     _cards = _game.Players[GetPlayerId(_selectedPlayer)].Cards;
                 }
+                _inputSeries = new string[_game.Players.Length];
             }
             StateHasChanged();
         });

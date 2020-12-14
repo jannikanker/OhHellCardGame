@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Blazor-Charts\LineChart\LineChart.csproj" />
     <ProjectReference Include="..\Shared\CardGames.Shared.csproj" />
   </ItemGroup>
 
@@ -35,6 +36,12 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>UIStrings.resx</DependentUpon>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\css\LineChart\styles.css">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
