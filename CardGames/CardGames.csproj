@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Blazor-Charts\LineChart\LineChart.csproj" />
+    <ProjectReference Include="..\LineChart\LineChart.csproj" />
     <ProjectReference Include="..\Shared\CardGames.Shared.csproj" />
   </ItemGroup>
 
