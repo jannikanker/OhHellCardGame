@@ -14,106 +14,7 @@
     var settings = gameSettings.Value;
 }
 
-<style>
-    fieldset.scheduler-border {
-        border: 1px groove #ddd !important;
-        padding: 0 0 0 0 !important;
-        margin: 0 auto;
-        -webkit-box-shadow: 0px 10px 0px 10px #000;
-        box-shadow: 0px 0px 0px 0px #000;
-        border-radius: 5px;
-        width:355px;
-    }
-
-    legend.scheduler-border {
-        font-size: 2.2em !important;
-        font-weight: bold !important;
-        text-align: left !important;
-        width: 90%;
-        padding: 0px 0px;
-        border-bottom: none;
-    }
-
-    div.gallerySelectedPlayer {
-        margin: 0px;
-        border: 1px solid #ccc;
-        float: left;
-        width: 82px;
-        border-radius: 5px;
-        background-color: lightblue;
-    }
-
-    div.gallery {
-        margin: 0px;
-        border: 1px solid #ffffff;
-        float: left;
-        width: 82px;
-        border-radius: 5px;
-    }
-
-    div.galleryStarted {
-        margin: 0px;
-        border: 1px solid #f00;
-        float: left;
-        width: 82px;
-        border-radius: 5px;
-    }
-
-    div.galleryWon {
-        margin: 0px;
-        border: 1px solid red;
-        float: left;
-        width: 82px;
-        border-radius: 5px;
-        background-color: red;
-    }
-
-    div.gallery:hover {
-        border: 1px solid #808080;
-    }
-
-    div.desc {
-        text-align: center;
-    }
-
-    img.playingColor {
-        text-align: center;
-    }
-
-    header {
-        text-align:center;
-    }
-    section,
-    aside,
-    footer {
-        margin: 0 1.5% 24px 1.5%;
-    }
-
-    section {
-        text-align: center;
-        width: 97%;
-    }
-
-    aside {
-        float: left;
-        width: 0%;
-    }
-
-    footer {
-        clear: both;
-        margin-bottom: 0;
-    }
-
-    .betting {
-        display: block;
-        text-align: center;
-        border: 1px solid #808080;
-    }
-
-    .trump {
-        float: left;
-    }
-</style>
+<link href="css/desktop.css" rel="stylesheet" />
 
 
 <AuthorizeView>
@@ -124,105 +25,104 @@
         }
         else
         {
-            @if (!(_game.Players[GetPlayerId(_selectedPlayer)].Email == GetUserEmail().Result
-|| GetUserEmail().Result == settings.SystemAdmin))
+            @if (!(_game.Players[GetPlayerId(_selectedPlayer)].Email == GetUserEmail().Result || GetUserEmail().Result == settings.SystemAdmin))
             {
                 <p>@L["NotAuthorized"]</p>
                 return;
             }
-    <header>
-        <h3>@L["Welcome", @context.User.Identity.Name.Split(" ")[0]] @(IsGameAdmin() ? "✏️" : "")</h3>
+            <header>
+                <h3>@L["Welcome", @context.User.Identity.Name.Split(" ")[0]] @(IsGameAdmin() ? "✏️" : "")</h3>
 
-        <div style="float:right">
-            <div style="display:@_sideView">
-                <img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="80" />
-            </div>
-        </div>
+                <div style="float:right">
+                    <div style="display:@_sideView">
+                        <img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="80" />
+                    </div>
+                </div>
 
-        <h5 class="active">@_game.Status</h5>
-        <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
-        <button class="btn btn-success" @onclick="() => OpenTopScoreBoard()">Top Scores</button>
-        <button class="btn btn-success" @onclick="() => OpenTrump()">@(GetColourChar(_game.PlayingCard.Colour.ToString()))</button>
-        <button id="btnShuffle"
-                disabled="@((!_game.GameStarted || _game.Playing || _game.Shuffled || _game.GameOver) || (_game.PlayerToStartObj.Id != _selectedPlayer))"
-                class="btn btn-success"
-                @onclick="@(e => Shuffle())">
-            @L["Shuffle"]
-            @if (_game.CurrentRound < 8)
-            {
-                <b> ( @((_game.CurrentRound + 1).ToString()) )</b>
-            }
-            else
-            {
-                <b> ( @((16 - _game.CurrentRound).ToString()) )</b>
-            }
-        </button>
-        <button class="btn btn-success" @onclick="@ToggleSideView"><img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="10" /></button>
-        <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
-                disabled="@(!_game.CleanTable || !IsGameAdmin())"
-                class="btn btn-success" @onclick="@CleanTable"
-                title="@L["CleanTableText"]">
-            @L["CleanTable"]
-        </button>
-        <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
-                disabled="@(!_game.RoundReady || _game.GameOver || !IsGameAdmin())"
-                class="btn btn-success" @onclick="@NextRound"
-                title="@L["NextRoundText"]">
-            @L["NextRound"]
-        </button>
-
-        <br />
-        @for (int bet = 0; bet <= _game.Rounds[_game.CurrentRound].NrCards; bet++)
-        {
-            //Define if player is last and what bet is not allowed
-            var lastBetter = _game.PlayerToStart - 1;
-            if (lastBetter < 0)
-                lastBetter = _game.NrPlayers - 1;
-
-            var notAllowed = false;
-
-            if (_game.CurrentPlayer == lastBetter)
-            {
-                var sum = 0;
-                for (int b = 0; b < _game.NrPlayers; b++)
-                {
-                    if (_game.Rounds[_game.CurrentRound].Bets[b] > -1)
+                <h5 class="active">@_game.Status</h5>
+                <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
+                <button class="btn btn-success" @onclick="() => OpenTopScoreBoard()">Top Scores</button>
+                <button class="btn btn-success" @onclick="() => OpenTrump()">@(GetColourChar(_game.PlayingCard.Colour.ToString()))</button>
+                <button id="btnShuffle"
+                        disabled="@((!_game.GameStarted || _game.Playing || _game.Shuffled || _game.GameOver) || (_game.PlayerToStartObj.Id != _selectedPlayer))"
+                        class="btn btn-success"
+                        @onclick="@(e => Shuffle())">
+                    @L["Shuffle"]
+                    @if (_game.CurrentRound < 8)
                     {
-                        sum += _game.Rounds[_game.CurrentRound].Bets[b];
+                        <b> ( @((_game.CurrentRound + 1).ToString()) )</b>
                     }
-                }
-                var betNotAllowed = _game.Rounds[_game.CurrentRound].NrCards - sum;
-                if (bet == betNotAllowed)
+                    else
+                    {
+                        <b> ( @((16 - _game.CurrentRound).ToString()) )</b>
+                    }
+                </button>
+                <button class="btn btn-success" @onclick="@ToggleSideView"><img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="10" /></button>
+                <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
+                        disabled="@(!_game.CleanTable || !IsGameAdmin())"
+                        class="btn btn-success" @onclick="@CleanTable"
+                        title="@L["CleanTableText"]">
+                    @L["CleanTable"]
+                </button>
+                <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
+                        disabled="@(!_game.RoundReady || _game.GameOver || !IsGameAdmin())"
+                        class="btn btn-success" @onclick="@NextRound"
+                        title="@L["NextRoundText"]">
+                    @L["NextRound"]
+                </button>
+
+                <br />
+                @for (int bet = 0; bet <= _game.Rounds[_game.CurrentRound].NrCards; bet++)
                 {
-                    notAllowed = true;
+                    //Define if player is last and what bet is not allowed
+                    var lastBetter = _game.PlayerToStart - 1;
+                    if (lastBetter < 0)
+                        lastBetter = _game.NrPlayers - 1;
+
+                    var notAllowed = false;
+
+                    if (_game.CurrentPlayer == lastBetter)
+                    {
+                        var sum = 0;
+                        for (int b = 0; b < _game.NrPlayers; b++)
+                        {
+                            if (_game.Rounds[_game.CurrentRound].Bets[b] > -1)
+                            {
+                                sum += _game.Rounds[_game.CurrentRound].Bets[b];
+                            }
+                        }
+                        var betNotAllowed = _game.Rounds[_game.CurrentRound].NrCards - sum;
+                        if (bet == betNotAllowed)
+                        {
+                            notAllowed = true;
+                        }
+                    }
+
+                    var localBetVar = bet;
+                    <button class=@(notAllowed && _game.CurrentPlayerObj.Id == _selectedPlayer ? "btn btn-outline-danger" : "btn btn-outline-success") disabled="@(notAllowed || !_game.Shuffled || _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(_selectedPlayer)] > -1 || (_game.CurrentPlayerObj.Id != _selectedPlayer))"
+                            @onclick="@(e => PlaceBet(e, localBetVar.ToString()))">
+                        @(notAllowed && _game.CurrentPlayerObj.Id == _selectedPlayer ? "X" : bet.ToString())
+                    </button>
                 }
-            }
 
-            var localBetVar = bet;
-            <button class=@(notAllowed && _game.CurrentPlayerObj.Id == _selectedPlayer ? "btn btn-outline-danger" : "btn btn-outline-success") disabled="@(notAllowed || !_game.Shuffled || _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(_selectedPlayer)] > -1 || (_game.CurrentPlayerObj.Id != _selectedPlayer))"
-                    @onclick="@(e => PlaceBet(e, localBetVar.ToString()))">
-                @(notAllowed && _game.CurrentPlayerObj.Id == _selectedPlayer ? "X" : bet.ToString())
-            </button>
-        }
-
-        @if (string.IsNullOrEmpty(_selectedPlayer))
-        {
-            <select @bind="_selectedPlayer" disabled="@(_playerSelected)">
-                <option value="" selected>Select Player</option>
-                @foreach (var p in _playerSelections)
+                @if (string.IsNullOrEmpty(_selectedPlayer))
                 {
-                    <option selected="@(p.Id == _selectedPlayer ? true : false)" value="@p.Id">@p.Name</option>
-                };
-            </select>
-            <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@GetAvailablePlayers">Refresh Players</button>
-            <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@SelectPlayer">Select Player</button>
-        }
+                    <select @bind="_selectedPlayer" disabled="@(_playerSelected)">
+                        <option value="" selected>Select Player</option>
+                        @foreach (var p in _playerSelections)
+                        {
+                            <option selected="@(p.Id == _selectedPlayer ? true : false)" value="@p.Id">@p.Name</option>
+                        };
+                    </select>
+                    <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@GetAvailablePlayers">Refresh Players</button>
+                    <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@SelectPlayer">Select Player</button>
+                }
 
-        @if (IsGameAdmin() && !_game.GameStarted)
-        {
-            <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn)" class="btn btn-success" @onclick="@StartGame">Start</button>
-        }
-    </header>
+                @if (IsGameAdmin() && !_game.GameStarted)
+                {
+                    <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn)" class="btn btn-success" @onclick="@StartGame">Start</button>
+                }
+            </header>
 
             <hr />
             <section>
@@ -230,7 +130,7 @@
                     <legend>@L["PlayedCards"] </legend>
                     @foreach (var playedCard in _game.Rounds[_game.CurrentRound].PlayedCards)
                     {
-                        <div class=@(playedCard.Winner ? "galleryWon" : (playedCard.PlayerId == _game.PlayerToStartObj.Id ? "galleryStarted" : playedCard.PlayerId == _selectedPlayer ? "gallerySelectedPlayer" : "gallery"))>
+                        <div class=@(playedCard.Winner ? "galleryWon" : (playedCard.PlayerId == _game.CurrentPlayerObj.Id ? "galleryCurrentPlayer" : "gallery"))>
                             <div class="desc">
                                 <p>
                                     @(_game.Players[GetPlayerId(playedCard.PlayerId)].FirstName)
@@ -242,11 +142,10 @@
                                 @if (playedCard.Card != null)
                                 {
 
-                                    <div id="PlayCard_@(playedCard.PlayerId)"><img src="/CardImages/@(playedCard.Card == null ? "green_back" : playedCard.Card.Face).png" width="80" /></div>
+                                    <div id="PlayCard_@(playedCard.PlayerId)"><img src="/CardImages/@(playedCard.Card == null ? "green_back" : playedCard.Card.Face).png" width="80" style="padding: 0px 0px 5px 0px;" /></div>
                                     @if (_game.ChooseWinner)
                                     {
                                         <button class="btn btn-outline-info" style="visibility:@(_game.ChooseWinner ? "visible" : "hidden")" disabled="@(!_game.ChooseWinner || !IsGameAdmin())" @onclick="@(e => Winner(e, playedCard))">@L["Won"]</button>
-
                                     }
                                 }
                                 else
@@ -280,11 +179,12 @@
                         }
                         <div class="gallery">
                             <div class="desc">
-                                <div id="PlayerCard_@_cards.IndexOf(card).ToString()"><img src="/CardImages/@(card.Face).png" width="80" /></div>
+                                <div id="PlayerCard_@_cards.IndexOf(card).ToString()"><img src="/CardImages/@(card.Face).png" width="80" style="padding: 0px 0px 5px 0px;"/></div>
                                 <div>
                                     <button id="PlayButton_@_cards.IndexOf(card).ToString()"
                                             disabled="@(!canPlayCard || _game.ChooseWinner || _game.CleanTable || !_game.Betted || (_game.CurrentPlayerObj.Id != _selectedPlayer))"
-                                            class="btn btn-success" @onclick="@(e => Play(e, _selectedPlayer, card, canPlayCard))">
+                                            class="btn btn-success"
+                                            @onclick="@(e => Play(e, _selectedPlayer, card, canPlayCard))">
                                         @L["Play"]
                                     </button>
                                 </div>
@@ -319,27 +219,6 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @for (int s = 0; s < _game.Players.Length; s++)
-                                    {
-                                        _inputSeries[s] = "0,";
-                                    }
-
-                                    @{_xAxisLabels = "0,";}
-
-                                    @for (int r = 0; r <= _game.CurrentRound; r++)
-                                    {
-                                        _xAxisLabels += (r + 1).ToString();
-                                        if (r < _game.CurrentRound - 1)
-                                            _xAxisLabels += ",";
-
-                                        foreach (var player in _game.Players)
-                                        {
-                                            _inputSeries[GetPlayerId(player.Id)] += _game.Rounds[r].Scores[GetPlayerId(player.Id)].ToString();
-                                            if (r < _game.CurrentRound - 1)
-                                                _inputSeries[GetPlayerId(player.Id)] += ",";
-                                        }
-                                    }
-
                                     @for (int round = 0; round < _game.Rounds.Length; round++)
                                     {
                                         <tr>
@@ -366,14 +245,8 @@
                                             }
                                         </tr>
                                     }
-                                 </tbody>
+                                </tbody>
                             </table>
-                            <LineChart InputSeries1="@(_inputSeries[0])"
-                                       InputSeries2="@(_inputSeries[1])"
-                                       InputSeries3="@(_inputSeries[2])"
-                                       InputSeries4="@(_inputSeries[3])"
-                                       XAxisLabels="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
-                                       InputLabels="@(_inputLabels)"> </LineChart>
                         </div>
                     </div>
                 </div>
@@ -416,15 +289,15 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach(var score in _topScores)
+                                    @foreach (var score in _topScores)
                                     {
-                                    <tr>
-                                        <td>@(_topScores.IndexOf(score))</td>
-                                        <td>@(score.Name)</td>
-                                        <td>@(score.Id)</td>
-                                        <td>@(score.GameOverDateTime.ToShortDateString())</td>
-                                        <td>@(score.Score)</td>
-                                    </tr>
+                                        <tr>
+                                            <td>@(_topScores.IndexOf(score))</td>
+                                            <td>@(score.Name)</td>
+                                            <td>@(score.Id)</td>
+                                            <td>@(score.GameOverDateTime.ToShortDateString())</td>
+                                            <td>@(score.Score)</td>
+                                        </tr>
                                     }
                                 </tbody>
                             </table>
@@ -450,374 +323,414 @@
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; }
 
-    private HubConnection _hubConnection;
-    private bool _playerSelected;
-    private Game _game;
-    private List<Card> _cards = new List<Card>();
-    private List<PlayerSelection> _playerSelections = new List<PlayerSelection>();
-    private List<GameScore> _topScores;
-    private bool _inprogress = false;
+private HubConnection _hubConnection;
+private bool _playerSelected;
+private Game _game;
+private List<Card> _cards = new List<Card>();
+private List<PlayerSelection> _playerSelections = new List<PlayerSelection>();
+private List<GameScore> _topScores;
+private bool _inprogress = false;
 
-    private string _modalClass = "";
-    private string _modalDisplay = "none;";
+private string _modalClass = "";
+private string _modalDisplay = "none;";
 
-    private string _modalClassTrump = "";
-    private string _modalDisplayTrump = "none;";
-    private string _modalClassTopscores = "";
-    private string _modalDisplayTopscores = "none;";
-    private string _sideView = "show;";
+private string _modalClassTrump = "";
+private string _modalDisplayTrump = "none;";
+private string _modalClassTopscores = "";
+private string _modalDisplayTopscores = "none;";
+private string _sideView = "show;";
 
-    private string _inputLabels = "";
-    private string[] _inputSeries;
-    private string _xAxisLabels;
+private string _inputLabels = "";
+private string[][] _inputSeries;
+private string _xAxisLabels;
 
-    protected override async Task OnInitializedAsync()
+protected override async Task OnInitializedAsync()
+{
+    _hubConnection = new HubConnectionBuilder()
+    .WithUrl(NavigationManager.ToAbsoluteUri("/gameHub"))
+    .WithAutomaticReconnect()
+    .Build();
+
+    _hubConnection.On<Game, List<GameScore>>("JoinedGame", (game, topScores) =>
     {
-        _hubConnection = new HubConnectionBuilder()
-        .WithUrl(NavigationManager.ToAbsoluteUri("/gameHub"))
-        .WithAutomaticReconnect()
-        .Build();
-
-        _hubConnection.On<Game, List<GameScore>>("JoinedGame", (game,topScores) =>
+        _inprogress = false;
+        _game = game;
+        _topScores = topScores;
+        if (game != null)
         {
-            _inprogress = false;
-            _game = game;
-            _topScores = topScores;
-            if (game != null)
+            if (!string.IsNullOrEmpty(_selectedPlayer))
             {
-                if (!string.IsNullOrEmpty(_selectedPlayer))
-                {
-                    _cards = _game.Players[GetPlayerId(_selectedPlayer)].Cards;
-                }
-                _inputSeries = new string[_game.Players.Length];
+                _cards = _game.Players[GetPlayerId(_selectedPlayer)].Cards;
             }
-            StateHasChanged();
-        });
-
-        _hubConnection.On<Game>("GameStarted", (game) =>
-        {
-            _inprogress = false;
-            _game = game;
-
-            StateHasChanged();
-        });
-
-        _hubConnection.On<Game>("GameResetted", (game) =>
-        {
-            _game = game;
-            _cards = _game.Players[GetPlayerId(_selectedPlayer)].Cards;
-            StateHasChanged();
-        });
-
-        _hubConnection.On<Game>("NewGameSet", (game) =>
-        {
-            _game = game;
-            _cards = new List<Card>();
-            StateHasChanged();
-        });
-
-        _hubConnection.On<Game, string>("PlayerSelected", (game, signedInPlayerID) =>
-        {
-            _inprogress = false;
-            _game = game;
-            var index = _playerSelections.FindIndex(p => p.Id == signedInPlayerID);
-            if (index > 0)
-                _playerSelections.RemoveAt(index);
-
-            if (_selectedPlayer == signedInPlayerID)
+            _inputSeries = new string[_game.Players.Length][];
+            for (int p = 0; p < _game.Players.Length; p++)
             {
-                _cards = _game.Players[GetPlayerId(signedInPlayerID)].Cards;
+                _inputSeries[p] = new string[_game.Rounds.Length + 1];
+                Array.Fill(_inputSeries[p], "0");
             }
+        }
+        StateHasChanged();
+    });
 
-            StateHasChanged();
-        });
+    _hubConnection.On<Game>("GameStarted", (game) =>
+    {
+        _inprogress = false;
+        _game = game;
 
-        _hubConnection.On<List<Card>, Game>("Shuffled", (cards, game) =>
+        StateHasChanged();
+    });
+
+    _hubConnection.On<Game>("GameResetted", (game) =>
+    {
+        _game = game;
+        _cards = _game.Players[GetPlayerId(_selectedPlayer)].Cards;
+        StateHasChanged();
+    });
+
+    _hubConnection.On<Game>("NewGameSet", (game) =>
+    {
+        _game = game;
+        _cards = new List<Card>();
+        StateHasChanged();
+    });
+
+    _hubConnection.On<Game, string>("PlayerSelected", (game, signedInPlayerID) =>
+    {
+        _inprogress = false;
+        _game = game;
+        var index = _playerSelections.FindIndex(p => p.Id == signedInPlayerID);
+        if (index > 0)
+            _playerSelections.RemoveAt(index);
+
+        if (_selectedPlayer == signedInPlayerID)
         {
-            _inprogress = false;
-            _game = game;
-            _cards = cards;
-            _game.Playing = true;
-            StateHasChanged();
-        });
+            _cards = _game.Players[GetPlayerId(signedInPlayerID)].Cards;
+        }
 
-        _hubConnection.On<List<Card>, Game>("PlayedCard", (cards, game) =>
+        StateHasChanged();
+    });
+
+    _hubConnection.On<List<Card>, Game>("Shuffled", (cards, game) =>
+    {
+        _inprogress = false;
+        _game = game;
+        _cards = cards;
+        _game.Playing = true;
+        StateHasChanged();
+    });
+
+    _hubConnection.On<List<Card>, Game>("PlayedCard", (cards, game) =>
+    {
+        _inprogress = false;
+        _game = game;
+        _cards = cards;
+        StateHasChanged();
+    });
+
+    _hubConnection.On<string[]>("ReturnAvailablePlayers", (rap) =>
+    {
+        _inprogress = false;
+        _playerSelections = new List<PlayerSelection>();
+        foreach (var p in rap)
         {
-            _inprogress = false;
-            _game = game;
-            _cards = cards;
-            StateHasChanged();
-        });
+            _playerSelections.Add(new PlayerSelection { Id = p, Name = p });
+        }
+        StateHasChanged();
+    });
 
-        _hubConnection.On<string[]>("ReturnAvailablePlayers", (rap) =>
+    _hubConnection.On<Game>("WinnerRegistered", (game) =>
+    {
+        _inprogress = false;
+        _game = game;
+        StateHasChanged();
+    });
+
+    _hubConnection.On<Game>("StartNextRound", (game) =>
+    {
+        _inprogress = false;
+        _game = game;
+        StateHasChanged();
+    });
+
+    _hubConnection.On<Game>("CleanedTable", (game) =>
+    {
+        _inprogress = false;
+        _game = game;
+        StateHasChanged();
+    });
+
+    _hubConnection.On<Game>("BetPlaced", (game) =>
+    {
+        _inprogress = false;
+        _game = game;
+        StateHasChanged();
+    });
+
+    _hubConnection.On<Game>("GameSettingsResetted", (game) =>
+    {
+        _inprogress = false;
+        _game = game;
+        StateHasChanged();
+    });
+
+
+
+    await _hubConnection.StartAsync();
+    var authState = await authenticationStateTask;
+    var user = authState.User;
+    if (user.Identity.IsAuthenticated)
+    {
+        await JoinGame();
+    }
+}
+
+
+public void OpenScoreBoard()
+{
+    _modalDisplay = "block;";
+    _modalClass = "Show";
+    StateHasChanged();
+}
+
+public void CloseScoreBoard()
+{
+    _modalDisplay = "none";
+    _modalClass = "";
+    StateHasChanged();
+}
+
+public void OpenTopScoreBoard()
+{
+    _modalDisplayTopscores = "block;";
+    _modalClassTopscores = "Show";
+    StateHasChanged();
+}
+
+public void CloseTopScoreBoard()
+{
+    _modalDisplayTopscores = "none";
+    _modalClassTopscores = "";
+    StateHasChanged();
+}
+
+public void CreateScoreGraphDataSets()
+{
+    var xAxisLabelsArray = new string[_game.Rounds.Length + 1];
+    for (int l = 0; l <= _game.Rounds.Length; l++)
+    {
+        xAxisLabelsArray[l] = l.ToString();
+    }
+
+    foreach (var player in _game.Players)
+    {
+        for (int r = 0; r <= _game.CurrentRound + 1; r++)
         {
-            _inprogress = false;
-            _playerSelections = new List<PlayerSelection>();
-            foreach (var p in rap)
-            {
-                _playerSelections.Add(new PlayerSelection { Id = p, Name = p });
-            }
-            StateHasChanged();
-        });
-
-        _hubConnection.On<Game>("WinnerRegistered", (game) =>
-        {
-            _inprogress = false;
-            _game = game;
-            StateHasChanged();
-        });
-
-        _hubConnection.On<Game>("StartNextRound", (game) =>
-        {
-            _inprogress = false;
-            _game = game;
-            StateHasChanged();
-        });
-
-        _hubConnection.On<Game>("CleanedTable", (game) =>
-        {
-            _inprogress = false;
-            _game = game;
-            StateHasChanged();
-        });
-
-        _hubConnection.On<Game>("BetPlaced", (game) =>
-        {
-            _inprogress = false;
-            _game = game;
-            StateHasChanged();
-        });
-
-        _hubConnection.On<Game>("GameSettingsResetted", (game) =>
-        {
-            _inprogress = false;
-            _game = game;
-            StateHasChanged();
-        });
-
-
-
-        await _hubConnection.StartAsync();
-        var authState = await authenticationStateTask;
-        var user = authState.User;
-        if (user.Identity.IsAuthenticated)
-        {
-            await JoinGame();
+            if (r > 0)
+                _inputSeries[GetPlayerId(player.Id)][r] = _game.Rounds[r-1].Scores[GetPlayerId(player.Id)].ToString();
         }
     }
 
+    //create inputs for graph
+    _xAxisLabels = string.Join(",", xAxisLabelsArray);
+}
 
-    public void OpenScoreBoard()
+private string CreateGraphXML()
+{
+    CreateScoreGraphDataSets();
+    var lineGraph = String.Format(" <LineChart InputSeries1=\"{0}\" InputSeries2=\"{1}\" InputSeries3=\"{2}\" InputSeries4=\"{3}\" XAxisLabels=\"{4}\" InputLabels=\"{5}\"></LineChart>",
+        string.Join(",", _inputSeries[0]),
+        string.Join(",", _inputSeries[1]),
+        string.Join(",", _inputSeries[2]),
+        string.Join(",", _inputSeries[3]),
+        _xAxisLabels,
+        _inputLabels
+        );
+
+    return lineGraph;
+}
+
+public void OpenTrump()
+{
+    _modalDisplayTrump = "block;";
+    _modalClassTrump = "Show";
+    StateHasChanged();
+}
+
+public void CloseTrump()
+{
+    _modalDisplayTrump = "none";
+    _modalClassTrump = "";
+    StateHasChanged();
+}
+
+public void ToggleSideView()
+{
+    if (_sideView == "show")
+        _sideView = "none";
+    else
+        _sideView = "show";
+    StateHasChanged();
+}
+
+private async Task PlaceBet(MouseEventArgs e, string bet)
+{
+    if (!_inprogress)
     {
-        _modalDisplay = "block;";
-        _modalClass = "Show";
-        StateHasChanged();
+        await _hubConnection.SendAsync("PlaceBet", _selectedGame, _selectedPlayer, bet);
+        _inprogress = true;
+    }
+}
+
+private async Task JoinGame()
+{
+    var authState = await authenticationStateTask;
+    var user = authState.User;
+
+    if (!string.IsNullOrEmpty(_selectedGame))
+        if (!_inprogress)
+        {
+            await _hubConnection.SendAsync("JoinGame", _selectedGame, _selectedPlayer, user.Identity.Name);
+            _inprogress = true;
+        }
+}
+
+
+private async Task CleanTable()
+{
+    if (!_inprogress)
+    {
+        await _hubConnection.SendAsync("CleanTable", _game.Id);
+        _inprogress = true;
+    }
+}
+
+private async Task StartGame()
+{
+    if (!String.IsNullOrEmpty(_selectedPlayer))
+    {
+        if (!_inprogress)
+        {
+            await _hubConnection.SendAsync("StartGame", _game.Id);
+            _inprogress = true;
+        }
+    }
+}
+
+private void NextRound()
+{
+    if (!_inprogress)
+    {
+        _hubConnection.SendAsync("NextRound", _game.Id);
+        _inprogress = true;
+    }
+}
+
+private void Shuffle()
+{
+    if (!_inprogress)
+    {
+        _hubConnection.SendAsync("Shuffle", _game.Id);
+        _inprogress = true;
+    }
+}
+
+private void Play(MouseEventArgs e, string player, Card card, bool canPlayCard)
+{
+    if (canPlayCard && !_game.ChooseWinner && !_game.CleanTable && _game.Betted && (_game.CurrentPlayerObj.Id == _selectedPlayer))
+        if (!_inprogress)
+        {
+            _hubConnection.SendAsync("PlayCard", _game.Id, _selectedPlayer, card);
+            _inprogress = true;
+        }
+}
+
+private void Winner(MouseEventArgs e, PlayedCard winningCard)
+{
+    if (!_inprogress)
+    {
+        _hubConnection.SendAsync("RoundWinner", _game.Id, winningCard.PlayerId);
+        _inprogress = true;
     }
 
-    public void CloseScoreBoard()
+}
+
+private async Task SelectPlayer()
+{
+    if (!_inprogress)
     {
-        _modalDisplay = "none";
-        _modalClass = "";
-        StateHasChanged();
+        _playerSelected = true;
+        await _hubConnection.SendAsync("JoinGame", _game.Id, _selectedPlayer);
+        _inprogress = true;
     }
+}
 
-    public void OpenTopScoreBoard()
+private async Task GetAvailablePlayers()
+{
+    if (!_inprogress)
     {
-        _modalDisplayTopscores = "block;";
-        _modalClassTopscores = "Show";
-        StateHasChanged();
+        await _hubConnection.SendAsync("GetAvailablePlayers", _game.Id);
+        _inprogress = true;
     }
+}
 
-    public void CloseTopScoreBoard()
+private int GetPlayerId(string player)
+{
+    var pId = 0;
+    pId = Convert.ToInt32(player.Substring(1, 1)) - 1;
+
+    return pId;
+}
+
+private async Task<string> GetUserEmail()
+{
+    var authState = await authenticationStateTask;
+    var user = authState.User;
+
+    if (user.Identity.IsAuthenticated)
     {
-        _modalDisplayTopscores = "none";
-        _modalClassTopscores = "";
-        StateHasChanged();
-    }
-
-
-    public void OpenTrump()
-    {
-        _modalDisplayTrump = "block;";
-        _modalClassTrump = "Show";
-        StateHasChanged();
-    }
-
-    public void CloseTrump()
-    {
-        _modalDisplayTrump = "none";
-        _modalClassTrump = "";
-        StateHasChanged();
-    }
-
-    public void ToggleSideView()
-    {
-        if (_sideView == "show")
-            _sideView = "none";
+        var email = ((System.Security.Claims.ClaimsIdentity)user.Identity).Claims.FirstOrDefault(c => c.Type == "emails");
+        if (email != null)
+            return email.Value;
         else
-            _sideView = "show";
-        StateHasChanged();
-    }
-
-    private async Task PlaceBet(MouseEventArgs e, string bet)
-    {
-        if (!_inprogress)
-        {
-            await _hubConnection.SendAsync("PlaceBet", _selectedGame, _selectedPlayer, bet);
-            _inprogress = true;
-        }
-    }
-
-    private async Task JoinGame()
-    {
-        var authState = await authenticationStateTask;
-        var user = authState.User;
-
-        if (!string.IsNullOrEmpty(_selectedGame))
-            if (!_inprogress)
-            {
-                await _hubConnection.SendAsync("JoinGame", _selectedGame, _selectedPlayer, user.Identity.Name);
-                _inprogress = true;
-            }
-    }
-
-
-    private async Task CleanTable()
-    {
-        if (!_inprogress)
-        {
-            await _hubConnection.SendAsync("CleanTable", _game.Id);
-            _inprogress = true;
-        }
-    }
-
-    private async Task StartGame()
-    {
-        if (!String.IsNullOrEmpty(_selectedPlayer))
-        {
-            if (!_inprogress)
-            {
-                await _hubConnection.SendAsync("StartGame", _game.Id);
-                _inprogress = true;
-            }
-        }
-    }
-
-    private void NextRound()
-    {
-        if (!_inprogress)
-        {
-            _hubConnection.SendAsync("NextRound", _game.Id);
-            _inprogress = true;
-        }
-    }
-
-    private void Shuffle()
-    {
-        if (!_inprogress)
-        {
-            _hubConnection.SendAsync("Shuffle", _game.Id);
-            _inprogress = true;
-        }
-    }
-
-    private void Play(MouseEventArgs e, string player, Card card, bool canPlayCard)
-    {
-        if (canPlayCard && !_game.ChooseWinner && !_game.CleanTable && _game.Betted && (_game.CurrentPlayerObj.Id == _selectedPlayer))
-            if (!_inprogress)
-            {
-                _hubConnection.SendAsync("PlayCard", _game.Id, _selectedPlayer, card);
-                _inprogress = true;
-            }
-    }
-
-    private void Winner(MouseEventArgs e, PlayedCard winningCard)
-    {
-        if (!_inprogress)
-        {
-            _hubConnection.SendAsync("RoundWinner", _game.Id, winningCard.PlayerId);
-            _inprogress = true;
-        }
-
-    }
-
-    private async Task SelectPlayer()
-    {
-        if (!_inprogress)
-        {
-            _playerSelected = true;
-            await _hubConnection.SendAsync("JoinGame", _game.Id, _selectedPlayer);
-            _inprogress = true;
-        }
-    }
-
-    private async Task GetAvailablePlayers()
-    {
-        if (!_inprogress)
-        {
-            await _hubConnection.SendAsync("GetAvailablePlayers", _game.Id);
-            _inprogress = true;
-        }
-    }
-
-    private int GetPlayerId(string player)
-    {
-        var pId = 0;
-        pId = Convert.ToInt32(player.Substring(1, 1)) - 1;
-
-        return pId;
-    }
-
-    private async Task<string> GetUserEmail()
-    {
-        var authState = await authenticationStateTask;
-        var user = authState.User;
-
-        if (user.Identity.IsAuthenticated)
-        {
-            var email = ((System.Security.Claims.ClaimsIdentity)user.Identity).Claims.FirstOrDefault(c => c.Type == "emails");
-            if (email != null)
-                return email.Value;
-            else
-                return null;
-        }
-        else
-        {
             return null;
-        }
     }
-
-    private bool IsGameAdmin()
+    else
     {
-        return IsGameAdmin(_selectedPlayer);
+        return null;
     }
+}
 
-    private bool IsGameAdmin(string player)
-    {
-        return _game.Players[GetPlayerId(player)].IsGameController;
-    }
+private bool IsGameAdmin()
+{
+    return IsGameAdmin(_selectedPlayer);
+}
 
-    private string GetColourChar(string colour)
-    {
-        switch (colour)
-        {
-            case "S":
-                return "♠️";
-            case "H":
-                return "♥️";
-            case "D":
-                return "♦";
-            case "C":
-                return "♣️";
-            default:
-                return "";
-        }
-        return "";
-    }
+private bool IsGameAdmin(string player)
+{
+    return _game.Players[GetPlayerId(player)].IsGameController;
+}
 
-    public class PlayerSelection
+private string GetColourChar(string colour)
+{
+    switch (colour)
     {
-        public string Id;
-        public string Name;
+        case "S":
+            return "♠️";
+        case "H":
+            return "♥️";
+        case "D":
+            return "♦";
+        case "C":
+            return "♣️";
+        default:
+            return "";
     }
+    return "";
+}
+
+public class PlayerSelection
+{
+    public string Id;
+    public string Name;
+}
 }

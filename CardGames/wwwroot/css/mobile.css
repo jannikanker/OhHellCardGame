@@ -1,0 +1,99 @@
+﻿fieldset.scheduler-border {
+    border: 1px groove #ddd !important;
+    padding: 0 0 0 0 !important;
+    margin: 0 auto;
+    -webkit-box-shadow: 0px 10px 0px 10px #000;
+    box-shadow: 0px 0px 0px 0px #000;
+    border-radius: 5px;
+    width: 355px;
+}
+
+legend.scheduler-border {
+    font-size: 2.2em !important;
+    font-weight: bold !important;
+    text-align: left !important;
+    width: 90%;
+    padding: 0px 0px;
+    border-bottom: none;
+}
+
+div.gallerySelectedPlayer {
+    margin: 0px;
+    border: 1px solid #ccc;
+    float: left;
+    width: 82px;
+    border-radius: 5px;
+    background-color: lightblue;
+}
+
+div.gallery {
+    margin: 0px;
+    border: 1px solid #ffffff;
+    float: left;
+    width: 82px;
+    border-radius: 5px;
+}
+
+div.galleryStarted {
+    margin: 0px;
+    border: 1px solid #f00;
+    float: left;
+    width: 82px;
+    border-radius: 5px;
+}
+
+div.galleryWon {
+    margin: 0px;
+    border: 1px solid red;
+    float: left;
+    width: 82px;
+    border-radius: 5px;
+    background-color: red;
+}
+
+div.gallery:hover {
+    border: 1px solid #808080;
+}
+
+div.desc {
+    text-align: center;
+}
+
+img.playingColor {
+    text-align: center;
+}
+
+header {
+    text-align: center;
+}
+
+section,
+aside,
+footer {
+    margin: 0 1.5% 24px 1.5%;
+}
+
+section {
+    text-align: center;
+    width: 97%;
+}
+
+aside {
+    float: left;
+    width: 0%;
+}
+
+footer {
+    clear: both;
+    margin-bottom: 0;
+}
+
+.betting {
+    display: block;
+    text-align: center;
+    border: 1px solid #808080;
+}
+
+.trump {
+    float: left;
+}
