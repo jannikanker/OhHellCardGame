@@ -8,8 +8,9 @@ namespace CardGames.Shared.Models
 {
     public class Game
     {
-        [Newtonsoft.Json.JsonProperty(PropertyName = "id")]
         public string Key { get; set; }
+        [Newtonsoft.Json.JsonProperty(PropertyName = "id")]
+        public string DBid { get; set; }
         public string Id { get; set; }
         public DateTime GameOverDateTime { get; set; }
         public string GameAdmin { get; set; }
@@ -74,13 +75,13 @@ namespace CardGames.Shared.Models
         public Game(string gameId, int nrPlayers)
         {
             this.Key = Guid.NewGuid().ToString();
+            this.DBid = this.Key;
             this.Id = gameId;
             this.NrPlayers = nrPlayers;
             this.Players = new Player[NrPlayers];
             this.Connections = new string[NrPlayers];
 
             StartNewGame();
-
         }
 
         public void StartNewGame(bool keepPlayer = false)
@@ -219,6 +220,7 @@ namespace CardGames.Shared.Models
                 if (this.CurrentRound == this.NrRounds-1)
                 {
                     this.GameOver = true;
+                    this.GameOverDateTime = DateTime.UtcNow;
                 }
                 else
                 {
@@ -489,6 +491,7 @@ namespace CardGames.Shared.Models
             this.PlayHistory = new List<PlayedCard[]>();
         }
 
+        public Card Trump { get; set; }
         public PlayedCard[] PlayedCards { get; set; }
         public List<PlayedCard[]> PlayHistory { get; set; }
         public bool Current { get; set; }

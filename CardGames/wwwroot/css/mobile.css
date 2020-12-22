@@ -17,13 +17,12 @@ legend.scheduler-border {
     border-bottom: none;
 }
 
-div.gallerySelectedPlayer {
+div.galleryCurrentPlayer {
     margin: 0px;
     border: 1px solid #ccc;
     float: left;
     width: 82px;
     border-radius: 5px;
-    background-color: lightblue;
 }
 
 div.gallery {

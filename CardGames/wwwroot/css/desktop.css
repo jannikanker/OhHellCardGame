@@ -95,3 +95,8 @@ footer {
 .trump {
     float: left;
 }
+
+.modal-body,
+.modal-title {
+    color: black;
+}

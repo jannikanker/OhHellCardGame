@@ -115,6 +115,15 @@ namespace CardGames.Pages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Laatst gespeelde kaarten.
+        /// </summary>
+        public static string LastPlayedCards {
+            get {
+                return ResourceManager.GetString("LastPlayedCards", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Login voor je kan spelen.
         /// </summary>
         public static string Login {

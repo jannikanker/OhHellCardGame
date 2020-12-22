@@ -135,6 +135,9 @@
   <data name="GameStartingUp" xml:space="preserve">
     <value>Het spel {0} is aan het opstarten of is er nog niet. Wacht aub even.</value>
   </data>
+  <data name="LastPlayedCards" xml:space="preserve">
+    <value>Laatst gespeelde kaarten</value>
+  </data>
   <data name="Login" xml:space="preserve">
     <value>Login voor je kan spelen</value>
   </data>

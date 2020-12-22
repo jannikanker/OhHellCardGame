@@ -26,40 +26,6 @@ namespace CardGames.Server.Services
             _cosmosSettings = cosmosSettings.Value;
         }
 
-        public Game NewGame(string gameId, int nrPlayers)
-        {
-            _logger.LogInformation($"Adding New Game with id: {gameId}.");
-            var game = new Game(gameId, nrPlayers);
-            _redisCacheClient.Db0.AddAsync(gameId, game).Wait();
-
-            return game;
-        }
-
-        public void SaveGame(Game game)
-        {
-            _logger.LogInformation($"Saving Game with id: {game.Id}.");
-            _redisCacheClient.Db0.RemoveAsync(game.Id).Wait();
-            _redisCacheClient.Db0.AddAsync(game.Id, game).Wait();
-        }
-
-        public async Task SaveGamePersistent(Game game, bool overwrite = false)
-        {
-            try
-            {
-                game.GameOverDateTime = DateTime.UtcNow;
-                game.Key = Guid.NewGuid().ToString();
-                using (var client = new CosmosClient(_cosmosSettings.EndpointUrl, _cosmosSettings.Key))
-                {
-                    var database = await client.CreateDatabaseIfNotExistsAsync(_cosmosSettings.DatabaseName);
-                    var container = database.Database.GetContainer(_cosmosSettings.DatabaseContainer);
-                    await container.CreateItemAsync<Game>(game);
-                }
-            }
-            catch(Exception ex)
-            {
-                var msg = ex.Message;
-            }
-        }
 
         public async Task<List<GameScore>> GetTopScores()
         {
@@ -92,10 +58,52 @@ namespace CardGames.Server.Services
             return gameScores.OrderByDescending(g => g.Score).Take(10).ToList();
         }
 
+        public Game NewGame(string gameId, int nrPlayers)
+        {
+            _logger.LogInformation($"Adding New Game with id: {gameId}.");
+            var game = new Game(gameId, nrPlayers);
+            _redisCacheClient.Db0.AddAsync(gameId, game).Wait();
+            //SaveGamePersistent(game, false).Wait();
+            return game;
+        }
+
+        public async Task SaveGame(Game game)
+        {
+            _logger.LogInformation($"Saving Game with id: {game.Id}.");
+            await _redisCacheClient.Db0.RemoveAsync(game.Id);
+            await _redisCacheClient.Db0.AddAsync(game.Id, game);
+            //await SaveGamePersistent(game, true);
+        }
+
+        public async Task SaveGamePersistent(Game game, bool overwrite = false)
+        {
+            try
+            {
+                using (var client = new CosmosClient(_cosmosSettings.EndpointUrl, _cosmosSettings.Key))
+                {
+                    var database = await client.CreateDatabaseIfNotExistsAsync(_cosmosSettings.DatabaseName);
+                    var container = database.Database.GetContainer(_cosmosSettings.DatabaseContainer);
+                    if (overwrite)
+                    {
+                        await container.ReplaceItemAsync(game, game.Key);
+                    }
+                    else
+                    {
+                        await container.CreateItemAsync<Game>(game); 
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                var msg = ex.Message;
+            }
+        }
+
         public Game GetGame(string gameId)
         {
             var gameData = _redisCacheClient.Db0.Database.StringGetAsync(gameId).Result;
-            var game = JsonSerializer.Deserialize<Game>(gameData);
+            string result = System.Text.Encoding.UTF8.GetString(gameData);
+            var game = JsonSerializer.Deserialize<Game>(result);
             return game;
         }
 
@@ -106,7 +114,7 @@ namespace CardGames.Server.Services
             var game = GetGame(gameId);
             game.GameStarted = true;
             game.Rounds[0].Current = true;
-            SaveGame(game);
+            SaveGame(game).Wait();
 
             return game;
         }
@@ -147,7 +155,7 @@ namespace CardGames.Server.Services
             _logger.LogInformation($"New Game Set on Game with id: {gameId}.");
             var game = GetGame(gameId);
             game.NewGameSet();
-            SaveGame(game);
+            SaveGame(game).Wait();
             return game;
         }
 
@@ -158,6 +166,7 @@ namespace CardGames.Server.Services
             foreach (var key in listOfKeys)
             {
                 var game = GetGame(key);
+                game.Id = key;
                 foreach (var player in game.Players)
                 {
                     var userInGame = new GamePlayer();

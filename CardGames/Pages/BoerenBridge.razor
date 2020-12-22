@@ -40,6 +40,8 @@
         <h5 class="active">@_game.Status</h5>
         <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
         <button class="btn btn-success" @onclick="() => OpenTopScoreBoard()">Top Scores</button>
+        <button class="btn btn-success" disabled="@(!_game.GameOver)"  @onclick="() => OpenGamePlayedCards()">History</button>
+        <button class="btn btn-success" @onclick="() => OpenLastPlayedCards()">Last</button>
         <button class="btn btn-success" @onclick="() => OpenTrump()">@(GetColourChar(_game.PlayingCard.Colour.ToString()))</button>
         <button id="btnShuffle"
                 disabled="@((!_game.GameStarted || _game.Playing || _game.Shuffled || _game.GameOver) || (_game.PlayerToStartObj.Id != _selectedPlayer))"
@@ -129,7 +131,9 @@
             <hr />
             <section>
                 <fieldset class="scheduler-border">
-                    <legend>@L["PlayedCards"] </legend>
+                    <legend>
+                        @L["PlayedCards"]
+                    </legend>
                     @foreach (var playedCard in _game.Rounds[_game.CurrentRound].PlayedCards)
                     {
                         <div class=@(playedCard.Winner ? "galleryWon" : (playedCard.PlayerId == _game.CurrentPlayerObj.Id ? "galleryCurrentPlayer" : "gallery"))>
@@ -156,7 +160,6 @@
                                 }
                             </div>
                         </div>
-
                     }
                 </fieldset>
 
@@ -177,13 +180,13 @@
                                 .Where(p => p.PlayerId == _game.PlayerToStartObj.Id)
                                 .FirstOrDefault().Card.Colour;
                             var cardswithPlayingColour = _cards.Where(c => c.Colour == playedColour).Count();
-                            canPlayCard = cardswithPlayingColour > 0 ? (card.Colour == playedColour ? true : false) : true;                
+                            canPlayCard = cardswithPlayingColour > 0 ? (card.Colour == playedColour ? true : false) : true;
                         }
                         canPlayCard = !(!canPlayCard || _game.ChooseWinner || _game.CleanTable || !_game.Betted || (_game.CurrentPlayerObj.Id != _selectedPlayer));
 
                         <div class="gallery">
                             <div class="desc">
-                                <div id="PlayerCard_@_cards.IndexOf(card).ToString()"><img src="/CardImages/@(card.Face).png" width="80" style="padding: 0px 0px 5px 0px;"/></div>
+                                <div id="PlayerCard_@_cards.IndexOf(card).ToString()"><img src="/CardImages/@(card.Face).png" width="80" style="padding: 0px 0px 5px 0px;" /></div>
                                 <div>
                                     <button id="PlayButton_@_cards.IndexOf(card).ToString()"
                                             disabled="@(!canPlayCard)"
@@ -236,11 +239,14 @@
                                                     <b>@((16 - round).ToString())</b>
                                                 }
                                             </td>
-                                            @foreach (var player in _game.Players)
+                                            @for (var playerIndex = 0; playerIndex < _game.Players.Length; playerIndex++)
                                             {
+                                                var player = _game.Players[playerIndex];
                                                 @if (round < _game.CurrentRound || _game.GameOver)
                                                 {
-                                                    <td style="background-color:@(_game.Rounds[round].Winners[GetPlayerId(player.Id)] ? "lightgreen" : "lightcoral")">@(_game.Rounds[round].Scores[GetPlayerId(player.Id)].ToString())</td>
+                                                    <td style="background-color:@(_game.Rounds[round].Winners[GetPlayerId(player.Id)] ? "lightgreen" : "lightcoral")">
+                                                        @(_game.Rounds[round].Scores[GetPlayerId(player.Id)].ToString())
+                                                    </td>
                                                 }
                                                 else
                                                 {
@@ -285,7 +291,7 @@
                             <table class="table table-sm table-striped">
                                 <thead>
                                     <tr>
-                                        <td></td>
+                                        <td>#</td>
                                         <td>Name</td>
                                         <td>Game</td>
                                         <td>Date</td>
@@ -296,15 +302,94 @@
                                     @foreach (var score in _topScores)
                                     {
                                         <tr>
-                                            <td>@(_topScores.IndexOf(score))</td>
-                                            <td>@(score.Name)</td>
-                                            <td>@(score.Id)</td>
-                                            <td>@(score.GameOverDateTime.ToShortDateString())</td>
-                                            <td>@(score.Score)</td>
+                                            <td>@(_topScores.IndexOf(score)+1)</td>
+                                            <td align="left">@(score.Name)</td>
+                                            <td align="left">@(score.Id)</td>
+                                            <td align="left">@(score.GameOverDateTime.ToShortDateString())</td>
+                                            <td align="right">@(score.Score)</td>
                                         </tr>
                                     }
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal @_modalClassLastCards" role="dialog" style="display: @_modalDisplayLastCards; overflow: auto">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">@L["LastPlayedCards"]</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => CloseLastPlayedCards()">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" style="text-align:center">
+                            <table border="0">
+                                <tr>
+                                    @foreach (var player in _game.Players)
+                                    {
+                                        <td>
+                                            @(player.FirstName)
+                                        </td>
+                                    }
+                                </tr>
+                                <tr>
+                                    @foreach (var face in ShowLastPlayedCard())
+                                    {
+                                        <td>
+                                            <img src="/CardImages/@(face.ToString() + ".png")" width="100" />
+                                        </td>
+                                    }
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal @_modalClassGameCards" role="dialog" style="display: @_modalDisplayGameCards; overflow: auto">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">@L["LastPlayedCards"]</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => CloseGamePlayedCards()">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" style="text-align:center">
+                            <table border="0">
+                                <tr>
+                                    <td>Round</td>
+                                    <td>Card</td>
+                                    @foreach (var player in _game.Players)
+                                    {
+
+                                        <td>
+                                            @(player.FirstName)
+                                        </td>
+                                    }
+                                </tr>
+
+                                @foreach (var gameRounds in _game.Rounds)
+                                {
+                                    foreach (var roundHistory in gameRounds.PlayHistory)
+                                    {
+                                        <tr>
+                                            <td></td>
+                                            <td></td>
+                                            @foreach (var playerCard in roundHistory)
+                                            {
+                                            <td style="border:@(playerCard.Winner? "dashed" : "medium")">
+                                                <img src="/CardImages/@(playerCard.Card.Face.ToString() + ".png")" width="50" />
+                                            </td>
+
+                                            }
+                                        </tr>
+                                    }
+                                }
+                                </table>
                         </div>
                     </div>
                 </div>
@@ -327,414 +412,466 @@
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; }
 
-private HubConnection _hubConnection;
-private bool _playerSelected;
-private Game _game;
-private List<Card> _cards = new List<Card>();
-private List<PlayerSelection> _playerSelections = new List<PlayerSelection>();
-private List<GameScore> _topScores;
-private bool _inprogress = false;
+    private HubConnection _hubConnection;
+    private bool _playerSelected;
+    private Game _game;
+    private List<Card> _cards = new List<Card>();
+    private List<PlayerSelection> _playerSelections = new List<PlayerSelection>();
+    private List<GameScore> _topScores;
+    private bool _inprogress = false;
 
-private string _modalClass = "";
-private string _modalDisplay = "none;";
+    private string _modalClass = "";
+    private string _modalDisplay = "none;";
 
-private string _modalClassTrump = "";
-private string _modalDisplayTrump = "none;";
-private string _modalClassTopscores = "";
-private string _modalDisplayTopscores = "none;";
-private string _sideView = "show;";
+    private string _modalClassTrump = "";
+    private string _modalDisplayTrump = "none;";
+    private string _modalClassTopscores = "";
+    private string _modalDisplayTopscores = "none;";
+    private string _modalClassLastCards = "";
+    private string _modalDisplayLastCards = "none;";
+    private string _modalClassGameCards = "";
+    private string _modalDisplayGameCards = "none;";
+    private string _sideView = "show;";
 
-private string _inputLabels = "";
-private string[][] _inputSeries;
-private string _xAxisLabels;
+    private string _inputLabels = "";
+    private string[][] _inputSeries;
+    private string _xAxisLabels;
 
-protected override async Task OnInitializedAsync()
-{
-    _hubConnection = new HubConnectionBuilder()
-    .WithUrl(NavigationManager.ToAbsoluteUri("/gameHub"))
-    .WithAutomaticReconnect()
-    .Build();
-
-    _hubConnection.On<Game, List<GameScore>>("JoinedGame", (game, topScores) =>
+    protected override async Task OnInitializedAsync()
     {
-        _inprogress = false;
-        _game = game;
-        _topScores = topScores;
-        if (game != null)
+        _hubConnection = new HubConnectionBuilder()
+        .WithUrl(NavigationManager.ToAbsoluteUri("/gameHub"))
+        .WithAutomaticReconnect()
+        .Build();
+
+        _hubConnection.On<Game, List<GameScore>>("JoinedGame", (game, topScores) =>
         {
-            if (!string.IsNullOrEmpty(_selectedPlayer))
+            _inprogress = false;
+            _game = game;
+            _topScores = topScores;
+            if (game != null)
             {
-                _cards = _game.Players[GetPlayerId(_selectedPlayer)].Cards;
+                if (!string.IsNullOrEmpty(_selectedPlayer))
+                {
+                    _cards = _game.Players[GetPlayerId(_selectedPlayer)].Cards;
+                }
+                _inputSeries = new string[_game.Players.Length][];
+                for (int p = 0; p < _game.Players.Length; p++)
+                {
+                    _inputSeries[p] = new string[_game.Rounds.Length + 1];
+                    Array.Fill(_inputSeries[p], "0");
+                }
             }
-            _inputSeries = new string[_game.Players.Length][];
-            for (int p = 0; p < _game.Players.Length; p++)
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("GameStarted", (game) =>
+        {
+            _inprogress = false;
+            _game = game;
+
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("GameResetted", (game) =>
+        {
+            _game = game;
+            _cards = _game.Players[GetPlayerId(_selectedPlayer)].Cards;
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("NewGameSet", (game) =>
+        {
+            _game = game;
+            _cards = new List<Card>();
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game, string>("PlayerSelected", (game, signedInPlayerID) =>
+        {
+            _inprogress = false;
+            _game = game;
+            var index = _playerSelections.FindIndex(p => p.Id == signedInPlayerID);
+            if (index > 0)
+                _playerSelections.RemoveAt(index);
+
+            if (_selectedPlayer == signedInPlayerID)
             {
-                _inputSeries[p] = new string[_game.Rounds.Length + 1];
-                Array.Fill(_inputSeries[p], "0");
+                _cards = _game.Players[GetPlayerId(signedInPlayerID)].Cards;
+            }
+
+            StateHasChanged();
+        });
+
+        _hubConnection.On<List<Card>, Game>("Shuffled", (cards, game) =>
+        {
+            _inprogress = false;
+            _game = game;
+            _cards = cards;
+            _game.Playing = true;
+            StateHasChanged();
+        });
+
+        _hubConnection.On<List<Card>, Game>("PlayedCard", (cards, game) =>
+        {
+            _inprogress = false;
+            _game = game;
+            _cards = cards;
+            StateHasChanged();
+        });
+
+        _hubConnection.On<string[]>("ReturnAvailablePlayers", (rap) =>
+        {
+            _inprogress = false;
+            _playerSelections = new List<PlayerSelection>();
+            foreach (var p in rap)
+            {
+                _playerSelections.Add(new PlayerSelection { Id = p, Name = p });
+            }
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("WinnerRegistered", (game) =>
+        {
+            _inprogress = false;
+            _game = game;
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("StartNextRound", (game) =>
+        {
+            _inprogress = false;
+            _game = game;
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("CleanedTable", (game) =>
+        {
+            _inprogress = false;
+            _game = game;
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("BetPlaced", (game) =>
+        {
+            _inprogress = false;
+            _game = game;
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game>("GameSettingsResetted", (game) =>
+        {
+            _inprogress = false;
+            _game = game;
+            StateHasChanged();
+        });
+
+
+
+        await _hubConnection.StartAsync();
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            await JoinGame();
+        }
+    }
+
+
+    public void OpenScoreBoard()
+    {
+        _modalDisplay = "block;";
+        _modalClass = "Show";
+        StateHasChanged();
+    }
+
+    public void CloseScoreBoard()
+    {
+        _modalDisplay = "none";
+        _modalClass = "";
+        StateHasChanged();
+    }
+
+    public void OpenTopScoreBoard()
+    {
+        _modalDisplayTopscores = "block;";
+        _modalClassTopscores = "Show";
+        StateHasChanged();
+    }
+
+
+    public void CloseTopScoreBoard()
+    {
+        _modalDisplayTopscores = "none";
+        _modalClassTopscores = "";
+        StateHasChanged();
+    }
+
+
+    public void OpenLastPlayedCards()
+    {
+        _modalDisplayLastCards = "block;";
+        _modalClassLastCards = "Show";
+        StateHasChanged();
+    }
+
+    public void OpenGamePlayedCards()
+    {
+        _modalDisplayGameCards = "block;";
+        _modalClassGameCards = "Show";
+        StateHasChanged();
+    }
+
+    public void CloseGamePlayedCards()
+    {
+        _modalClassGameCards = "none";
+        _modalDisplayGameCards = "";
+        StateHasChanged();
+    }
+
+
+
+    public void CloseLastPlayedCards()
+    {
+        _modalClassLastCards = "none";
+        _modalDisplayLastCards = "";
+        StateHasChanged();
+    }
+
+
+    public void CreateScoreGraphDataSets()
+    {
+        var xAxisLabelsArray = new string[_game.Rounds.Length + 1];
+        for (int l = 0; l <= _game.Rounds.Length; l++)
+        {
+            xAxisLabelsArray[l] = l.ToString();
+        }
+
+        foreach (var player in _game.Players)
+        {
+            for (int r = 0; r <= _game.CurrentRound + 1; r++)
+            {
+                if (r > 0)
+                    _inputSeries[GetPlayerId(player.Id)][r] = _game.Rounds[r-1].Scores[GetPlayerId(player.Id)].ToString();
             }
         }
-        StateHasChanged();
-    });
 
-    _hubConnection.On<Game>("GameStarted", (game) =>
+        //create inputs for graph
+        _xAxisLabels = string.Join(",", xAxisLabelsArray);
+    }
+
+    private string[] ShowLastPlayedCard()
     {
-        _inprogress = false;
-        _game = game;
-
-        StateHasChanged();
-    });
-
-    _hubConnection.On<Game>("GameResetted", (game) =>
-    {
-        _game = game;
-        _cards = _game.Players[GetPlayerId(_selectedPlayer)].Cards;
-        StateHasChanged();
-    });
-
-    _hubConnection.On<Game>("NewGameSet", (game) =>
-    {
-        _game = game;
-        _cards = new List<Card>();
-        StateHasChanged();
-    });
-
-    _hubConnection.On<Game, string>("PlayerSelected", (game, signedInPlayerID) =>
-    {
-        _inprogress = false;
-        _game = game;
-        var index = _playerSelections.FindIndex(p => p.Id == signedInPlayerID);
-        if (index > 0)
-            _playerSelections.RemoveAt(index);
-
-        if (_selectedPlayer == signedInPlayerID)
+        if (_game.Rounds[_game.CurrentRound].PlayHistory.Count() > 0)
         {
-            _cards = _game.Players[GetPlayerId(signedInPlayerID)].Cards;
+            var lastPlayedCards = _game.Rounds[_game.CurrentRound].PlayHistory.Last();
+            var faces = lastPlayedCards.Select(f => f.Card.Face).ToArray();
+            return faces;
         }
-
-        StateHasChanged();
-    });
-
-    _hubConnection.On<List<Card>, Game>("Shuffled", (cards, game) =>
-    {
-        _inprogress = false;
-        _game = game;
-        _cards = cards;
-        _game.Playing = true;
-        StateHasChanged();
-    });
-
-    _hubConnection.On<List<Card>, Game>("PlayedCard", (cards, game) =>
-    {
-        _inprogress = false;
-        _game = game;
-        _cards = cards;
-        StateHasChanged();
-    });
-
-    _hubConnection.On<string[]>("ReturnAvailablePlayers", (rap) =>
-    {
-        _inprogress = false;
-        _playerSelections = new List<PlayerSelection>();
-        foreach (var p in rap)
-        {
-            _playerSelections.Add(new PlayerSelection { Id = p, Name = p });
-        }
-        StateHasChanged();
-    });
-
-    _hubConnection.On<Game>("WinnerRegistered", (game) =>
-    {
-        _inprogress = false;
-        _game = game;
-        StateHasChanged();
-    });
-
-    _hubConnection.On<Game>("StartNextRound", (game) =>
-    {
-        _inprogress = false;
-        _game = game;
-        StateHasChanged();
-    });
-
-    _hubConnection.On<Game>("CleanedTable", (game) =>
-    {
-        _inprogress = false;
-        _game = game;
-        StateHasChanged();
-    });
-
-    _hubConnection.On<Game>("BetPlaced", (game) =>
-    {
-        _inprogress = false;
-        _game = game;
-        StateHasChanged();
-    });
-
-    _hubConnection.On<Game>("GameSettingsResetted", (game) =>
-    {
-        _inprogress = false;
-        _game = game;
-        StateHasChanged();
-    });
-
-
-
-    await _hubConnection.StartAsync();
-    var authState = await authenticationStateTask;
-    var user = authState.User;
-    if (user.Identity.IsAuthenticated)
-    {
-        await JoinGame();
-    }
-}
-
-
-public void OpenScoreBoard()
-{
-    _modalDisplay = "block;";
-    _modalClass = "Show";
-    StateHasChanged();
-}
-
-public void CloseScoreBoard()
-{
-    _modalDisplay = "none";
-    _modalClass = "";
-    StateHasChanged();
-}
-
-public void OpenTopScoreBoard()
-{
-    _modalDisplayTopscores = "block;";
-    _modalClassTopscores = "Show";
-    StateHasChanged();
-}
-
-public void CloseTopScoreBoard()
-{
-    _modalDisplayTopscores = "none";
-    _modalClassTopscores = "";
-    StateHasChanged();
-}
-
-public void CreateScoreGraphDataSets()
-{
-    var xAxisLabelsArray = new string[_game.Rounds.Length + 1];
-    for (int l = 0; l <= _game.Rounds.Length; l++)
-    {
-        xAxisLabelsArray[l] = l.ToString();
-    }
-
-    foreach (var player in _game.Players)
-    {
-        for (int r = 0; r <= _game.CurrentRound + 1; r++)
-        {
-            if (r > 0)
-                _inputSeries[GetPlayerId(player.Id)][r] = _game.Rounds[r-1].Scores[GetPlayerId(player.Id)].ToString();
-        }
-    }
-
-    //create inputs for graph
-    _xAxisLabels = string.Join(",", xAxisLabelsArray);
-}
-
-private string CreateGraphXML()
-{
-    CreateScoreGraphDataSets();
-    var lineGraph = String.Format(" <LineChart InputSeries1=\"{0}\" InputSeries2=\"{1}\" InputSeries3=\"{2}\" InputSeries4=\"{3}\" XAxisLabels=\"{4}\" InputLabels=\"{5}\"></LineChart>",
-        string.Join(",", _inputSeries[0]),
-        string.Join(",", _inputSeries[1]),
-        string.Join(",", _inputSeries[2]),
-        string.Join(",", _inputSeries[3]),
-        _xAxisLabels,
-        _inputLabels
-        );
-
-    return lineGraph;
-}
-
-public void OpenTrump()
-{
-    _modalDisplayTrump = "block;";
-    _modalClassTrump = "Show";
-    StateHasChanged();
-}
-
-public void CloseTrump()
-{
-    _modalDisplayTrump = "none";
-    _modalClassTrump = "";
-    StateHasChanged();
-}
-
-public void ToggleSideView()
-{
-    if (_sideView == "show")
-        _sideView = "none";
-    else
-        _sideView = "show";
-    StateHasChanged();
-}
-
-private async Task PlaceBet(MouseEventArgs e, string bet)
-{
-    if (!_inprogress)
-    {
-        await _hubConnection.SendAsync("PlaceBet", _selectedGame, _selectedPlayer, bet);
-        _inprogress = true;
-    }
-}
-
-private async Task JoinGame()
-{
-    var authState = await authenticationStateTask;
-    var user = authState.User;
-
-    if (!string.IsNullOrEmpty(_selectedGame))
-        if (!_inprogress)
-        {
-            await _hubConnection.SendAsync("JoinGame", _selectedGame, _selectedPlayer, user.Identity.Name);
-            _inprogress = true;
-        }
-}
-
-
-private async Task CleanTable()
-{
-    if (!_inprogress)
-    {
-        await _hubConnection.SendAsync("CleanTable", _game.Id);
-        _inprogress = true;
-    }
-}
-
-private async Task StartGame()
-{
-    if (!String.IsNullOrEmpty(_selectedPlayer))
-    {
-        if (!_inprogress)
-        {
-            await _hubConnection.SendAsync("StartGame", _game.Id);
-            _inprogress = true;
-        }
-    }
-}
-
-private void NextRound()
-{
-    if (!_inprogress)
-    {
-        _hubConnection.SendAsync("NextRound", _game.Id);
-        _inprogress = true;
-    }
-}
-
-private void Shuffle()
-{
-    if (!_inprogress)
-    {
-        _hubConnection.SendAsync("Shuffle", _game.Id);
-        _inprogress = true;
-    }
-}
-
-private void Play(MouseEventArgs e, string player, Card card, bool canPlayCard)
-{
-    if (canPlayCard && !_game.ChooseWinner && !_game.CleanTable && _game.Betted && (_game.CurrentPlayerObj.Id == _selectedPlayer))
-        if (!_inprogress)
-        {
-            _hubConnection.SendAsync("PlayCard", _game.Id, _selectedPlayer, card);
-            _inprogress = true;
-        }
-}
-
-private void Winner(MouseEventArgs e, PlayedCard winningCard)
-{
-    if (!_inprogress)
-    {
-        _hubConnection.SendAsync("RoundWinner", _game.Id, winningCard.PlayerId);
-        _inprogress = true;
-    }
-
-}
-
-private async Task SelectPlayer()
-{
-    if (!_inprogress)
-    {
-        _playerSelected = true;
-        await _hubConnection.SendAsync("JoinGame", _game.Id, _selectedPlayer);
-        _inprogress = true;
-    }
-}
-
-private async Task GetAvailablePlayers()
-{
-    if (!_inprogress)
-    {
-        await _hubConnection.SendAsync("GetAvailablePlayers", _game.Id);
-        _inprogress = true;
-    }
-}
-
-private int GetPlayerId(string player)
-{
-    var pId = 0;
-    pId = Convert.ToInt32(player.Substring(1, 1)) - 1;
-
-    return pId;
-}
-
-private async Task<string> GetUserEmail()
-{
-    var authState = await authenticationStateTask;
-    var user = authState.User;
-
-    if (user.Identity.IsAuthenticated)
-    {
-        var email = ((System.Security.Claims.ClaimsIdentity)user.Identity).Claims.FirstOrDefault(c => c.Type == "emails");
-        if (email != null)
-            return email.Value;
         else
+        {
+            return new string[0];
+        }
+    }
+
+
+    private string CreateGraphXML()
+    {
+        CreateScoreGraphDataSets();
+        var lineGraph = String.Format(" <LineChart InputSeries1=\"{0}\" InputSeries2=\"{1}\" InputSeries3=\"{2}\" InputSeries4=\"{3}\" XAxisLabels=\"{4}\" InputLabels=\"{5}\"></LineChart>",
+            string.Join(",", _inputSeries[0]),
+            string.Join(",", _inputSeries[1]),
+            string.Join(",", _inputSeries[2]),
+            string.Join(",", _inputSeries[3]),
+            _xAxisLabels,
+            _inputLabels
+            );
+
+        return lineGraph;
+    }
+
+    public void OpenTrump()
+    {
+        _modalDisplayTrump = "block;";
+        _modalClassTrump = "Show";
+        StateHasChanged();
+    }
+
+    public void CloseTrump()
+    {
+        _modalDisplayTrump = "none";
+        _modalClassTrump = "";
+        StateHasChanged();
+    }
+
+    public void ToggleSideView()
+    {
+        if (_sideView == "show")
+            _sideView = "none";
+        else
+            _sideView = "show";
+        StateHasChanged();
+    }
+
+    private async Task PlaceBet(MouseEventArgs e, string bet)
+    {
+        if (!_inprogress)
+        {
+            await _hubConnection.SendAsync("PlaceBet", _selectedGame, _selectedPlayer, bet);
+            _inprogress = true;
+        }
+    }
+
+    private async Task JoinGame()
+    {
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+
+        if (!string.IsNullOrEmpty(_selectedGame))
+            if (!_inprogress)
+            {
+                await _hubConnection.SendAsync("JoinGame", _selectedGame, _selectedPlayer, user.Identity.Name);
+                _inprogress = true;
+            }
+    }
+
+
+    private async Task CleanTable()
+    {
+        if (!_inprogress)
+        {
+            await _hubConnection.SendAsync("CleanTable", _game.Id);
+            _inprogress = true;
+        }
+    }
+
+    private async Task StartGame()
+    {
+        if (!String.IsNullOrEmpty(_selectedPlayer))
+        {
+            if (!_inprogress)
+            {
+                await _hubConnection.SendAsync("StartGame", _game.Id);
+                _inprogress = true;
+            }
+        }
+    }
+
+    private void NextRound()
+    {
+        if (!_inprogress)
+        {
+            _hubConnection.SendAsync("NextRound", _game.Id);
+            _inprogress = true;
+        }
+    }
+
+    private void Shuffle()
+    {
+        if (!_inprogress)
+        {
+            _hubConnection.SendAsync("Shuffle", _game.Id);
+            _inprogress = true;
+        }
+    }
+
+    private void Play(MouseEventArgs e, string player, Card card, bool canPlayCard)
+    {
+        if (canPlayCard && !_game.ChooseWinner && !_game.CleanTable && _game.Betted && (_game.CurrentPlayerObj.Id == _selectedPlayer))
+            if (!_inprogress)
+            {
+                _hubConnection.SendAsync("PlayCard", _game.Id, _selectedPlayer, card);
+                _inprogress = true;
+            }
+    }
+
+    private void Winner(MouseEventArgs e, PlayedCard winningCard)
+    {
+        if (!_inprogress)
+        {
+            _hubConnection.SendAsync("RoundWinner", _game.Id, winningCard.PlayerId);
+            _inprogress = true;
+        }
+
+    }
+
+    private async Task SelectPlayer()
+    {
+        if (!_inprogress)
+        {
+            _playerSelected = true;
+            await _hubConnection.SendAsync("JoinGame", _game.Id, _selectedPlayer);
+            _inprogress = true;
+        }
+    }
+
+    private async Task GetAvailablePlayers()
+    {
+        if (!_inprogress)
+        {
+            await _hubConnection.SendAsync("GetAvailablePlayers", _game.Id);
+            _inprogress = true;
+        }
+    }
+
+    private int GetPlayerId(string player)
+    {
+        var pId = 0;
+        pId = Convert.ToInt32(player.Substring(1, 1)) - 1;
+
+        return pId;
+    }
+
+    private async Task<string> GetUserEmail()
+    {
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            var email = ((System.Security.Claims.ClaimsIdentity)user.Identity).Claims.FirstOrDefault(c => c.Type == "emails");
+            if (email != null)
+                return email.Value;
+            else
+                return null;
+        }
+        else
+        {
             return null;
+        }
     }
-    else
+
+    private bool IsGameAdmin()
     {
-        return null;
+        return IsGameAdmin(_selectedPlayer);
     }
-}
 
-private bool IsGameAdmin()
-{
-    return IsGameAdmin(_selectedPlayer);
-}
-
-private bool IsGameAdmin(string player)
-{
-    return _game.Players[GetPlayerId(player)].IsGameController;
-}
-
-private string GetColourChar(string colour)
-{
-    switch (colour)
+    private bool IsGameAdmin(string player)
     {
-        case "S":
-            return "♠️";
-        case "H":
-            return "♥️";
-        case "D":
-            return "♦";
-        case "C":
-            return "♣️";
-        default:
-            return "";
+        return _game.Players[GetPlayerId(player)].IsGameController;
     }
-    return "";
-}
 
-public class PlayerSelection
-{
-    public string Id;
-    public string Name;
-}
+    private string GetColourChar(string colour)
+    {
+        switch (colour)
+        {
+            case "S":
+                return "♠️";
+            case "H":
+                return "♥️";
+            case "D":
+                return "♦";
+            case "C":
+                return "♣️";
+            default:
+                return "";
+        }
+        return "";
+    }
+
+    public class PlayerSelection
+    {
+        public string Id;
+        public string Name;
+    }
 }
