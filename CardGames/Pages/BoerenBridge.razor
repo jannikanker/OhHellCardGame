@@ -57,14 +57,15 @@
                 <b> ( @((16 - _game.CurrentRound).ToString()) )</b>
             }
         </button>
+
         <button class="btn btn-success" @onclick="@ToggleSideView"><img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="10" /></button>
-        <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
+        <button style="visibility:@(IsGameAdmin() ? "visible" : "none")"
                 disabled="@(!_game.CleanTable || !IsGameAdmin())"
                 class="btn btn-success" @onclick="@CleanTable"
                 title="@L["CleanTableText"]">
             @L["CleanTable"]
         </button>
-        <button style="visibility:@(IsGameAdmin() ? "visible" : "hidden")"
+        <button style="visibility:@(IsGameAdmin() ? "visible" : "none")"
                 disabled="@(!_game.RoundReady || _game.GameOver || !IsGameAdmin())"
                 class="btn btn-success" @onclick="@NextRound"
                 title="@L["NextRoundText"]">
