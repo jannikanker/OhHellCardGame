@@ -1,6 +1,6 @@
-﻿fieldset.scheduler-border {
+﻿fieldset.scheduler-border-playedcards {
     border: 0px groove #ddd !important;
-    background-color : #022800;
+    background-color: #022800;
     padding: 0 0 0 0 !important;
     margin: 0 auto;
     -webkit-box-shadow: 0px 10px 0px 10px #000;
