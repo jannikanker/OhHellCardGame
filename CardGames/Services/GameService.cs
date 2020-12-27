@@ -77,6 +77,9 @@ namespace CardGames.Server.Services
 
         public async Task SaveGamePersistent(Game game, bool overwrite = false)
         {
+            //TODO: findout why id is not correctly deserialize from Redis, causing DBid to be null;
+            game.DBid = game.Key;
+
             try
             {
                 using (var client = new CosmosClient(_cosmosSettings.EndpointUrl, _cosmosSettings.Key))

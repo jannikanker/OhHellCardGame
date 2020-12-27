@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.AzureADB2C.UI;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.UI;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -10,6 +12,7 @@ using CardGames.Shared.Models;
 using StackExchange.Redis.Extensions.Core.Configuration;
 using StackExchange.Redis.Extensions.Newtonsoft;
 using CardGames.Hubs;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace CardGames
 {
@@ -26,8 +29,22 @@ namespace CardGames
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddAuthentication(AzureADB2CDefaults.AuthenticationScheme)
-                .AddAzureADB2C(options => Configuration.Bind("AzureAdB2C", options));
+            var initialScopes = Configuration.GetValue<string>("DownstreamApi:Scopes")?.Split(' ');
+
+            services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+                .AddMicrosoftIdentityWebApp(Configuration.GetSection("AzureAdB2C"))
+                    .EnableTokenAcquisitionToCallDownstreamApi(initialScopes)
+                        .AddDownstreamWebApi("DownstreamApi", Configuration.GetSection("DownstreamApi"))
+                        .AddInMemoryTokenCaches();
+
+            services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+                .AddMicrosoftIdentityWebApi(Configuration.GetSection("AzureAdB2C"), JwtBearerDefaults.AuthenticationScheme)
+                .EnableTokenAcquisitionToCallDownstreamApi();
+
+            services.AddControllersWithViews()
+                .AddMicrosoftIdentityUI();
+
+            services.AddSignalR();
 
             services.Configure<GameSettings>(Configuration.GetSection("GameSettings"));
             services.Configure<CosmosSettings>(Configuration.GetSection("CosmosSettings"));
@@ -35,7 +52,7 @@ namespace CardGames
             services.AddLocalization();
             services.AddRazorPages();
             services.AddServerSideBlazor();
-            services.AddSignalR();
+
             services.AddSingleton<GameService>();
 
             var redisConfiguration = Configuration.GetSection("Redis").Get<RedisConfiguration>();

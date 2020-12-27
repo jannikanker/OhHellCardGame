@@ -1,11 +1,16 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.SignalR.Client
-@using CardGames.Shared;
+@using Microsoft.AspNetCore.Http
 @using CardGames.Shared.Models;
-@using System.Collections;
-@using Microsoft.Extensions.Logging;
+@using Microsoft.Identity.Web
+@using Microsoft.Extensions.Configuration
+
+@inject IHttpContextAccessor httpContextAccessor
 @inject NavigationManager NavigationManager
+@inject ITokenAcquisition tokenHandler
+@inject IConfiguration configuration;
 @inject Microsoft.Extensions.Options.IOptions<GameSettings> gameSettings
+
 @{
     var settings = gameSettings.Value;
 }
@@ -87,13 +92,13 @@
         }
     </Authorized>
     <NotAuthorized>
-        <a href="AzureADB2C/Account/SignIn">Log in before playing.</a>
+        <a href="MicrosoftIdentity/Account/SignIn">Log in before playing.</a>
     </NotAuthorized>
 </AuthorizeView>
 
 @code {
-    [CascadingParameter]
-    private Task<AuthenticationState> authenticationStateTask { get; set; }
+        [CascadingParameter]
+        private Task<AuthenticationState> authenticationStateTask { get; set; }
 
     private HubConnection _hubConnection;
     private List<GamePlayer> _runningGames = new List<GamePlayer>();
@@ -105,15 +110,23 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+
+        var token = "";
+        if (user.Identity.IsAuthenticated)
+        {
+            var initialScopes = configuration.GetValue<string>("DownstreamApi:Scopes")?.Split(' ');
+            token = await tokenHandler.GetAccessTokenForUserAsync(initialScopes);
+        }
+
         _hubConnection = new HubConnectionBuilder()
-        .WithUrl(NavigationManager.ToAbsoluteUri("/gameHub"))
-        .WithAutomaticReconnect()
-            .ConfigureLogging(logging =>
+            .WithUrl(NavigationManager.ToAbsoluteUri("/gameHub"), options =>
             {
-                logging.SetMinimumLevel(LogLevel.Information);
-                logging.AddConsole();
+                options.AccessTokenProvider = () => Task.FromResult(token);
             })
-        .Build();
+            .WithAutomaticReconnect()
+            .Build();
 
         _hubConnection.On<List<GamePlayer>>("ReturnRunningGames", (gamePlayers) =>
         {
@@ -157,12 +170,19 @@
             StateHasChanged();
         });
 
-        await _hubConnection.StartAsync();
-        var authState = await authenticationStateTask;
-        var user = authState.User;
+
         if (user.Identity.IsAuthenticated)
         {
-            await GetRunningGames();
+            try
+            {
+                await _hubConnection.StartAsync();
+                await GetRunningGames();
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.Message;
+                throw;
+            }
         }
     }
 
@@ -253,4 +273,5 @@
         var isAdmin = _runningGames.Where(p => p.Email == playerEmail && p.IsGameAdmin).Count() > 0;
         return isAdmin;
     }
+
 }

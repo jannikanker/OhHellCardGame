@@ -1,23 +1,18 @@
-﻿using CardGames.Hubs;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
 using CardGames.Server.Services;
-using CardGames.Shared;
 using CardGames.Shared.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
-
 
 namespace CardGames.Hubs
 {
-
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class GameHub : Hub
     {
         private GameService _gameService;

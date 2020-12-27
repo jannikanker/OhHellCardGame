@@ -86,6 +86,9 @@ namespace CardGames.Shared.Models
 
         public void StartNewGame(bool keepPlayer = false)
         {
+            this.Key = Guid.NewGuid().ToString();
+            this.DBid = this.Key;
+
             this.PlayingCard = new Card { Colour = Colours.H, Value = Values.Four };
 
             this.CurrentPlayer = 0;
