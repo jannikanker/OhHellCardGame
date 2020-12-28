@@ -36,7 +36,7 @@ namespace CardGames.Server.Services
                 using (var client = new CosmosClient(_cosmosSettings.EndpointUrl, _cosmosSettings.Key))
                 {
                     var database = client.GetDatabase(_cosmosSettings.DatabaseName);
-                    var container = database.GetContainer(_cosmosSettings.DatabaseContainer);
+                    var container = database.GetContainer(_cosmosSettings.GamesContainer);
                     QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
                     var scores = container.GetItemQueryIterator<GameScore>(queryDefinition);
 
@@ -85,7 +85,7 @@ namespace CardGames.Server.Services
                 using (var client = new CosmosClient(_cosmosSettings.EndpointUrl, _cosmosSettings.Key))
                 {
                     var database = await client.CreateDatabaseIfNotExistsAsync(_cosmosSettings.DatabaseName);
-                    var container = database.Database.GetContainer(_cosmosSettings.DatabaseContainer);
+                    var container = database.Database.GetContainer(_cosmosSettings.GamesContainer);
                     if (overwrite)
                     {
                         await container.ReplaceItemAsync(game, game.Key);

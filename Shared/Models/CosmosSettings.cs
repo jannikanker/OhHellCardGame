@@ -9,6 +9,6 @@ namespace CardGames.Shared.Models
         public string EndpointUrl { get; set; }
         public string Key { get; set; }
         public string DatabaseName { get; set; }
-        public string DatabaseContainer { get; set; }
+        public string GamesContainer { get; set; }
     }
 }

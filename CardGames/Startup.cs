@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
+using Microsoft.Identity.Web.TokenCacheProviders.Distributed;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -13,6 +14,8 @@ using StackExchange.Redis.Extensions.Core.Configuration;
 using StackExchange.Redis.Extensions.Newtonsoft;
 using CardGames.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Caching.Cosmos;
+using Microsoft.Azure.Cosmos.Fluent;
 
 namespace CardGames
 {
@@ -35,11 +38,23 @@ namespace CardGames
                 .AddMicrosoftIdentityWebApp(Configuration.GetSection("AzureAdB2C"))
                     .EnableTokenAcquisitionToCallDownstreamApi(initialScopes)
                         .AddDownstreamWebApi("DownstreamApi", Configuration.GetSection("DownstreamApi"))
-                        .AddInMemoryTokenCaches();
+                        .AddDistributedTokenCaches();
+
+            services.AddCosmosCache((CosmosCacheOptions cacheOptions) =>
+            {
+                cacheOptions.DatabaseName = Configuration.GetValue<string>("CosmosSettings:DatabaseName");
+                cacheOptions.ContainerName = Configuration.GetValue<string>("CosmosSettings:CosmosCacheContainer");
+                cacheOptions.ClientBuilder = 
+                    new CosmosClientBuilder(string.Format("AccountEndpoint={0};AccountKey={1};",
+                    Configuration.GetValue<string>("CosmosSettings:EndpointUrl"),
+                    Configuration.GetValue<string>("CosmosSettings:Key")));
+                cacheOptions.CreateIfNotExists = true;
+            });
 
             services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
                 .AddMicrosoftIdentityWebApi(Configuration.GetSection("AzureAdB2C"), JwtBearerDefaults.AuthenticationScheme)
                 .EnableTokenAcquisitionToCallDownstreamApi();
+
 
             services.AddControllersWithViews()
                 .AddMicrosoftIdentityUI();
