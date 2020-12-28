@@ -9,6 +9,7 @@
 @inject NavigationManager NavigationManager
 @inject ITokenAcquisition tokenHandler
 @inject IConfiguration configuration;
+@inject MicrosoftIdentityConsentAndConditionalAccessHandler ConsentHandler
 @inject Microsoft.Extensions.Options.IOptions<GameSettings> gameSettings
 
 @{
@@ -97,8 +98,8 @@
 </AuthorizeView>
 
 @code {
-        [CascadingParameter]
-        private Task<AuthenticationState> authenticationStateTask { get; set; }
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
 
     private HubConnection _hubConnection;
     private List<GamePlayer> _runningGames = new List<GamePlayer>();
@@ -110,20 +111,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await authenticationStateTask;
-        var user = authState.User;
-
-        var token = "";
-        if (user.Identity.IsAuthenticated)
-        {
-            var initialScopes = configuration.GetValue<string>("DownstreamApi:Scopes")?.Split(' ');
-            token = await tokenHandler.GetAccessTokenForUserAsync(initialScopes);
-        }
-
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(NavigationManager.ToAbsoluteUri("/gameHub"), options =>
             {
-                options.AccessTokenProvider = () => Task.FromResult(token);
+                options.AccessTokenProvider = GetAccessToken;
             })
             .WithAutomaticReconnect()
             .Build();
@@ -170,11 +161,13 @@
             StateHasChanged();
         });
 
-
+        var authState = await authenticationStateTask;
+        var user = authState.User;
         if (user.Identity.IsAuthenticated)
         {
             try
             {
+                var a = await GetAccessToken();
                 await _hubConnection.StartAsync();
                 await GetRunningGames();
             }
@@ -186,6 +179,29 @@
         }
     }
 
+
+    private async Task<string> GetAccessToken()
+    {
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+
+        var token = "";
+        if (user.Identity.IsAuthenticated)
+        {
+            try
+            {
+                var initialScopes = configuration.GetValue<string>("DownstreamApi:Scopes")?.Split(' ');
+                var userflow = configuration.GetValue<string>("AzureAdB2C:SignUpSignInPolicyId");
+                token = await tokenHandler.GetAccessTokenForUserAsync(initialScopes);
+            }
+            catch (Exception)
+            {
+                //ConsentHandler.HandleException(ex);
+                NavigationManager.NavigateTo("MicrosoftIdentity/Account/SignOut");
+            }
+        }
+        return token;
+    }
 
     private async Task<string> GetUserEmail()
     {

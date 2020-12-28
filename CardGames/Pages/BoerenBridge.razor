@@ -451,24 +451,13 @@
 
     private int _cardsWidth = 482;
     private int _cardIncrease = 121;
-    private string _myAccessToken = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ilg1ZVhrNHh5b2pORnVtMWtsMll0djhkbE5QNC1jNTdkTzZRR1RWQndhTmsifQ.eyJpc3MiOiJodHRwczovL3N2ZGhiMmMuYjJjbG9naW4uY29tL2E1YmRhMTgwLTQ4YmItNDQ4Zi04NjVjLWJiNDE5M2Y0ZDcyMi92Mi4wLyIsImV4cCI6MTYwOTA4Mzc4MSwibmJmIjoxNjA5MDgwMTgxLCJhdWQiOiI0ZjQzOTA1OS1hZWQyLTQ2MzktODkxNy1mM2JlZjNkNmQwYWMiLCJnaXZlbl9uYW1lIjoiU2FuZGVyIiwiZmFtaWx5X25hbWUiOiJ2YW4gZGVuIEhvdmVuIiwibmFtZSI6IlNhbmRlciB2YW4gZGVuIEhvdmVuIChHTUFJTCkiLCJpZHAiOiJnb29nbGUuY29tIiwib2lkIjoiODlhNGEzZjQtYzIxMy00NzJjLWFiYzYtOGNmNTYzMjdmZjc1Iiwic3ViIjoiODlhNGEzZjQtYzIxMy00NzJjLWFiYzYtOGNmNTYzMjdmZjc1IiwiZW1haWxzIjpbInNhbmRlcnZkaG92ZW5AZ21haWwuY29tIl0sInRmcCI6IkIyQ18xX0NhcmRHYW1lc19TaWduVXBfU2lnbkluIiwibm9uY2UiOiJkZWZhdWx0Tm9uY2UiLCJzY3AiOiJBY2Nlc3NfQXNfVXNlciIsImF6cCI6IjRmNDM5MDU5LWFlZDItNDYzOS04OTE3LWYzYmVmM2Q2ZDBhYyIsInZlciI6IjEuMCIsImlhdCI6MTYwOTA4MDE4MX0.Y_OAHFdEWfUVztyxPzrcZNjHyWvI3QPgp3A43u3uTYz8SOML5aLrHB2j1AVk5RHqxyhgY-ztA5uamCRRyWYP-7D6XX7zI2Ey1KkFOp0BBD6hZvvIDWriPIB1trqOAk52uZ2w0011rm8k1ah1Pio-KbamQ58TML5go9AJHrwyVlYxedsb7HYlDK2M1QHhkg5dzQ8ucVuZtQ9bQIyMoAmLrLhWhiwz8mm0NEJ_37BLa8NxGm2aQdJjOYfX0LvAdn96Mydc14OtfYzrmP3qFO-08nAgSfZ74DcHHEWJwh5t-8NjaCCdybTJ_6jJzc1_5nTv3_V4mI4HizjZCFPYVwtDWw";
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await authenticationStateTask;
-        var user = authState.User;
-
-        var token = "";
-        if (user.Identity.IsAuthenticated)
-        {
-            var initialScopes = configuration.GetValue<string>("DownstreamApi:Scopes")?.Split(' ');
-            token = await tokenHandler.GetAccessTokenForUserAsync(initialScopes);
-        }
-
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(NavigationManager.ToAbsoluteUri("/gameHub"), options =>
             {
-                options.AccessTokenProvider = () => Task.FromResult(token);
+                options.AccessTokenProvider = GetAccessToken;
             })
             .WithAutomaticReconnect()
             .Build();
@@ -599,13 +588,36 @@
             StateHasChanged();
         });
 
-        if (user.Identity.IsAuthenticated)
+        var authState = await authenticationStateTask;
+        if (authState.User.Identity.IsAuthenticated)
         {
             await _hubConnection.StartAsync();
             await JoinGame();
         }
     }
 
+    public void OpenTrump()
+    {
+        _modalDisplayTrump = "block;";
+        _modalClassTrump = "Show";
+        StateHasChanged();
+    }
+
+    public void CloseTrump()
+    {
+        _modalDisplayTrump = "none";
+        _modalClassTrump = "";
+        StateHasChanged();
+    }
+
+    public void ToggleSideView()
+    {
+        if (_sideView == "show")
+            _sideView = "none";
+        else
+            _sideView = "show";
+        StateHasChanged();
+    }
 
     public void OpenScoreBoard()
     {
@@ -719,28 +731,29 @@
         return lineGraph;
     }
 
-    public void OpenTrump()
+    private async Task<string> GetAccessToken()
     {
-        _modalDisplayTrump = "block;";
-        _modalClassTrump = "Show";
-        StateHasChanged();
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+
+        var token = "";
+        if (user.Identity.IsAuthenticated)
+        {
+            try
+            {
+                var initialScopes = configuration.GetValue<string>("DownstreamApi:Scopes")?.Split(' ');
+                var userflow = configuration.GetValue<string>("AzureAdB2C:SignUpSignInPolicyId");
+                token = await tokenHandler.GetAccessTokenForUserAsync(initialScopes);
+            }
+            catch (Exception)
+            {
+                //ConsentHandler.HandleException(ex);
+                NavigationManager.NavigateTo("MicrosoftIdentity/Account/SignOut");
+            }
+        }
+        return token;
     }
 
-    public void CloseTrump()
-    {
-        _modalDisplayTrump = "none";
-        _modalClassTrump = "";
-        StateHasChanged();
-    }
-
-    public void ToggleSideView()
-    {
-        if (_sideView == "show")
-            _sideView = "none";
-        else
-            _sideView = "show";
-        StateHasChanged();
-    }
 
     private async Task PlaceBet(MouseEventArgs e, string bet)
     {

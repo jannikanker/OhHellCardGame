@@ -51,7 +51,8 @@ namespace CardGames
 
             services.AddLocalization();
             services.AddRazorPages();
-            services.AddServerSideBlazor();
+            services.AddServerSideBlazor()
+                .AddMicrosoftIdentityConsentHandler();
 
             services.AddSingleton<GameService>();
 
