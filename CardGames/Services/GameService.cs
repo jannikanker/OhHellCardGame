@@ -8,22 +8,28 @@ using System.Text.Json;
 using Microsoft.Azure.Cosmos;
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Html;
+using Microsoft.AspNetCore.Http;
 
 namespace CardGames.Server.Services
 {
+    [Authorize]
     public class GameService
     {
         private GameSettings _settings;
         private ILogger<GameService> _logger;
         private readonly IRedisCacheClient _redisCacheClient;
         private CosmosSettings _cosmosSettings;
+        private IHttpContextAccessor _httpContextAccessor;
 
-        public GameService(IOptions<GameSettings> settings, ILogger<GameService> logger, IRedisCacheClient redisCacheClient, IOptions<CosmosSettings> cosmosSettings)
+        public GameService(IOptions<GameSettings> settings, ILogger<GameService> logger, IRedisCacheClient redisCacheClient, IOptions<CosmosSettings> cosmosSettings, IHttpContextAccessor httpContextAccessor)
         {
             _settings = settings.Value;
             _logger = logger;
             _redisCacheClient = redisCacheClient;
             _cosmosSettings = cosmosSettings.Value;
+            _httpContextAccessor = httpContextAccessor;
         }
 
 
@@ -144,13 +150,10 @@ namespace CardGames.Server.Services
             return game;
         }
 
-        public void RemoveGame(string gameId, string userEmail)
+        public void RemoveGame(string gameId)
         {
             _logger.LogInformation($"Removing Game with id: {gameId}.");
-            if (userEmail == _settings.SystemAdmin)
-            {
-                _redisCacheClient.Db0.RemoveAsync(gameId).Wait();
-            }
+            _redisCacheClient.Db0.RemoveAsync(gameId).Wait();
         }
 
         public Game NewGameSet(string gameId)
@@ -162,8 +165,9 @@ namespace CardGames.Server.Services
             return game;
         }
 
-        public List<GamePlayer> GetPlayerGames(string userEmail)
+        public List<GamePlayer> GetPlayerGames()
         {
+            var email = ((System.Security.Claims.ClaimsIdentity)_httpContextAccessor.HttpContext.User.Identity).Claims.FirstOrDefault(c => c.Type == "emails")?.Value.ToString();
             var gameIds = new List<GamePlayer>();
             var listOfKeys = _redisCacheClient.Db0.SearchKeysAsync("*").Result;
             foreach (var key in listOfKeys)
@@ -174,7 +178,7 @@ namespace CardGames.Server.Services
                 {
                     var userInGame = new GamePlayer();
                     userInGame.GameId = game.Id;
-                    if (player.Email == userEmail || userEmail == _settings.SystemAdmin || IsUserGameAdmin(game.Id, userEmail))
+                    if (player.Email == email || email == _settings.SystemAdmin || IsUserGameAdmin(game.Id, email))
                     {
                         userInGame.Player = player.Id;
                         userInGame.Email = player.Email;

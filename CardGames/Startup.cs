@@ -55,6 +55,14 @@ namespace CardGames
                 .AddMicrosoftIdentityWebApi(Configuration.GetSection("AzureAdB2C"), JwtBearerDefaults.AuthenticationScheme)
                 .EnableTokenAcquisitionToCallDownstreamApi();
 
+            var admin = Configuration.GetValue<string>("GameSettings:SystemAdmin");
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("IsAdmin", policy =>
+                   policy.RequireAssertion(context =>
+                       context.User.HasClaim(c =>
+                           (c.Type == "emails") && (c.Value.ToLower().Equals(admin.ToLower())))));
+            });
 
             services.AddControllersWithViews()
                 .AddMicrosoftIdentityUI();
@@ -73,6 +81,8 @@ namespace CardGames
 
             var redisConfiguration = Configuration.GetSection("Redis").Get<RedisConfiguration>();
             services.AddStackExchangeRedisExtensions<NewtonsoftSerializer>(redisConfiguration);
+
+            services.AddHttpContextAccessor();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

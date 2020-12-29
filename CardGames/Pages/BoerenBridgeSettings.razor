@@ -225,57 +225,53 @@
 
     private async Task NewGame()
     {
-        await _hubConnection.SendAsync("NewGame", _newGameName, _newGameAdmin, GetUserEmail().Result, _nrPlayers);
+        await _hubConnection.SendAsync("NewGame", _newGameName, _newGameAdmin, _nrPlayers);
     }
 
     private async Task ResetGame()
     {
-        await _hubConnection.SendAsync("ResetGame", _selectedGame, GetUserEmail().Result);
+        await _hubConnection.SendAsync("ResetGame", _selectedGame);
     }
 
     private async Task ResetCurrentRound()
     {
-        await _hubConnection.SendAsync("ResetCurrentRound", _selectedGame, GetUserEmail().Result);
+        await _hubConnection.SendAsync("ResetCurrentRound", _selectedGame);
     }
 
     private async Task RemoveGame()
     {
-        await _hubConnection.SendAsync("RemoveGame", _selectedGame, GetUserEmail().Result);
+        await _hubConnection.SendAsync("RemoveGame", _selectedGame);
     }
 
     private async Task GetGameSettings()
     {
-        await _hubConnection.SendAsync("GetGameSettings", _selectedGame, GetUserEmail().Result);
+        await _hubConnection.SendAsync("GetGameSettings", _selectedGame);
     }
 
     private async Task SaveGameSettings()
     {
         var settings = _gameSettings;
-        await _hubConnection.SendAsync("SaveGameSettings", _selectedGame, GetUserEmail().Result, settings);
+        await _hubConnection.SendAsync("SaveGameSettings", _selectedGame, settings);
     }
 
     private async Task GameSavedToDB()
     {
-        var settings = _gameSettings;
-        await _hubConnection.SendAsync("SaveGameToDb", _selectedGame, GetUserEmail().Result);
+        await _hubConnection.SendAsync("SaveGameToDb", _selectedGame);
     }
 
     private async Task NewGameSet()
     {
-        await _hubConnection.SendAsync("NewGameSet", _selectedGame, GetUserEmail().Result);
+        await _hubConnection.SendAsync("NewGameSet", _selectedGame);
     }
 
     private async Task GetRunningGames()
     {
-        var userEmail = await GetUserEmail();
-
-        await _hubConnection.SendAsync("GetRunningGames", userEmail);
+        await _hubConnection.SendAsync("GetRunningGames");
     }
 
     private void SavePlayer(MouseEventArgs e, GamePlayer gamePlayer)
     {
-        _hubConnection.SendAsync("SaveGamePlayer", gamePlayer, GetUserEmail().Result);
-
+        _hubConnection.SendAsync("SaveGamePlayer", gamePlayer);
     }
 
     private void NavigateToGame(MouseEventArgs e, GamePlayer gamePlayer)

@@ -28,21 +28,103 @@ namespace CardGames.Hubs
             _logger = logger;
         }
 
-        public async Task GetAvailablePlayers(string gameId)
-        {
-            var game = _gameService.GetGame(gameId);
-            var availablePlayers = game.Players.Where(p => p.SignedIn == false).Select(p => p.Id).ToArray();
 
-            await Clients.Caller.SendAsync("ReturnAvailablePlayers", availablePlayers);
-        }
-
-        public async Task NewGame(string name, string gameAdmin, string userEmail, int nrPlayers)
+        [Authorize(Policy = "IsAdmin")]
+        public async Task NewGame(string name, string gameAdmin, int nrPlayers)
         {
             var game = _gameService.NewGame(name, nrPlayers);
             game.GameAdmin = gameAdmin;
-            var games = _gameService.GetPlayerGames(userEmail);
+            var games = _gameService.GetPlayerGames();
             await Clients.Caller.SendAsync("NewGameCreated", games);
             _logger.LogInformation($"New Game created with name: {name}.");
+        }
+
+        [Authorize(Policy = "IsAdmin")]
+        public async Task ResetGame(string gameId)
+        {
+            var game = _gameService.ResetGame(gameId);
+            var games = _gameService.GetPlayerGames();
+            game.Status = _localizer["GameResetted", game.CurrentPlayerObj.FirstName];
+            await _gameService.SaveGame(game);
+
+            await Clients.Caller.SendAsync("GameResetted", games);
+            await Clients.Group(gameId).SendAsync("GameResetted", game);
+        }
+        
+        [Authorize(Policy = "IsAdmin")]
+        public async Task ResetCurrentRound(string gameId)
+        {
+
+            var game = _gameService.ResetCurrentRound(gameId);
+            var games = _gameService.GetPlayerGames();
+            game.Status = _localizer["CurrentRoundResetted", game.CurrentPlayerObj.FirstName];
+            await _gameService.SaveGame(game);
+
+            await Clients.Caller.SendAsync("GameResetted", games);
+            await Clients.Group(gameId).SendAsync("GameResetted", game);
+        }
+
+        [Authorize(Policy = "IsAdmin")]
+        public async Task GetGameSettings(string gameId)
+        {
+            var game = _gameService.GetGame(gameId);
+            var json = JsonConvert.SerializeObject(game);
+            await Clients.Caller.SendAsync("GameSettings", json);
+            //await Clients.Group(gameId).SendAsync("GameResetted", game);
+
+        }
+
+        [Authorize(Policy = "IsAdmin")]
+        public async Task SaveGameSettings(string gameId, string gameSettings)
+        {
+            var game = JsonConvert.DeserializeObject<Game>(gameSettings);
+            await _gameService.SaveGame(game);
+            await Clients.Group(gameId).SendAsync("GameSettingsResetted", game);
+        }
+
+        [Authorize(Policy = "IsAdmin")]
+        public async Task SaveGameToDb(string gameId)
+        {
+            var game = _gameService.GetGame(gameId);
+            await _gameService.SaveGamePersistent(game,false);
+            await Clients.Caller.SendAsync("GameSavedToDB");
+        }
+
+        [Authorize(Policy = "IsAdmin")]
+        public async Task RemoveGame(string gameId)
+        {
+            _gameService.RemoveGame(gameId);
+            var games = _gameService.GetPlayerGames();
+            await Clients.Caller.SendAsync("GameRemoved", games);
+        }
+
+        [Authorize(Policy = "IsAdmin")]
+        public async Task NewGameSet(string gameId)
+        {
+            var game = _gameService.NewGameSet(gameId);
+            var games = _gameService.GetPlayerGames();
+            game.Status = _localizer["NewGameSet"];
+            await _gameService.SaveGame(game);
+            //await Clients.Caller.SendAsync("NewGameSet", games);
+            await Clients.Group(gameId).SendAsync("NewGameSet", game);
+        }
+
+        public async Task GetRunningGames()
+        {
+            var games = _gameService.GetPlayerGames();
+            await Clients.Caller.SendAsync("ReturnRunningGames", games);
+        }
+
+        [Authorize(Policy = "IsAdmin")]
+        public async Task SaveGamePlayer(GamePlayer gamePlayer)
+        {
+            var game = _gameService.GetGame(gamePlayer.GameId);
+            game.Players[Player.GetPlayerId(gamePlayer.Player)].Email = gamePlayer.Email;
+            game.Players[Player.GetPlayerId(gamePlayer.Player)].IsGameController = gamePlayer.IsGameAdmin;
+            await _gameService.SaveGame(game);
+
+            var games = _gameService.GetPlayerGames();
+            await Clients.Caller.SendAsync("SavedGamePlayer", games);
         }
 
         public async Task JoinGame(string gameId, string selectedPlayer, string name)
@@ -81,6 +163,14 @@ namespace CardGames.Hubs
             }
         }
 
+        public async Task GetAvailablePlayers(string gameId)
+        {
+            var game = _gameService.GetGame(gameId);
+            var availablePlayers = game.Players.Where(p => p.SignedIn == false).Select(p => p.Id).ToArray();
+
+            await Clients.Caller.SendAsync("ReturnAvailablePlayers", availablePlayers);
+        }
+
         public async Task StartGame(string gameId)
         {
             var game = _gameService.StartGame(gameId);
@@ -89,87 +179,6 @@ namespace CardGames.Hubs
 
             await Clients.Group(gameId).SendAsync("GameStarted", game);
             _logger.LogInformation($"Game {gameId} started.");
-        }
-
-        public async Task ResetGame(string gameId, string userEmail)
-        {
-
-            var game = _gameService.ResetGame(gameId);
-            var games = _gameService.GetPlayerGames(userEmail);
-            game.Status = _localizer["GameResetted", game.CurrentPlayerObj.FirstName];
-            await _gameService.SaveGame(game);
-
-            await Clients.Caller.SendAsync("GameResetted", games);
-            await Clients.Group(gameId).SendAsync("GameResetted", game);
-        }
-
-        public async Task ResetCurrentRound(string gameId, string userEmail)
-        {
-
-            var game = _gameService.ResetCurrentRound(gameId);
-            var games = _gameService.GetPlayerGames(userEmail);
-            game.Status = _localizer["CurrentRoundResetted", game.CurrentPlayerObj.FirstName];
-            await _gameService.SaveGame(game);
-
-            await Clients.Caller.SendAsync("GameResetted", games);
-            await Clients.Group(gameId).SendAsync("GameResetted", game);
-        }
-
-        public async Task GetGameSettings(string gameId, string userEmail)
-        {
-            var game = _gameService.GetGame(gameId);
-            var json = JsonConvert.SerializeObject(game);
-            await Clients.Caller.SendAsync("GameSettings", json);
-            //await Clients.Group(gameId).SendAsync("GameResetted", game);
-
-        }
-
-        public async Task SaveGameSettings(string gameId, string userEmail, string gameSettings)
-        {
-            var game = JsonConvert.DeserializeObject<Game>(gameSettings);
-            await _gameService.SaveGame(game);
-            await Clients.Group(gameId).SendAsync("GameSettingsResetted", game);
-        }
-
-        public async Task SaveGameToDb(string gameId, string userEmail)
-        {
-            var game = _gameService.GetGame(gameId);
-            await _gameService.SaveGamePersistent(game,false);
-            await Clients.Caller.SendAsync("GameSavedToDB");
-        }
-
-        public async Task RemoveGame(string gameId, string userEmail)
-        {
-            _gameService.RemoveGame(gameId, userEmail);
-            var games = _gameService.GetPlayerGames(userEmail);
-            await Clients.Caller.SendAsync("GameRemoved", games);
-        }
-
-        public async Task NewGameSet(string gameId, string userEmail)
-        {
-            var game = _gameService.NewGameSet(gameId);
-            var games = _gameService.GetPlayerGames(userEmail);
-            game.Status = _localizer["NewGameSet"];
-            await _gameService.SaveGame(game);
-            //await Clients.Caller.SendAsync("NewGameSet", games);
-            await Clients.Group(gameId).SendAsync("NewGameSet", game);
-        }
-
-        public async Task GetRunningGames(string userEmail)
-        {
-            var games = _gameService.GetPlayerGames(userEmail);
-            await Clients.Caller.SendAsync("ReturnRunningGames", games);
-        }
-
-        public async Task SaveGamePlayer(GamePlayer gamePlayer, string userEmail)
-        {
-            var game = _gameService.GetGame(gamePlayer.GameId);
-            game.Players[Player.GetPlayerId(gamePlayer.Player)].Email = gamePlayer.Email;
-            game.Players[Player.GetPlayerId(gamePlayer.Player)].IsGameController = gamePlayer.IsGameAdmin;
-            await _gameService.SaveGame(game);
-
-            var games = _gameService.GetPlayerGames(userEmail);
-            await Clients.Caller.SendAsync("SavedGamePlayer", games);
         }
 
         public async Task PlaceBet(string gameId, string selectedPlayer, string placedBet)
