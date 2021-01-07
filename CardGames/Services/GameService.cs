@@ -167,7 +167,7 @@ namespace CardGames.Server.Services
 
         public List<GamePlayer> GetPlayerGames()
         {
-            var email = ((System.Security.Claims.ClaimsIdentity)_httpContextAccessor.HttpContext.User.Identity).Claims.FirstOrDefault(c => c.Type == "emails")?.Value.ToString();
+            string email = GetUser();
             var gameIds = new List<GamePlayer>();
             var listOfKeys = _redisCacheClient.Db0.SearchKeysAsync("*").Result;
             foreach (var key in listOfKeys)
@@ -178,24 +178,39 @@ namespace CardGames.Server.Services
                 {
                     var userInGame = new GamePlayer();
                     userInGame.GameId = game.Id;
-                    if (player.Email == email || email == _settings.SystemAdmin || IsUserGameAdmin(game.Id, email))
+                    if (player.Email == email || email == _settings.SystemAdmin || IsUserGameController(game.Id, email))
                     {
                         userInGame.Player = player.Id;
                         userInGame.Email = player.Email;
                         userInGame.IsGameAdmin = player.IsGameController;
                         gameIds.Add(userInGame);
-                    }                  
-                }              
+                    }
+                }
             }
             return gameIds;
         }
 
-        private bool IsUserGameAdmin(string gameId, string playerEmail)
+        private string GetUser()
+        {
+            return ((System.Security.Claims.ClaimsIdentity)_httpContextAccessor.HttpContext.User.Identity).Claims.FirstOrDefault(c => c.Type == "emails")?.Value.ToString();
+        }
+
+        public bool IsUserGameController(string gameId)
+        {
+            return IsUserGameController(gameId, GetUser());
+        }
+
+        private bool IsUserGameController(string gameId, string playerEmail)
         {
             var game = GetGame(gameId);
-            var gamesAdmin = game.Players.Where(p => p.Email == playerEmail && p.IsGameController);
-            var isAdmin = gamesAdmin.Count() > 0;
-            return isAdmin;
+            var gamesControllers = game.Players.Where(p => p.Email == playerEmail && p.IsGameController);
+            var isController = gamesControllers.Count() > 0;
+            return isController;
+        }
+
+        public bool IsUserSystemAdmin()
+        {
+            return (_settings.SystemAdmin == GetUser());
         }
     }
 }

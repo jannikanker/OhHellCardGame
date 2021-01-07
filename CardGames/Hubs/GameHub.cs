@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace CardGames.Hubs
@@ -18,14 +19,17 @@ namespace CardGames.Hubs
         private GameService _gameService;
         private IStringLocalizer<GameHubStrings> _localizer;
         private readonly ILogger _logger;
+        private GameSettings _settings;
 
         public GameHub(GameService gameService, 
                        IStringLocalizer<GameHubStrings> localizer,
-                       ILogger<GameHub> logger)
+                       ILogger<GameHub> logger,
+                       IOptions<GameSettings> settings)
         {
             _gameService = gameService;
             _localizer = localizer;
             _logger = logger;
+            _settings = settings.Value;
         }
 
 
@@ -115,16 +119,18 @@ namespace CardGames.Hubs
             await Clients.Caller.SendAsync("ReturnRunningGames", games);
         }
 
-        [Authorize(Policy = "IsAdmin")]
         public async Task SaveGamePlayer(GamePlayer gamePlayer)
         {
-            var game = _gameService.GetGame(gamePlayer.GameId);
-            game.Players[Player.GetPlayerId(gamePlayer.Player)].Email = gamePlayer.Email;
-            game.Players[Player.GetPlayerId(gamePlayer.Player)].IsGameController = gamePlayer.IsGameAdmin;
-            await _gameService.SaveGame(game);
+            if (_gameService.IsUserGameController(gamePlayer.GameId) || _gameService.IsUserSystemAdmin())
+            {
+                var game = _gameService.GetGame(gamePlayer.GameId);
+                game.Players[Player.GetPlayerId(gamePlayer.Player)].Email = gamePlayer.Email;
+                game.Players[Player.GetPlayerId(gamePlayer.Player)].IsGameController = gamePlayer.IsGameAdmin;
+                await _gameService.SaveGame(game);
 
-            var games = _gameService.GetPlayerGames();
-            await Clients.Caller.SendAsync("SavedGamePlayer", games);
+                var games = _gameService.GetPlayerGames();
+                await Clients.Caller.SendAsync("SavedGamePlayer", games);
+            }
         }
 
         public async Task JoinGame(string gameId, string selectedPlayer, string name)
@@ -161,6 +167,11 @@ namespace CardGames.Hubs
                     _logger.LogInformation($"Player {name} joined Game {gameId}.");
                 }
             }
+        }
+
+        private string GetUser()
+        {
+            return ((System.Security.Claims.ClaimsIdentity)Context.User.Identity).Claims.FirstOrDefault(c => c.Type == "emails")?.Value.ToString();
         }
 
         public async Task GetAvailablePlayers(string gameId)

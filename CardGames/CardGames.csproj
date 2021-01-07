@@ -24,7 +24,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\LineChart\LineChart.csproj" />
     <ProjectReference Include="..\Shared\CardGames.Shared.csproj" />
   </ItemGroup>
 
