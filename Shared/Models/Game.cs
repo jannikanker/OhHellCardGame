@@ -130,6 +130,20 @@ namespace CardGames.Shared.Models
                     this.Players[p].Score = 0;
                     this.Players[p].Cards = new List<Card>();
                 }
+
+                //randomize the players
+                var rand = new Random();
+                for (int i = 0; i < this.Players.Length - 1; i++)
+                {
+                    int j = rand.Next(i, this.Players.Length);
+                    string tempEmail = this.Players[i].Email;
+                    bool tempController = this.Players[i].IsGameController;
+
+                    this.Players[i].Email = this.Players[j].Email;
+                    this.Players[i].IsGameController = this.Players[j].IsGameController;
+                    this.Players[j].Email = tempEmail;
+                    this.Players[j].IsGameController = tempController;
+                }
             }
 
             void PrepareRounds()

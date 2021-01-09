@@ -4,7 +4,7 @@ namespace CardGames.Services
 {
     public class Randomizer
     {
-        public static void Randomize<T>(T[] items)
+        public static T[] Randomize<T>(T[] items)
         {
             Random rand = new Random();
 
@@ -17,6 +17,8 @@ namespace CardGames.Services
                 items[i] = items[j];
                 items[j] = temp;
             }
+
+            return items;
         }
     }
 }

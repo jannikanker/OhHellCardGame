@@ -47,7 +47,7 @@
                         <img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="80" />
                     </div>
                 </div>
-                <h3>@L["Welcome", @context.User.Identity.Name.Split(" ")[0]] @(IsGameAdmin() ? "✏️" : "")</h3>
+                <h3>@L["Welcome", @context.User.Identity.Name.Split(" ")[0]] @(IsGameController() ? "✏️" : "")</h3>
                 <h5 class="active">@_game.Status</h5>
                 <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
                 <button class="btn btn-success" @onclick="() => OpenTopScoreBoard()">Top Scores</button>
@@ -70,14 +70,14 @@
                 </button>
 
                 <button class="btn btn-success" @onclick="@ToggleSideView"><img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="10" /></button>
-                <button style="display:@(IsGameAdmin() ? "inline" : "none")"
-                        disabled="@(!_game.CleanTable || !IsGameAdmin())"
+                <button style="display:@(IsGameController() ? "inline" : "none")"
+                        disabled="@(!_game.CleanTable || !IsGameController())"
                         class="btn btn-success" @onclick="@CleanTable"
                         title="@L["CleanTableText"]">
                     @L["CleanTable"]
                 </button>
-                <button style="display: @(IsGameAdmin() ? "inline" : "none")"
-                        disabled="@(!_game.RoundReady || _game.GameOver || !IsGameAdmin())"
+                <button style="display: @(IsGameController() ? "inline" : "none")"
+                        disabled="@(!_game.RoundReady || _game.GameOver || !IsGameController())"
                         class="btn btn-success" @onclick="@NextRound"
                         title="@L["NextRoundText"]">
                     @L["NextRound"]
@@ -134,7 +134,7 @@
                     <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@SelectPlayer">Select Player</button>
                 }
 
-                @if (IsGameAdmin() && !_game.GameStarted)
+                @if (IsGameController() && !_game.GameStarted)
                 {
                     <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn)" class="btn btn-success" @onclick="@StartGame">Start</button>
                 }
@@ -163,7 +163,7 @@
                                     <div id="PlayCard_@(playedCard.PlayerId)"><img src="/CardImages/@(playedCard.Card == null ? "green_back" : playedCard.Card.Face).png" width="80" style="padding: 0px 0px 5px 0px;" /></div>
                                     @if (_game.ChooseWinner)
                                     {
-                                        <button class="btn btn-outline-info" style="visibility:@(_game.ChooseWinner ? "visible" : "hidden")" disabled="@(!_game.ChooseWinner || !IsGameAdmin())" @onclick="@(e => Winner(e, playedCard))">@L["Won"]</button>
+                                        <button class="btn btn-outline-info" style="visibility:@(_game.ChooseWinner ? "visible" : "hidden")" disabled="@(!_game.ChooseWinner || !IsGameController())" @onclick="@(e => Winner(e, playedCard))">@L["Won"]</button>
                                     }
                                 }
                                 else
@@ -230,7 +230,7 @@
                                         @(_inputLabels = "")
                                         @foreach (var player in _game.Players)
                                         {
-                                            <td><p style="color: @(IsGameAdmin(player.Id) ? "red" : "black")">@(player.Name == null ? player.Id : player.Name.Split(" ")[0])</p></td>
+                                            <td><p style="color: @(IsGameController(player.Id) ? "red" : "black")">@(player.Name == null ? player.Id : player.Name.Split(" ")[0])</p></td>
                                             _inputLabels += player.FirstName;
                                             if (!_game.Players.Last().Equals(player))
                                                 _inputLabels += ",";
@@ -883,12 +883,12 @@
         }
     }
 
-    private bool IsGameAdmin()
+    private bool IsGameController()
     {
-        return IsGameAdmin(_selectedPlayer);
+        return IsGameController(_selectedPlayer);
     }
 
-    private bool IsGameAdmin(string player)
+    private bool IsGameController(string player)
     {
         return _game.Players[GetPlayerId(player)].IsGameController;
     }

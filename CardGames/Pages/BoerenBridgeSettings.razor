@@ -12,74 +12,69 @@
 @inject MicrosoftIdentityConsentAndConditionalAccessHandler ConsentHandler
 @inject Microsoft.Extensions.Options.IOptions<GameSettings> gameSettings
 
-@{
-    var settings = gameSettings.Value;
-}
-
 
 <h1>Boeren Bridge Settings</h1>
 <img src="/CardImages/back_cards-07.png" width="300" />
 <AuthorizeView>
     <Authorized>
         <h1>Hello @context.User.Identity.Name</h1>
-        @if (GetUserEmail().Result == settings.SystemAdmin || IsGameAdmin())
+        @if (_gameUser.HasRole(UserRoles.AdminOrController))
         {
-            if (GetUserEmail().Result == settings.SystemAdmin)
-            {
-                <input type="text" @bind="_newGameName" />
-                <input type="Text" @bind="_newGameAdmin" />
-                <input type="number" @bind="_nrPlayers" min="2" max="6" />
-                <button class="btn btn-danger" @onclick="@NewGame">New Game</button>
-                <br />
-
-                <p>Games</p><button class="btn btn-danger" @onclick="@GetRunningGames"><span class="fa fa-refresh"></span></button>
-                <select @bind="_selectedGame">
-                    <option value="">-select game-</option>
-                    @foreach (var game in _runningGames.GroupBy(g => g.GameId))
+            <input type="text" @bind="_newGameName" style="display:@ShowFor(UserRoles.Admin)" />
+            <input type="Text" @bind="_newGameAdmin" style="display:@ShowFor(UserRoles.Admin)" />
+            <input type="number" @bind="_nrPlayers" min="2" max="6" style="display:@ShowFor(UserRoles.Admin)" />
+            <button class="btn btn-danger" @onclick="@NewGame" style="display:@ShowFor(UserRoles.Admin)">New Game</button>
+            <br />
+            
+            <p>Games</p><button class="btn btn-danger" @onclick="@GetRunningGames"><span class="fa fa-refresh"></span></button>
+            <select @bind="_selectedGame" style="display:@ShowFor(UserRoles.AdminOrController)">
+                <option value="">-select game-</option>
+                @{
+                    var games = _runningGames.GroupBy(g => g.GameId).ToList();
+                    foreach (var game in games)
                     {
-                        <option value=@game.Key>@game.Key</option>
+                        if (games.IndexOf(game) == 0)
+                        {
+                            <option selected value=@game.Key>@game.Key</option>
+                        }
+                        else
+                        {
+                            <option value=@game.Key>@game.Key</option>
+                        }
                     }
-                </select>
-                <p></p>
-                <button class="btn btn-danger" @onclick="@RemoveGame">Remove Game</button>
-                <button class="btn btn-danger" @onclick="@ResetGame">Reset Game</button>
-                <button class="btn btn-danger" @onclick="@ResetCurrentRound">Reset Round</button>
-                <button class="btn btn-danger" @onclick="@NewGameSet">New Set</button>
-                <button class="btn btn-danger" @onclick="@GetGameSettings">Get Game Settings</button>
-                <button class="btn btn-danger" @onclick="@SaveGameSettings">Save Game Settings</button>
-                <button class="btn btn-danger" @onclick="@GameSavedToDB">Save Game to DB</button>
-
-                <div class="form-group">
-                    <label for="comment">Comment:</label>
-                    <textarea class="form-control" rows="5" id="gameSettings" @bind="_gameSettings"></textarea>
-                </div>
-
-                <p></p>
-                @foreach (var game in _runningGames)
-                {
-                    <p>
-                        @game.GameId:@game.Player
-                        <input @bind="game.Email" type="text" size="100" />
-                        Admin <input type="checkbox" @bind="game.IsGameAdmin">
-                        <button class="btn btn-success" @onclick="@(e => SavePlayer(e, game))">Save</button>
-                        <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, game))">GoTo @game.GameId as @game.Player</button>
-                    </p>
                 }
+            </select>
+            <p></p>
+            <button class="btn btn-danger" @onclick="@RemoveGame" style="display:@ShowFor(UserRoles.Admin)">Remove Game</button>
+            <button class="btn btn-danger" @onclick="@ResetGame" style="display:@ShowFor(UserRoles.AdminOrController)">Reset Game</button>
+            <button class="btn btn-danger" @onclick="@ResetCurrentRound" style="display:@ShowFor(UserRoles.AdminOrController)">Reset Round</button>
+            <button class="btn btn-danger" @onclick="@NewGameSet" style="display:@ShowFor(UserRoles.Admin)">New Set</button>
+            <button class="btn btn-danger" @onclick="@GetGameSettings" style="display:@ShowFor(UserRoles.Admin)">Get Game Settings</button>
+            <button class="btn btn-danger" @onclick="@SaveGameSettings" style="display:@ShowFor(UserRoles.Admin)">Save Game Settings</button>
+            <button class="btn btn-danger" @onclick="@GameSavedToDB" style="display:@ShowFor(UserRoles.Admin)">Save Game to DB</button>
+            <button class="btn btn-danger" @onclick="@ShowAccessToken" style="display:@ShowFor(UserRoles.Admin)">Get AccessToken</button>
 
-            }
-            else
+            <div class="form-group" style="display:@ShowFor(UserRoles.Admin)">
+                <p>Info</p>
+                <textarea class="form-control" rows="5" id="gameSettings" @bind="_gameInfo"></textarea>
+            </div>
+
+            <p></p>
+            @foreach (var game in _runningGames.GroupBy(g => g.GameId))
             {
-                @foreach (var game in _runningGames)
+                @game.Key<br />
+                @foreach (var row in _runningGames.Where(g => g.GameId == game.Key))
                 {
                     <p>
-                        @game.GameId:@game.Player
-                        <input @bind="game.Email" type="text" size="100" />
-                        Admin <input disabled type="checkbox" @bind="game.IsGameAdmin">
-                        <button class="btn btn-success" @onclick="@(e => SavePlayer(e, game))">Save</button>
-                        <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, game))">GoTo @game.GameId as @game.Player</button>
+                        @row.Player
+                        <input @bind="row.Email" type="text" size="100" />
+                        Admin <input type="checkbox" @bind="row.IsGameAdmin">
+                        <button class="btn btn-success" @onclick="@(e => SavePlayer(e, row))">Save</button>
+                        <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, row))">Go To @row.GameId as @row.Player</button>
                     </p>
-                }
-            }
+                 }
+                <hr/>
+             }
         }
         else
         {
@@ -87,7 +82,7 @@
             @foreach (var game in _runningGames)
             {
                 <p>
-                    <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, game))">Click to go to @game.GameId</button>
+                    <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, game))">Go To @game.GameId</button>
                 </p>
             }
         }
@@ -107,21 +102,28 @@
     private string _newGameAdmin = "";
     private string _selectedGame;
     private int _nrPlayers = 4;
-    private string _gameSettings;
+    private string _gameInfo;
+    private GameSettings _settings;
+    private GameUser _gameUser;
+    private string _token;
 
     protected override async Task OnInitializedAsync()
     {
+        _settings = gameSettings.Value;
+        _gameUser = new GameUser(GetUserEmail().Result, IsSystemAdmin(), IsGameController());
+
         _hubConnection = new HubConnectionBuilder()
-            .WithUrl(NavigationManager.ToAbsoluteUri("/gameHub"), options =>
-            {
-                options.AccessTokenProvider = GetAccessToken;
-            })
-            .WithAutomaticReconnect()
-            .Build();
+        .WithUrl(NavigationManager.ToAbsoluteUri("/gameHub"), options =>
+        {
+            options.AccessTokenProvider = GetAccessToken;
+        })
+        .WithAutomaticReconnect()
+        .Build();
 
         _hubConnection.On<List<GamePlayer>>("ReturnRunningGames", (gamePlayers) =>
         {
             _runningGames = gamePlayers;
+            _gameUser = new GameUser(GetUserEmail().Result, IsSystemAdmin(), IsGameController());
             StateHasChanged();
         });
 
@@ -143,9 +145,9 @@
             StateHasChanged();
         });
 
-        _hubConnection.On<string>("GameSettings", (gameSettings) =>
+        _hubConnection.On<string>("GameSettings", (gameInfo) =>
         {
-            _gameSettings = gameSettings;
+            _gameInfo = gameInfo;
             StateHasChanged();
         });
 
@@ -167,7 +169,7 @@
         {
             try
             {
-                var a = await GetAccessToken();
+                var _token = await GetAccessToken();
                 await _hubConnection.StartAsync();
                 await GetRunningGames();
             }
@@ -179,6 +181,11 @@
         }
     }
 
+    private void ShowAccessToken()
+    {
+        _gameInfo = _token;
+        StateHasChanged();
+    }
 
     private async Task<string> GetAccessToken()
     {
@@ -200,26 +207,8 @@
                 NavigationManager.NavigateTo("MicrosoftIdentity/Account/SignOut");
             }
         }
+        _token = token;
         return token;
-    }
-
-    private async Task<string> GetUserEmail()
-    {
-        var authState = await authenticationStateTask;
-        var user = authState.User;
-
-        if (user.Identity.IsAuthenticated)
-        {
-            var email = ((System.Security.Claims.ClaimsIdentity)user.Identity).Claims.FirstOrDefault(c => c.Type == "emails");
-            if (email != null)
-                return email.Value;
-            else
-                return null;
-        }
-        else
-        {
-            return null;
-        }
     }
 
 
@@ -250,7 +239,7 @@
 
     private async Task SaveGameSettings()
     {
-        var settings = _gameSettings;
+        var settings = _gameInfo;
         await _hubConnection.SendAsync("SaveGameSettings", _selectedGame, settings);
     }
 
@@ -279,11 +268,112 @@
         NavigationManager.NavigateTo(String.Format("/BoerenBridge/{0}/{1}", gamePlayer.GameId, gamePlayer.Player));
     }
 
-    private bool IsGameAdmin()
+
+
+    //########### Internal functions ###########
+
+    private async Task<string> GetUserEmail()
     {
-        var playerEmail = GetUserEmail().Result;
-        var isAdmin = _runningGames.Where(p => p.Email == playerEmail && p.IsGameAdmin).Count() > 0;
-        return isAdmin;
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            var email = ((System.Security.Claims.ClaimsIdentity)user.Identity).Claims.FirstOrDefault(c => c.Type == "emails");
+            if (email != null)
+                return email.Value;
+            else
+                return null;
+        }
+        else
+        {
+            return null;
+        }
     }
 
+    private bool IsGameController()
+    {
+        if (_runningGames != null && _gameUser != null)
+        {
+            var isController = _runningGames.Where(p => p.Email == _gameUser.Email && p.IsGameAdmin).Count() > 0;
+            return isController;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private bool IsSystemAdmin()
+    {
+        if (_gameUser != null)
+        {
+            var isAdmin = _gameUser.Email == _settings.SystemAdmin;
+            return isAdmin;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private string ShowFor(UserRoles role)
+    {
+        return _gameUser.HasRole(role) ? "inline" : "none";
+    }
+
+    internal class GameUser
+    {
+        private string _email;
+        private bool _isSystemAdmin;
+        private bool _isController;
+
+        internal GameUser(string email, bool isAdmin, bool isController)
+        {
+            _email = email;
+            _isSystemAdmin = isAdmin;
+            _isController = isController;
+        }
+
+        internal string Email
+        {
+            get
+            {
+                return _email;
+            }
+        }
+
+        internal bool IsSystemAdmin
+        {
+            get
+            {
+                return _isSystemAdmin;
+            }
+        }
+
+        internal bool IsGameController
+        {
+            get
+            {
+                return _isController;
+            }
+        }
+
+        internal bool HasRole(UserRoles role)
+        {
+            switch (role)
+            {
+                case UserRoles.Admin:
+                    return _isSystemAdmin;
+                case UserRoles.Controller:
+                    return _isController;
+                case UserRoles.AdminOrController:
+                    return (_isController || _isSystemAdmin);
+                case UserRoles.User:
+                    return (!_isController && !_isSystemAdmin);
+                default:
+                    return false;
+            }
+        }
+    }
 }

@@ -43,16 +43,19 @@ namespace CardGames.Hubs
             _logger.LogInformation($"New Game created with name: {name}.");
         }
 
-        [Authorize(Policy = "IsAdmin")]
+
         public async Task ResetGame(string gameId)
         {
-            var game = _gameService.ResetGame(gameId);
-            var games = _gameService.GetPlayerGames();
-            game.Status = _localizer["GameResetted", game.CurrentPlayerObj.FirstName];
-            await _gameService.SaveGame(game);
+            if (_gameService.IsUserGameController(gameId) || _gameService.IsUserSystemAdmin())
+            {
+                var game = _gameService.ResetGame(gameId);
+                var games = _gameService.GetPlayerGames();
+                game.Status = _localizer["GameResetted", game.CurrentPlayerObj.FirstName];
+                await _gameService.SaveGame(game);
 
-            await Clients.Caller.SendAsync("GameResetted", games);
-            await Clients.Group(gameId).SendAsync("GameResetted", game);
+                await Clients.Caller.SendAsync("GameResetted", games);
+                await Clients.Group(gameId).SendAsync("GameResetted", game);
+            }
         }
         
         [Authorize(Policy = "IsAdmin")]
@@ -89,9 +92,12 @@ namespace CardGames.Hubs
         [Authorize(Policy = "IsAdmin")]
         public async Task SaveGameToDb(string gameId)
         {
-            var game = _gameService.GetGame(gameId);
-            await _gameService.SaveGamePersistent(game,false);
-            await Clients.Caller.SendAsync("GameSavedToDB");
+            if (gameId != "TestGame")
+            {
+                var game = _gameService.GetGame(gameId);
+                await _gameService.SaveGamePersistent(game, false);
+                await Clients.Caller.SendAsync("GameSavedToDB");
+            }
         }
 
         [Authorize(Policy = "IsAdmin")]

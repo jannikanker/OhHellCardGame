@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http;
+using CardGames.Services;
 
 namespace CardGames.Server.Services
 {
@@ -134,9 +135,8 @@ namespace CardGames.Server.Services
             var game = GetGame(gameId);
             var nrPlayers = GetGame(gameId).NrPlayers;
 
-            _redisCacheClient.Db0.RemoveAsync(gameId).Wait();
             game.StartNewGame(true);
-            _redisCacheClient.Db0.AddAsync(gameId,game).Wait();
+            _redisCacheClient.Db0.ReplaceAsync(gameId,game).Wait();
 
             return game;
         }
