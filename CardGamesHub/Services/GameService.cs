@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http;
 using CardGames.Services;
 
-namespace CardGames.Server.Services
+namespace CardGamesHub.Server.Services
 {
     [Authorize]
     public class GameService

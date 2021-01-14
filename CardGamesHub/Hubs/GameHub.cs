@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using CardGames.Server.Services;
+using CardGamesHub.Server.Services;
 using CardGames.Shared.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -11,7 +11,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
-namespace CardGames.Hubs
+
+namespace CardGamesHub.Hubs
 {
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class GameHub : Hub
@@ -21,7 +22,7 @@ namespace CardGames.Hubs
         private readonly ILogger _logger;
         private GameSettings _settings;
 
-        public GameHub(GameService gameService, 
+        public GameHub(GameService gameService,
                        IStringLocalizer<GameHubStrings> localizer,
                        ILogger<GameHub> logger,
                        IOptions<GameSettings> settings)
@@ -57,7 +58,7 @@ namespace CardGames.Hubs
                 await Clients.Group(gameId).SendAsync("GameResetted", game);
             }
         }
-        
+
         [Authorize(Policy = "IsAdmin")]
         public async Task ResetCurrentRound(string gameId)
         {
@@ -208,7 +209,7 @@ namespace CardGames.Hubs
                 game.Betted = true;
             }
 
-            if (game.CurrentPlayer < game.NrPlayers-1)
+            if (game.CurrentPlayer < game.NrPlayers - 1)
                 game.CurrentPlayer++;
             else
                 game.CurrentPlayer = 0;
@@ -333,7 +334,7 @@ namespace CardGames.Hubs
         public async Task RoundWinner(string gameId, string winningPlayer)
         {
             var game = _gameService.GetGame(gameId);
-            foreach(var card in game.Rounds[game.CurrentRound].PlayedCards)
+            foreach (var card in game.Rounds[game.CurrentRound].PlayedCards)
             {
                 card.Winner = false;
             }

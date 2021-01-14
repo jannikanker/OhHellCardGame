@@ -7,5 +7,6 @@ namespace CardGames.Shared.Models
     public class GameSettings
     {
         public string SystemAdmin { get; set; }
+        public string GameHubUrl { get; set; }
     }
 }

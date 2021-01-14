@@ -113,7 +113,7 @@
         _gameUser = new GameUser(GetUserEmail().Result, IsSystemAdmin(), IsGameController());
 
         _hubConnection = new HubConnectionBuilder()
-        .WithUrl(NavigationManager.ToAbsoluteUri("/gameHub"), options =>
+        .WithUrl(_settings.GameHubUrl, options =>
         {
             options.AccessTokenProvider = GetAccessToken;
         })
@@ -270,7 +270,7 @@
 
 
 
-    //########### Internal functions ###########
+    #region Internal functions
 
     private async Task<string> GetUserEmail()
     {
@@ -321,6 +321,8 @@
     {
         return _gameUser.HasRole(role) ? "inline" : "none";
     }
+
+    #endregion
 
     internal class GameUser
     {

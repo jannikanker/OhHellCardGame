@@ -9,9 +9,7 @@
 @inject IConfiguration configuration;
 @inject Microsoft.Extensions.Options.IOptions<GameSettings> gameSettings
 @inject IStringLocalizer<UIStrings> L;
-@{
-    var settings = gameSettings.Value;
-}
+
 
 <link href="css/desktop.css" rel="stylesheet" />
 <style>
@@ -451,11 +449,13 @@
 
     private int _cardsWidth = 482;
     private int _cardIncrease = 121;
+    private GameSettings settings;
 
     protected override async Task OnInitializedAsync()
     {
+        settings = gameSettings.Value;
         _hubConnection = new HubConnectionBuilder()
-            .WithUrl(NavigationManager.ToAbsoluteUri("/gameHub"), options =>
+            .WithUrl(settings.GameHubUrl, options =>
             {
                 options.AccessTokenProvider = GetAccessToken;
             })
@@ -715,21 +715,6 @@
         }
     }
 
-
-    private string CreateGraphXML()
-    {
-        CreateScoreGraphDataSets();
-        var lineGraph = String.Format(" <LineChart InputSeries1=\"{0}\" InputSeries2=\"{1}\" InputSeries3=\"{2}\" InputSeries4=\"{3}\" XAxisLabels=\"{4}\" InputLabels=\"{5}\"></LineChart>",
-            string.Join(",", _inputSeries[0]),
-            string.Join(",", _inputSeries[1]),
-            string.Join(",", _inputSeries[2]),
-            string.Join(",", _inputSeries[3]),
-            _xAxisLabels,
-            _inputLabels
-            );
-
-        return lineGraph;
-    }
 
     private async Task<string> GetAccessToken()
     {

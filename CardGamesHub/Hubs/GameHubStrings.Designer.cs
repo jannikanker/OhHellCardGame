@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace CardGames.Hubs {
+namespace CardGamesHub.Hubs {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace CardGames.Hubs {
         public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("CardGames.Hubs.GameHubStrings", typeof(GameHubStrings).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("CardGamesHub.Hubs.GameHubStrings", typeof(GameHubStrings).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
