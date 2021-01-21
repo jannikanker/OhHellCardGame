@@ -1,0 +1,60 @@
+﻿@using CardGames.Shared.Models
+@using CardGames.Shared;
+
+
+<div class="modal @_modalClass" role="dialog" style="display: @_modalDisplay; overflow: auto">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Top Scores</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => Close()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" style="text-align:center">
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <td>#</td>
+                            <td>Name</td>
+                            <td>Game</td>
+                            <td>Date</td>
+                            <td>Score</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var score in _topScores)
+                        {
+                            <tr>
+                                <td>@(_topScores.IndexOf(score) + 1)</td>
+                                <td align="left">@(score.Name)</td>
+                                <td align="left">@(score.Id)</td>
+                                <td align="left">@(score.GameOverDateTime.ToShortDateString())</td>
+                                <td align="right">@(score.Score)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public List<GameScore> _topScores { get; set; }
+    [Parameter]
+    public string _selectedPlayer { get; set; }
+    [Parameter]
+    public string _modalClass { get; set; }
+    [Parameter]
+    public string _modalDisplay { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnCloseCallback { get; set; }
+
+    private void Close()
+    {
+        OnCloseCallback.InvokeAsync(0);
+    }
+}

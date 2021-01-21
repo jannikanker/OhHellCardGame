@@ -16,7 +16,8 @@ namespace CardGames.Shared.Models
         public string GameAdmin { get; set; }
         public Stock Stock { get; set; }
         public Player[] Players { get; set; }
-        public string[] Connections { get; set; }
+        public string[] PlayerConnections { get; set; }
+        public List<string> ViewerConnections { get; set; }
         public bool Playing { get; set; }
         public int NrCards { get; set; }
         public int NrPlayers { get; set; }
@@ -79,8 +80,8 @@ namespace CardGames.Shared.Models
             this.Id = gameId;
             this.NrPlayers = nrPlayers;
             this.Players = new Player[NrPlayers];
-            this.Connections = new string[NrPlayers];
-
+            this.PlayerConnections = new string[NrPlayers];
+            this.ViewerConnections = new List<string>();
             StartNewGame();
         }
 
@@ -113,6 +114,9 @@ namespace CardGames.Shared.Models
             this.Betted = false;
             this.GameOver = false;
 
+            //remove all viewers
+            this.ViewerConnections = new List<string>();
+
             if (!keepPlayer)
             {
                 for (int p = 0; p < NrPlayers; p++)
@@ -123,7 +127,7 @@ namespace CardGames.Shared.Models
             }
             else
             {
-                this.Connections = new string[NrPlayers];
+                this.PlayerConnections = new string[NrPlayers];
                 for (int p = 0; p < NrPlayers; p++)
                 {
                     this.Players[p].SignedIn = false;
@@ -345,6 +349,11 @@ namespace CardGames.Shared.Models
                 }
                 this.Rounds[this.CurrentRound].PlayedCards[Player.GetPlayerId(winningcard.PlayerId)].Winner = true;
             }
+        }
+
+        public bool IsGameController(int player)
+        {
+            return this.Players[player].IsGameController;
         }
 
         private T RandomEnum<T>(int range)

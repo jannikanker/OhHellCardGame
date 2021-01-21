@@ -1,5 +1,6 @@
 ﻿@page "/boerenbridge/{_selectedGame}/{_selectedPlayer}"
 @using Microsoft.AspNetCore.SignalR.Client
+@using CardGames.Shared; 
 @using CardGames.Shared.Models;
 @using Microsoft.Identity.Web
 @using Microsoft.Extensions.Configuration
@@ -34,378 +35,230 @@
         }
         else
         {
-            @if (!(_game.Players[GetPlayerId(_selectedPlayer)].Email == GetUserEmail().Result || GetUserEmail().Result == settings.SystemAdmin))
+            @if (_selectedPlayer.ToLower() == "view")
             {
-                <p>@L["NotAuthorized"]</p>
-                return;
-            }
-            <header>
-                <div style="position: absolute; top: 148px; right: 16px;">
-                    <div style="display:@_sideView">
-                        <img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="80" />
-                    </div>
-                </div>
-                <h3>@L["Welcome", @context.User.Identity.Name.Split(" ")[0]] @(IsGameController() ? "✏️" : "")</h3>
-                <h5 class="active">@_game.Status</h5>
-                <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
-                <button class="btn btn-success" @onclick="() => OpenTopScoreBoard()">Top Scores</button>
-                <button class="btn btn-success" disabled="@(!_game.GameOver)" @onclick="() => OpenGamePlayedCards()">History</button>
-                <button class="btn btn-success" @onclick="() => OpenLastPlayedCards()">Last</button>
-                <button class="btn btn-success" @onclick="() => OpenTrump()">@(GetColourChar(_game.PlayingCard.Colour.ToString()))</button>
-                <button id="btnShuffle"
-                        disabled="@((!_game.GameStarted || _game.Playing || _game.Shuffled || _game.GameOver) || (_game.PlayerToStartObj.Id != _selectedPlayer))"
-                        class="btn btn-success"
-                        @onclick="@(e => Shuffle())">
-                    @L["Shuffle"]
-                    @if (_game.CurrentRound < 8)
-                    {
-                        <b> ( @((_game.CurrentRound + 1).ToString()) )</b>
-                    }
-                    else
-                    {
-                        <b> ( @((16 - _game.CurrentRound).ToString()) )</b>
-                    }
-                </button>
-
-                <button class="btn btn-success" @onclick="@ToggleSideView"><img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="10" /></button>
-                <button style="display:@(IsGameController() ? "inline" : "none")"
-                        disabled="@(!_game.CleanTable || !IsGameController())"
-                        class="btn btn-success" @onclick="@CleanTable"
-                        title="@L["CleanTableText"]">
-                    @L["CleanTable"]
-                </button>
-                <button style="display: @(IsGameController() ? "inline" : "none")"
-                        disabled="@(!_game.RoundReady || _game.GameOver || !IsGameController())"
-                        class="btn btn-success" @onclick="@NextRound"
-                        title="@L["NextRoundText"]">
-                    @L["NextRound"]
-                </button>
-
-                <br />
-                @if (!_game.Rounds[_game.CurrentRound].AllBetsPlaced)
-                {
-                    for (int bet = 0; bet <= _game.Rounds[_game.CurrentRound].NrCards; bet++)
-                    {
-                        //Define if player is last and what bet is not allowed
-                        var lastBetter = _game.PlayerToStart - 1;
-                        if (lastBetter < 0)
-                            lastBetter = _game.NrPlayers - 1;
-
-                        var notAllowed = false;
-
-                        if (_game.CurrentPlayer == lastBetter)
-                        {
-                            var sum = 0;
-                            for (int b = 0; b < _game.NrPlayers; b++)
-                            {
-                                if (_game.Rounds[_game.CurrentRound].Bets[b] > -1)
-                                {
-                                    sum += _game.Rounds[_game.CurrentRound].Bets[b];
-                                }
-                            }
-                            var betNotAllowed = _game.Rounds[_game.CurrentRound].NrCards - sum;
-                            if (bet == betNotAllowed)
-                            {
-                                notAllowed = true;
-                            }
-                        }
-
-                        var localBetVar = bet;
-                        <button class=@(notAllowed && _game.CurrentPlayerObj.Id == _selectedPlayer ? "btn btn-outline-danger" : "btn btn-outline-success")
-                                disabled="@(notAllowed || !_game.Shuffled || _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(_selectedPlayer)] > -1 || (_game.CurrentPlayerObj.Id != _selectedPlayer))"
-                                @onclick="@(e => PlaceBet(e, localBetVar.ToString()))">
-                            @(notAllowed && _game.CurrentPlayerObj.Id == _selectedPlayer ? "X" : bet.ToString())
-                        </button>
-                    }
-                }
-
-                @if (string.IsNullOrEmpty(_selectedPlayer))
-                {
-                    <select @bind="_selectedPlayer" disabled="@(_playerSelected)">
-                        <option value="" selected>Select Player</option>
-                        @foreach (var p in _playerSelections)
-                        {
-                            <option selected="@(p.Id == _selectedPlayer ? true : false)" value="@p.Id">@p.Name</option>
-                        };
-                    </select>
-                    <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@GetAvailablePlayers">Refresh Players</button>
-                    <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@SelectPlayer">Select Player</button>
-                }
-
-                @if (IsGameController() && !_game.GameStarted)
-                {
-                    <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn)" class="btn btn-success" @onclick="@StartGame">Start</button>
-                }
-            </header>
-
-            <hr />
-            <section>
-                <fieldset class="scheduler-border-playedcards">
-                    <legend>
-                        @L["PlayedCards"]
-                    </legend>
-                    @foreach (var playedCard in _game.Rounds[_game.CurrentRound].PlayedCards)
-                    {
-                        <div class=@(playedCard.Winner ? "galleryWon" : (playedCard.PlayerId == _game.CurrentPlayerObj.Id ? "galleryCurrentPlayer" : "gallery"))>
-                            <div class="desc">
-                                <p>
-                                    @(_game.Players[GetPlayerId(playedCard.PlayerId)].FirstName)
-                                    <br />
-                                    🎰@(_game.Rounds[_game.CurrentRound].Bets[GetPlayerId(playedCard.PlayerId)] < 0 ? "?" : _game.Rounds[_game.CurrentRound].Bets[GetPlayerId(playedCard.PlayerId)].ToString())
-                                    🏆@(_game.Rounds[_game.CurrentRound].Wins[GetPlayerId(playedCard.PlayerId)].ToString())
-                                </p>
-
-                                @if (playedCard.Card != null)
-                                {
-
-                                    <div id="PlayCard_@(playedCard.PlayerId)"><img src="/CardImages/@(playedCard.Card == null ? "green_back" : playedCard.Card.Face).png" width="80" style="padding: 0px 0px 5px 0px;" /></div>
-                                    @if (_game.ChooseWinner)
-                                    {
-                                        <button class="btn btn-outline-info" style="visibility:@(_game.ChooseWinner ? "visible" : "hidden")" disabled="@(!_game.ChooseWinner || !IsGameController())" @onclick="@(e => Winner(e, playedCard))">@L["Won"]</button>
-                                    }
-                                }
-                                else
-                                {
-                                    <img src="/CardImages/green_back.png" width="80" />
-                                }
-                            </div>
-                        </div>
-                    }
-                </fieldset>
-
+                <header>
+                    <p>@L["NotAuthorized"]</p>
+                </header>
                 <hr />
-                <fieldset class="scheduler-border-playercards">
-                    <legend>@L["Cards", _game.Players[GetPlayerId(_selectedPlayer)].FirstName] | @L["Colour"]: @(GetColourChar(_game.PlayingCard.Colour.ToString()))</legend>
-                    @foreach (var card in _cards)
-                    {
-                        //define what can be played
-                        var canPlayCard = true;
-                        if ((_game.PlayerToStartObj.Id != _selectedPlayer)
-                            &&
-                            (_game.Rounds[_game.CurrentRound]
-                            .PlayedCards.Where(pc => pc.Card != null)
-                            .Count() > 0))
-                        {
-                            var playedColour = _game.Rounds[_game.CurrentRound].PlayedCards
-                                .Where(p => p.PlayerId == _game.PlayerToStartObj.Id)
-                                .FirstOrDefault().Card.Colour;
-                            var cardswithPlayingColour = _cards.Where(c => c.Colour == playedColour).Count();
-                            canPlayCard = cardswithPlayingColour > 0 ? (card.Colour == playedColour ? true : false) : true;
-                        }
-                        canPlayCard = !(!canPlayCard || _game.ChooseWinner || _game.CleanTable || !_game.Betted || (_game.CurrentPlayerObj.Id != _selectedPlayer));
+                <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
+                <br />
 
-                        <div class="gallery">
-                            <div class="desc">
-                                <div id="PlayerCard_@_cards.IndexOf(card).ToString()"><img src="/CardImages/@(card.Face).png" width="80" style="padding: 0px 0px 5px 0px;" /></div>
-                                <div>
-                                    <button id="PlayButton_@_cards.IndexOf(card).ToString()"
-                                            disabled="@(!canPlayCard)"
-                                            class="@(canPlayCard ? "btn btn-success" : "btn btn-outline-success")"
-                                            @onclick="@(e => Play(e, _selectedPlayer, card, canPlayCard))">
-                                        @L["Play"]
-                                    </button>
+                <section>
+                    <fieldset class="scheduler-border-playedcards">
+                        <legend>
+                            @L["PlayedCards"]
+                        </legend>
+
+
+                        @foreach (var playedCard in _game.Rounds[_game.CurrentRound].PlayedCards)
+                        {
+                            <div class=@(playedCard.Winner ? "galleryWon" : (playedCard.PlayerId == _game.CurrentPlayerObj.Id ? "galleryCurrentPlayer" : "gallery"))>
+                                <div class="desc">
+                                    <p>
+                                        @(_game.Players[GameUtils.GetPlayerId(playedCard.PlayerId)].FirstName)
+                                        <br />
+                                        🎰@(_game.Rounds[_game.CurrentRound].Bets[GameUtils.GetPlayerId(playedCard.PlayerId)] < 0 ? "?" : _game.Rounds[_game.CurrentRound].Bets[GameUtils.GetPlayerId(playedCard.PlayerId)].ToString())
+                                        🏆@(_game.Rounds[_game.CurrentRound].Wins[GameUtils.GetPlayerId(playedCard.PlayerId)].ToString())
+                                    </p>
+
+                                    @if (playedCard.Card != null)
+                                    {
+
+                                        <div id="PlayCard_@(playedCard.PlayerId)"><img src="/CardImages/@(playedCard.Card == null ? "green_back" : playedCard.Card.Face).png" width="80" style="padding: 0px 0px 5px 0px;" /></div>
+                                    }
+                                    else
+                                    {
+                                        <img src="/CardImages/green_back.png" width="80" />
+                                    }
                                 </div>
                             </div>
-                        </div>
-                    }
-                </fieldset>
-            </section>
+                        }
+                    </fieldset>
+                </section>
+                <CardGames.Components.ScoreBoard _game="@_game" _selectedPlayer="@_selectedPlayer" _modalClass="@_modalClass" _modalDisplay="@_modalDisplay" OnCloseCallback="@CloseScoreBoard" />
 
-            <div class="modal @_modalClass" role="dialog" style="display: @_modalDisplay; overflow: auto">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">ScoreBoard</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => CloseScoreBoard()">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <table class="table table-sm table-striped">
-                                <thead>
-                                    <tr>
-                                        <td></td>
-                                        @(_inputLabels = "")
-                                        @foreach (var player in _game.Players)
-                                        {
-                                            <td><p style="color: @(IsGameController(player.Id) ? "red" : "black")">@(player.Name == null ? player.Id : player.Name.Split(" ")[0])</p></td>
-                                            _inputLabels += player.FirstName;
-                                            if (!_game.Players.Last().Equals(player))
-                                                _inputLabels += ",";
-                                        }
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @for (int round = 0; round < _game.Rounds.Length; round++)
-                                    {
-                                        <tr>
-                                            <td>
-                                                @if (round < 8)
-                                                {
-                                                    <b>@((round+1).ToString())</b>
-                                                }
-                                                else
-                                                {
-                                                    <b>@((16 - round).ToString())</b>
-                                                }
-                                            </td>
-                                            @for (var playerIndex = 0; playerIndex < _game.Players.Length; playerIndex++)
-                                            {
-                                                var player = _game.Players[playerIndex];
-                                                @if (round < _game.CurrentRound || _game.GameOver)
-                                                {
-                                                    <td style="background-color:@(_game.Rounds[round].Winners[GetPlayerId(player.Id)] ? "lightgreen" : "lightcoral")">
-                                                        @(_game.Rounds[round].Scores[GetPlayerId(player.Id)].ToString())
-                                                    </td>
-                                                }
-                                                else
-                                                {
-                                                    <td>@(_game.Rounds[round].Scores[GetPlayerId(player.Id)].ToString())</td>
-                                                }
-                                            }
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
+            }
+            else
+            {
+                <header>
+                    <div style="position: absolute; top: 148px; right: 16px;">
+                        <div style="display:@_sideView">
+                            <img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="80" />
                         </div>
                     </div>
-                </div>
-            </div>
+                    <h3>@L["Welcome", @context.User.Identity.Name.Split(" ")[0]] @(IsGameController(_selectedPlayer) ? "✏️" : "")</h3>
+                    <h5 class="active">@_game.Status</h5>
+                    <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
+                    <button class="btn btn-success" @onclick="() => OpenTopScoreBoard()">Top Scores</button>
+                    <button class="btn btn-success" disabled="@(!_game.GameOver)" @onclick="() => OpenGamePlayedCards()">History</button>
+                    <button class="btn btn-success" @onclick="() => OpenLastPlayedCards()">Last</button>
+                    <button class="btn btn-success" @onclick="() => OpenTrump()">@(GetColourChar(_game.PlayingCard.Colour.ToString()))</button>
+                    <button id="btnShuffle"
+                            disabled="@((!_game.GameStarted || _game.Playing || _game.Shuffled || _game.GameOver) || (_game.PlayerToStartObj.Id != _selectedPlayer))"
+                            class="btn btn-success"
+                            @onclick="@(e => Shuffle())">
+                        @L["Shuffle"]
+                        @if (_game.CurrentRound < 8)
+                        {
+                            <b> ( @((_game.CurrentRound + 1).ToString()) )</b>
+                        }
+                        else
+                        {
+                            <b> ( @((16 - _game.CurrentRound).ToString()) )</b>
+                        }
+                    </button>
 
-            <div class="modal @_modalClassTrump" role="dialog" style="display: @_modalDisplayTrump; overflow: auto">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">@L["Colour"]</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => CloseTrump()">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body" style="text-align:center">
-                            <img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="200" />
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    <button class="btn btn-success" @onclick="@ToggleSideView"><img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="10" /></button>
+                    <button style="display:@(IsGameController(_selectedPlayer) ? "inline" : "none")"
+                            disabled="@(!_game.CleanTable || !IsGameController(_selectedPlayer))"
+                            class="btn btn-success" @onclick="@CleanTable"
+                            title="@L["CleanTableText"]">
+                        @L["CleanTable"]
+                    </button>
+                    <button style="display: @(IsGameController(_selectedPlayer) ? "inline" : "none")"
+                            disabled="@(!_game.RoundReady || _game.GameOver || !IsGameController(_selectedPlayer))"
+                            class="btn btn-success" @onclick="@NextRound"
+                            title="@L["NextRoundText"]">
+                        @L["NextRound"]
+                    </button>
 
-            <div class="modal @_modalClassTopscores" role="dialog" style="display: @_modalDisplayTopscores; overflow: auto">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Top Scores</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => CloseTopScoreBoard()">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body" style="text-align:center">
-                            <table class="table table-sm table-striped">
-                                <thead>
-                                    <tr>
-                                        <td>#</td>
-                                        <td>Name</td>
-                                        <td>Game</td>
-                                        <td>Date</td>
-                                        <td>Score</td>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var score in _topScores)
-                                    {
-                                        <tr>
-                                            <td>@(_topScores.IndexOf(score)+1)</td>
-                                            <td align="left">@(score.Name)</td>
-                                            <td align="left">@(score.Id)</td>
-                                            <td align="left">@(score.GameOverDateTime.ToShortDateString())</td>
-                                            <td align="right">@(score.Score)</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    <br />
+                    @if (!_game.Rounds[_game.CurrentRound].AllBetsPlaced)
+                    {
+                        for (int bet = 0; bet <= _game.Rounds[_game.CurrentRound].NrCards; bet++)
+                        {
+                            //Define if player is last and what bet is not allowed
+                            var lastBetter = _game.PlayerToStart - 1;
+                            if (lastBetter < 0)
+                                lastBetter = _game.NrPlayers - 1;
 
-            <div class="modal @_modalClassLastCards" role="dialog" style="display: @_modalDisplayLastCards; overflow: auto">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">@L["LastPlayedCards"]</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => CloseLastPlayedCards()">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body" style="text-align:center">
-                            <table border="0">
-                                <tr>
-                                    @foreach (var player in _game.Players)
-                                    {
-                                        <td>
-                                            @(player.FirstName)
-                                        </td>
-                                    }
-                                </tr>
-                                <tr>
-                                    @foreach (var face in ShowLastPlayedCard())
-                                    {
-                                        <td>
-                                            <img src="/CardImages/@(face.ToString() + ".png")" width="100" />
-                                        </td>
-                                    }
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                            var notAllowed = false;
 
-            <div class="modal @_modalClassGameCards" role="dialog" style="display: @_modalDisplayGameCards; overflow: auto">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">@L["LastPlayedCards"]</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => CloseGamePlayedCards()">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body" style="text-align:center">
-                            <table border="0">
-                                <tr>
-                                    <td>Round</td>
-                                    <td>Card</td>
-                                    @foreach (var player in _game.Players)
-                                    {
-
-                                        <td>
-                                            @(player.FirstName)
-                                        </td>
-                                    }
-                                </tr>
-
-                                @foreach (var gameRounds in _game.Rounds)
+                            if (_game.CurrentPlayer == lastBetter)
+                            {
+                                var sum = 0;
+                                for (int b = 0; b < _game.NrPlayers; b++)
                                 {
-                                    foreach (var roundHistory in gameRounds.PlayHistory)
+                                    if (_game.Rounds[_game.CurrentRound].Bets[b] > -1)
                                     {
-                                        <tr>
-                                            <td></td>
-                                            <td></td>
-                                            @foreach (var playerCard in roundHistory)
-                                            {
-                                                <td style="border:@(playerCard.Winner? "dashed" : "medium")">
-                                                    <img src="/CardImages/@(playerCard.Card.Face.ToString() + ".png")" width="50" />
-                                                </td>
-
-                                            }
-                                        </tr>
+                                        sum += _game.Rounds[_game.CurrentRound].Bets[b];
                                     }
                                 }
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                                var betNotAllowed = _game.Rounds[_game.CurrentRound].NrCards - sum;
+                                if (bet == betNotAllowed)
+                                {
+                                    notAllowed = true;
+                                }
+                            }
 
+                            var localBetVar = bet;
+                            <button class=@(notAllowed && _game.CurrentPlayerObj.Id == _selectedPlayer ? "btn btn-outline-danger" : "btn btn-outline-success")
+                                    disabled="@(notAllowed || !_game.Shuffled || _game.Rounds[_game.CurrentRound].Bets[GameUtils.GetPlayerId(_selectedPlayer)] > -1 || (_game.CurrentPlayerObj.Id != _selectedPlayer))"
+                                    @onclick="@(e => PlaceBet(e, localBetVar.ToString()))">
+                                @(notAllowed && _game.CurrentPlayerObj.Id == _selectedPlayer ? "X" : bet.ToString())
+                            </button>
+                        }
+                    }
 
+                    @if (string.IsNullOrEmpty(_selectedPlayer))
+                    {
+                        <select @bind="_selectedPlayer" disabled="@(_playerSelected)">
+                            <option value="" selected>Select Player</option>
+                            @foreach (var p in _playerSelections)
+                            {
+                                <option selected="@(p.Id == _selectedPlayer ? true : false)" value="@p.Id">@p.Name</option>
+                            };
+                        </select>
+                        <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@GetAvailablePlayers">Refresh Players</button>
+                        <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@SelectPlayer">Select Player</button>
+                    }
+
+                    @if (IsGameController(_selectedPlayer) && !_game.GameStarted)
+                    {
+                        <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn)" class="btn btn-success" @onclick="@StartGame">Start</button>
+                    }
+                </header>
+
+                <hr />
+                <section>
+                    <fieldset class="scheduler-border-playedcards">
+                        <legend>
+                            @L["PlayedCards"]
+                        </legend>
+                        @foreach (var playedCard in _game.Rounds[_game.CurrentRound].PlayedCards)
+                        {
+                            <div class=@(playedCard.Winner ? "galleryWon" : (playedCard.PlayerId == _game.CurrentPlayerObj.Id ? "galleryCurrentPlayer" : "gallery"))>
+                                <div class="desc">
+                                    <p>
+                                        @(_game.Players[GameUtils.GetPlayerId(playedCard.PlayerId)].FirstName)
+                                        <br />
+                                        🎰@(_game.Rounds[_game.CurrentRound].Bets[GameUtils.GetPlayerId(playedCard.PlayerId)] < 0 ? "?" : _game.Rounds[_game.CurrentRound].Bets[GameUtils.GetPlayerId(playedCard.PlayerId)].ToString())
+                                        🏆@(_game.Rounds[_game.CurrentRound].Wins[GameUtils.GetPlayerId(playedCard.PlayerId)].ToString())
+                                    </p>
+
+                                    @if (playedCard.Card != null)
+                                    {
+
+                                        <div id="PlayCard_@(playedCard.PlayerId)"><img src="/CardImages/@(playedCard.Card == null ? "green_back" : playedCard.Card.Face).png" width="80" style="padding: 0px 0px 5px 0px;" /></div>
+                                        @if (_game.ChooseWinner)
+                                        {
+                                            <button class="btn btn-outline-info" style="visibility:@(_game.ChooseWinner ? "visible" : "hidden")" disabled="@(!_game.ChooseWinner || !IsGameController(_selectedPlayer))" @onclick="@(e => Winner(e, playedCard))">@L["Won"]</button>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <img src="/CardImages/green_back.png" width="80" />
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </fieldset>
+
+                    <hr />
+                    <fieldset class="scheduler-border-playercards">
+                        <legend>@L["Cards", _game.Players[GameUtils.GetPlayerId(_selectedPlayer)].FirstName] | @L["Colour"]: @(GetColourChar(_game.PlayingCard.Colour.ToString()))</legend>
+                        @foreach (var card in _cards)
+                        {
+                            //define what can be played
+                            var canPlayCard = true;
+                            if ((_game.PlayerToStartObj.Id != _selectedPlayer)
+                                &&
+                                (_game.Rounds[_game.CurrentRound]
+                                .PlayedCards.Where(pc => pc.Card != null)
+                                .Count() > 0))
+                            {
+                                var playedColour = _game.Rounds[_game.CurrentRound].PlayedCards
+                                    .Where(p => p.PlayerId == _game.PlayerToStartObj.Id)
+                                    .FirstOrDefault().Card.Colour;
+                                var cardswithPlayingColour = _cards.Where(c => c.Colour == playedColour).Count();
+                                canPlayCard = cardswithPlayingColour > 0 ? (card.Colour == playedColour ? true : false) : true;
+                            }
+                            canPlayCard = !(!canPlayCard || _game.ChooseWinner || _game.CleanTable || !_game.Betted || (_game.CurrentPlayerObj.Id != _selectedPlayer));
+
+                            <div class="gallery">
+                                <div class="desc">
+                                    <div id="PlayerCard_@_cards.IndexOf(card).ToString()"><img src="/CardImages/@(card.Face).png" width="80" style="padding: 0px 0px 5px 0px;" /></div>
+                                    <div>
+                                        <button id="PlayButton_@_cards.IndexOf(card).ToString()"
+                                                disabled="@(!canPlayCard)"
+                                                class="@(canPlayCard ? "btn btn-success" : "btn btn-outline-success")"
+                                                @onclick="@(e => Play(e, _selectedPlayer, card, canPlayCard))">
+                                            @L["Play"]
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </fieldset>
+                </section>
+
+                <CardGames.Components.ScoreBoard _game="@_game" _selectedPlayer="@_selectedPlayer" _modalClass="@_modalClass" _modalDisplay="@_modalDisplay" OnCloseCallback="@CloseScoreBoard" />
+                <CardGames.Components.Trump _game="@_game" _selectedPlayer="@_selectedPlayer" _modalClass="@_modalClassTrump" _modalDisplay="@_modalDisplayTrump" OnCloseCallback="@CloseTrump" />
+                <CardGames.Components.TopScores _topScores="@_topScores" _selectedPlayer="@_selectedPlayer" _modalClass="@_modalClassTopscores" _modalDisplay="@_modalDisplayTopscores" OnCloseCallback="@CloseTopScoreBoard" />
+                <CardGames.Components.LastPlayedCards _game="@_game" _selectedPlayer="@_selectedPlayer" _modalClass="@_modalClassLastCards" _modalDisplay="@_modalDisplayLastCards" OnCloseCallback="@CloseLastPlayedCards" />
+                <CardGames.Components.CardHistory _game="@_game" _selectedPlayer="@_selectedPlayer" _modalClass="@_modalClassGameCards" _modalDisplay="@_modalDisplayGameCards" OnCloseCallback="@CloseGamePlayedCards" />
+            }
         }
     </Authorized>
     <NotAuthorized>
@@ -464,15 +317,20 @@
 
         _hubConnection.On<Game, List<GameScore>>("JoinedGame", (game, topScores) =>
         {
+            if(_selectedPlayer.ToLower() == "view")
+            {
+                return;
+            }
+
             _inprogress = false;
             _game = game;
             _topScores = topScores;
-            _cardsWidth = 482 + (game.Players[GetPlayerId(_selectedPlayer)].Cards.Count() > 4 ? (_cardIncrease * (game.Players[GetPlayerId(_selectedPlayer)].Cards.Count() - 4)) : 0);
+            _cardsWidth = 482 + (game.Players[GameUtils.GetPlayerId(_selectedPlayer)].Cards.Count() > 4 ? (_cardIncrease * (game.Players[GameUtils.GetPlayerId(_selectedPlayer)].Cards.Count() - 4)) : 0);
             if (game != null)
             {
                 if (!string.IsNullOrEmpty(_selectedPlayer))
                 {
-                    _cards = _game.Players[GetPlayerId(_selectedPlayer)].Cards;
+                    _cards = _game.Players[GameUtils.GetPlayerId(_selectedPlayer)].Cards;
                 }
                 _inputSeries = new string[_game.Players.Length][];
                 for (int p = 0; p < _game.Players.Length; p++)
@@ -481,6 +339,15 @@
                     Array.Fill(_inputSeries[p], "0");
                 }
             }
+            StateHasChanged();
+        });
+
+        _hubConnection.On<Game, List<GameScore>>("ViewedGame", (game, topScores) =>
+        {
+            _inprogress = false;
+            _game = game;
+            _topScores = topScores;
+
             StateHasChanged();
         });
 
@@ -495,7 +362,7 @@
         _hubConnection.On<Game>("GameResetted", (game) =>
         {
             _game = game;
-            _cards = _game.Players[GetPlayerId(_selectedPlayer)].Cards;
+            _cards = _game.Players[GameUtils.GetPlayerId(_selectedPlayer)].Cards;
             StateHasChanged();
         });
 
@@ -516,7 +383,7 @@
 
             if (_selectedPlayer == signedInPlayerID)
             {
-                _cards = _game.Players[GetPlayerId(signedInPlayerID)].Cards;
+                _cards = _game.Players[GameUtils.GetPlayerId(signedInPlayerID)].Cards;
             }
 
             StateHasChanged();
@@ -592,7 +459,10 @@
         if (authState.User.Identity.IsAuthenticated)
         {
             await _hubConnection.StartAsync();
-            await JoinGame();
+            if (_selectedPlayer.ToLower() == "view")
+                await ViewGame();
+            else
+                await JoinGame();
         }
     }
 
@@ -670,15 +540,12 @@
         StateHasChanged();
     }
 
-
-
     public void CloseLastPlayedCards()
     {
         _modalClassLastCards = "none";
         _modalDisplayLastCards = "";
         StateHasChanged();
     }
-
 
     public void CreateScoreGraphDataSets()
     {
@@ -693,28 +560,13 @@
             for (int r = 0; r <= _game.CurrentRound + 1; r++)
             {
                 if (r > 0)
-                    _inputSeries[GetPlayerId(player.Id)][r] = _game.Rounds[r - 1].Scores[GetPlayerId(player.Id)].ToString();
+                    _inputSeries[GameUtils.GetPlayerId(player.Id)][r] = _game.Rounds[r - 1].Scores[GameUtils.GetPlayerId(player.Id)].ToString();
             }
         }
 
         //create inputs for graph
         _xAxisLabels = string.Join(",", xAxisLabelsArray);
     }
-
-    private string[] ShowLastPlayedCard()
-    {
-        if (_game.Rounds[_game.CurrentRound].PlayHistory.Count() > 0)
-        {
-            var lastPlayedCards = _game.Rounds[_game.CurrentRound].PlayHistory.Last();
-            var faces = lastPlayedCards.Select(f => f.Card.Face).ToArray();
-            return faces;
-        }
-        else
-        {
-            return new string[0];
-        }
-    }
-
 
     private async Task<string> GetAccessToken()
     {
@@ -739,7 +591,6 @@
         return token;
     }
 
-
     private async Task PlaceBet(MouseEventArgs e, string bet)
     {
         if (!_inprogress)
@@ -762,6 +613,18 @@
             }
     }
 
+    private async Task ViewGame()
+    {
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+
+        if (!string.IsNullOrEmpty(_selectedGame))
+            if (!_inprogress)
+            {
+                await _hubConnection.SendAsync("ViewGame", _selectedGame);
+                _inprogress = true;
+            }
+    }
 
     private async Task CleanTable()
     {
@@ -819,7 +682,6 @@
             _hubConnection.SendAsync("RoundWinner", _game.Id, winningCard.PlayerId);
             _inprogress = true;
         }
-
     }
 
     private async Task SelectPlayer()
@@ -841,13 +703,6 @@
         }
     }
 
-    private int GetPlayerId(string player)
-    {
-        var pId = 0;
-        pId = Convert.ToInt32(player.Substring(1, 1)) - 1;
-
-        return pId;
-    }
 
     private async Task<string> GetUserEmail()
     {
@@ -868,14 +723,9 @@
         }
     }
 
-    private bool IsGameController()
-    {
-        return IsGameController(_selectedPlayer);
-    }
-
     private bool IsGameController(string player)
     {
-        return _game.Players[GetPlayerId(player)].IsGameController;
+        return _game.IsGameController(GameUtils.GetPlayerId(player));
     }
 
     private string GetColourChar(string colour)

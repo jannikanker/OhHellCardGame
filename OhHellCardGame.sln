@@ -6,7 +6,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CardGames.Shared", "Shared\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CardGames", "CardGames\CardGames.csproj", "{FF376747-E481-40C7-9E5F-3CBBAADD9653}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CardGamesHub", "CardGamesHub\CardGamesHub.csproj", "{38085497-45C6-40CA-9A65-157556A2ACD1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CardGamesHub", "CardGamesHub\CardGamesHub.csproj", "{38085497-45C6-40CA-9A65-157556A2ACD1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

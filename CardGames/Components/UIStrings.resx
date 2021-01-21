@@ -117,52 +117,7 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Betting" xml:space="preserve">
-    <value>Inzet</value>
-  </data>
-  <data name="Cards" xml:space="preserve">
-    <value>Kaarten van {0}</value>
-  </data>
-  <data name="CleanTable" xml:space="preserve">
-    <value>✅</value>
-  </data>
-  <data name="CleanTableText" xml:space="preserve">
-    <value>Tafel Leeg</value>
-  </data>
   <data name="Colour" xml:space="preserve">
     <value>Troef</value>
-  </data>
-  <data name="GameStartingUp" xml:space="preserve">
-    <value>Het spel {0} is aan het opstarten of is er nog niet. Wacht aub even.</value>
-  </data>
-  <data name="LastPlayedCards" xml:space="preserve">
-    <value>Laatst gespeelde kaarten</value>
-  </data>
-  <data name="Login" xml:space="preserve">
-    <value>Login voor je kan spelen</value>
-  </data>
-  <data name="NextRound" xml:space="preserve">
-    <value>🔄</value>
-  </data>
-  <data name="NextRoundText" xml:space="preserve">
-    <value>Volgende Ronde</value>
-  </data>
-  <data name="NotAuthorized" xml:space="preserve">
-    <value>Je bent niet geauthorizeerd om dit spel te spelen. Maar je kan meekijken.</value>
-  </data>
-  <data name="Play" xml:space="preserve">
-    <value>▶</value>
-  </data>
-  <data name="PlayedCards" xml:space="preserve">
-    <value>Gespeelde kaarten</value>
-  </data>
-  <data name="Shuffle" xml:space="preserve">
-    <value>Delen</value>
-  </data>
-  <data name="Welcome" xml:space="preserve">
-    <value>Hoi {0}</value>
-  </data>
-  <data name="Won" xml:space="preserve">
-    <value>🥇</value>
   </data>
 </root>

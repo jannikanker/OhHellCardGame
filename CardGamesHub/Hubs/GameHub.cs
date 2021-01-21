@@ -21,6 +21,7 @@ namespace CardGamesHub.Hubs
         private IStringLocalizer<GameHubStrings> _localizer;
         private readonly ILogger _logger;
         private GameSettings _settings;
+        private string _viewUser = "viewer";
 
         public GameHub(GameService gameService,
                        IStringLocalizer<GameHubStrings> localizer,
@@ -140,6 +141,26 @@ namespace CardGamesHub.Hubs
             }
         }
 
+        public async Task ViewGame(string gameId)
+        {
+            var game = _gameService.GetGame(gameId);
+            if (game != null)
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
+
+                var gameScores = await _gameService.GetTopScores();
+
+                game.ViewerConnections.Add(Context.ConnectionId);
+                await _gameService.SaveGame(game);
+
+                //Remove all card from game that is sent back to viewer so they cannot see cards of players
+                Array.ForEach(game.Players, player => player.Cards.Clear());
+
+                await Clients.Caller.SendAsync("ViewedGame", game, gameScores);
+                _logger.LogInformation($"{GetUser()} joined Game for viewing {gameId}.");
+            }
+        }
+
         public async Task JoinGame(string gameId, string selectedPlayer, string name)
         {
             var game = _gameService.GetGame(gameId);
@@ -149,11 +170,11 @@ namespace CardGamesHub.Hubs
                 {
                     game.Players.Where(p => p.Id == selectedPlayer).First().SignedIn = true;
                     game.Players.Where(p => p.Id == selectedPlayer).First().Name = name;
-                    if (!string.IsNullOrEmpty(game.Connections[Player.GetPlayerId(selectedPlayer)]))
+                    if (!string.IsNullOrEmpty(game.PlayerConnections[Player.GetPlayerId(selectedPlayer)]))
                     {
-                        await Groups.RemoveFromGroupAsync(game.Connections[Player.GetPlayerId(selectedPlayer)], gameId);
+                        await Groups.RemoveFromGroupAsync(game.PlayerConnections[Player.GetPlayerId(selectedPlayer)], gameId);
                     }
-                    game.Connections[Player.GetPlayerId(selectedPlayer)] = Context.ConnectionId;
+                    game.PlayerConnections[Player.GetPlayerId(selectedPlayer)] = Context.ConnectionId;
                     await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
 
                     var notsignedinplayer = "";
@@ -255,7 +276,11 @@ namespace CardGamesHub.Hubs
             foreach (var pl in game.Players)
             {
                 var pId = Player.GetPlayerId(pl.Id);
-                await Clients.Client(game.Connections[pId]).SendAsync("PlayedCard", game.Players[pId].Cards, game);
+                await Clients.Client(game.PlayerConnections[pId]).SendAsync("PlayedCard", game.Players[pId].Cards, game);
+            }
+            foreach(var connection in game.ViewerConnections)
+            {
+                await Clients.Client(connection).SendAsync("PlayedCard", new System.Collections.Generic.List<Card>(), game);
             }
         }
 
@@ -271,7 +296,7 @@ namespace CardGamesHub.Hubs
             foreach (var pl in game.Players)
             {
                 var pId = Player.GetPlayerId(pl.Id);
-                await Clients.Client(game.Connections[pId]).SendAsync("Shuffled", game.Players[pId].Cards, game);
+                await Clients.Client(game.PlayerConnections[pId]).SendAsync("Shuffled", game.Players[pId].Cards, game);
             }
         }
 

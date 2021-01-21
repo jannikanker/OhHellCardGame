@@ -151,7 +151,7 @@ namespace CardGames.Pages {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Je bent niet geauthorizeerd om dit spel te spelen.
+        ///   Looks up a localized string similar to Je bent niet geauthorizeerd om dit spel te spelen. Maar je kan meekijken..
         /// </summary>
         public static string NotAuthorized {
             get {
