@@ -57,6 +57,8 @@
                                     <p>
                                         @(_game.Players[GameUtils.GetPlayerId(playedCard.PlayerId)].FirstName)
                                         <br />
+                                        [ @(_game.Players[GameUtils.GetPlayerId(playedCard.PlayerId)].Score) ]
+                                        <br/>
                                         🎰@(_game.Rounds[_game.CurrentRound].Bets[GameUtils.GetPlayerId(playedCard.PlayerId)] < 0 ? "?" : _game.Rounds[_game.CurrentRound].Bets[GameUtils.GetPlayerId(playedCard.PlayerId)].ToString())
                                         🏆@(_game.Rounds[_game.CurrentRound].Wins[GameUtils.GetPlayerId(playedCard.PlayerId)].ToString())
                                     </p>
@@ -191,6 +193,8 @@
                                 <div class="desc">
                                     <p>
                                         @(_game.Players[GameUtils.GetPlayerId(playedCard.PlayerId)].FirstName)
+                                        <br />
+                                        [ @(_game.Players[GameUtils.GetPlayerId(playedCard.PlayerId)].Score) ]
                                         <br />
                                         🎰@(_game.Rounds[_game.CurrentRound].Bets[GameUtils.GetPlayerId(playedCard.PlayerId)] < 0 ? "?" : _game.Rounds[_game.CurrentRound].Bets[GameUtils.GetPlayerId(playedCard.PlayerId)].ToString())
                                         🏆@(_game.Rounds[_game.CurrentRound].Wins[GameUtils.GetPlayerId(playedCard.PlayerId)].ToString())
