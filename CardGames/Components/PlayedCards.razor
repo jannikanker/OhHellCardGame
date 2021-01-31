@@ -1,0 +1,59 @@
+﻿@using CardGames.Shared.Models
+@using CardGames.Shared;
+@inject IStringLocalizer<Pages.UIStrings> L;
+
+<fieldset class="scheduler-border-playedcards">
+    <legend>
+        @L["PlayedCards"]
+    </legend>
+    @foreach (var playedCard in game.Rounds[game.CurrentRound].PlayedCards)
+    {
+        <div class=@(playedCard.Winner ? "galleryWon" : (playedCard.PlayerId == game.CurrentPlayerObj.Id ? "galleryCurrentPlayer" : "gallery"))>
+            <div class="desc">
+                <p>
+                    @(game.Players[GameUtils.GetPlayerId(playedCard.PlayerId)].FirstName)
+                    <br />
+                    [ @(game.Players[GameUtils.GetPlayerId(playedCard.PlayerId)].Score) ]
+                    <br />
+                    🎰@(game.Rounds[game.CurrentRound].Bets[GameUtils.GetPlayerId(playedCard.PlayerId)] < 0 ? "?" :
+                                            game.Rounds[game.CurrentRound].Bets[GameUtils.GetPlayerId(playedCard.PlayerId)].ToString())
+                    🏆@(game.Rounds[game.CurrentRound].Wins[GameUtils.GetPlayerId(playedCard.PlayerId)].ToString())
+                </p>
+
+                @if (playedCard.Card != null)
+                {
+                    <div id="PlayCard_@(playedCard.PlayerId)">
+                        <img src="/CardImages/@(playedCard.Card == null ? "green_back" : playedCard.Card.Face).png" width="80" style="padding: 0px 0px 5px 0px;" />
+                    </div>
+                    @if (game.ChooseWinner && selectedPlayer != "view")
+                    {
+                        <button class="btn btn-outline-info" style="visibility:@(game.ChooseWinner ? "visible" : "hidden")"
+                                disabled="@(!game.ChooseWinner || !game.IsGameController(GameUtils.GetPlayerId(selectedPlayer)))"
+                                @onclick="@(e => Winner(e, playedCard))">
+                            @L["Won"]
+                        </button>
+                    }
+                }
+                else
+                {
+                    <img src="/CardImages/green_back.png" width="80" />
+                }
+            </div>
+        </div>
+    }
+</fieldset>
+
+@code {
+    [Parameter]
+    public Game game { get; set; }
+    [Parameter]
+    public string selectedPlayer { get; set; }
+
+    [Parameter]
+    public EventCallback<PlayedCard> OnWinner { get; set; }
+
+    private void Winner(MouseEventArgs e, PlayedCard winningCard)
+    {
+        OnWinner.InvokeAsync(winningCard);
+    }
+}

@@ -1,0 +1,58 @@
+﻿@using CardGames.Shared.Models
+@using CardGames.Shared;
+@inject IStringLocalizer<Pages.UIStrings> L;
+
+<fieldset class="scheduler-border-playercards">
+    <legend>@L["Cards", game.Players[GameUtils.GetPlayerId(selectedPlayer)].FirstName]</legend>
+    @foreach (var card in cards)
+    {
+        //define what can be played
+        var canPlayCard = true;
+        if ((game.PlayerToStartObj.Id != selectedPlayer)
+            &&
+            (game.Rounds[game.CurrentRound]
+            .PlayedCards.Where(pc => pc.Card != null)
+            .Count() > 0))
+        {
+            var playedColour = game.Rounds[game.CurrentRound].PlayedCards
+                .Where(p => p.PlayerId == game.PlayerToStartObj.Id)
+                .FirstOrDefault().Card.Colour;
+            var cardswithPlayingColour = cards.Where(c => c.Colour == playedColour).Count();
+            canPlayCard = cardswithPlayingColour > 0 ? (card.Colour == playedColour ? true : false) : true;
+        }
+        canPlayCard = !(!canPlayCard || game.ChooseWinner || game.CleanTable || !game.Betted || (game.CurrentPlayerObj.Id != selectedPlayer));
+
+        <div class="gallery">
+            <div class="desc">
+                <div id="PlayerCard_@cards.IndexOf(card).ToString()"><img src="/CardImages/@(card.Face).png" width="80" style="padding: 0px 0px 5px 0px;" /></div>
+                <div>
+                    <button id="PlayButton_@cards.IndexOf(card).ToString()"
+                            disabled="@(!canPlayCard)"
+                            class="@(canPlayCard ? "btn btn-success" : "btn btn-outline-success")"
+                            @onclick="@(e => Play(e, selectedPlayer, card, canPlayCard))">
+                        @L["Play"]
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</fieldset>
+
+@code {
+    [Parameter]
+    public Game game { get; set; }
+    [Parameter]
+    public List<Card> cards { get; set; }
+    [Parameter]
+    public string selectedPlayer { get; set; }
+    [Parameter]
+    public EventCallback<Card> OnPlayCard { get; set; }
+
+    private void Play(MouseEventArgs e, string player, Card card, bool canPlayCard)
+    {
+        if (canPlayCard && !game.ChooseWinner && !game.CleanTable && game.Betted && (game.CurrentPlayerObj.Id == selectedPlayer))
+        {
+            OnPlayCard.InvokeAsync(card);
+        }
+    }
+}

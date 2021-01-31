@@ -2,7 +2,7 @@
 @using CardGames.Shared;
 @inject IStringLocalizer<UIStrings> L;
 
-<div class="modal @_modalClass" role="dialog" style="display: @_modalDisplay; overflow: auto">
+<div class="modal @modalClass" role="dialog" style="display: @modalDisplay; overflow: auto">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -14,7 +14,7 @@
             <div class="modal-body" style="text-align:center">
                 <table border="0">
                     <tr>
-                        @foreach (var player in _game.Players)
+                        @foreach (var player in game.Players)
                         {
                             <td>
                                 @(player.FirstName)
@@ -37,13 +37,11 @@
 
 @code {
     [Parameter]
-    public Game _game { get; set; }
+    public Game game { get; set; }
     [Parameter]
-    public string _selectedPlayer { get; set; }
+    public string modalClass { get; set; }
     [Parameter]
-    public string _modalClass { get; set; }
-    [Parameter]
-    public string _modalDisplay { get; set; }
+    public string modalDisplay { get; set; }
 
     [Parameter]
     public EventCallback<int> OnCloseCallback { get; set; }
@@ -55,9 +53,9 @@
 
     private string[] ShowLastPlayedCard()
     {
-        if (_game.Rounds[_game.CurrentRound].PlayHistory.Count() > 0)
+        if (game.Rounds[game.CurrentRound].PlayHistory.Count() > 0)
         {
-            var lastPlayedCards = _game.Rounds[_game.CurrentRound].PlayHistory.Last();
+            var lastPlayedCards = game.Rounds[game.CurrentRound].PlayHistory.Last();
             var faces = lastPlayedCards.Select(f => f.Card.Face).ToArray();
             return faces;
         }

@@ -1,7 +1,7 @@
 ﻿@using CardGames.Shared.Models
 @using CardGames.Shared;
 
-<div class="modal @_modalClass" role="dialog" style="display: @_modalDisplay; overflow: auto">
+<div class="modal @modalClass" role="dialog" style="display: @modalDisplay; overflow: auto">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -15,14 +15,14 @@
                     <thead>
                         <tr>
                             <td></td>
-                            @foreach (var player in _game.Players)
+                            @foreach (var player in game.Players)
                             {
                                 <td><p style="color: @(IsGameController(player.Id) ? "red" : "black")">@(player.Name == null ? player.Id : player.Name.Split(" ")[0])</p></td>
                             }
                         </tr>
                     </thead>
                     <tbody>
-                        @for (int round = 0; round < _game.Rounds.Length; round++)
+                        @for (int round = 0; round < game.Rounds.Length; round++)
                         {
                             <tr>
                                 <td>
@@ -35,18 +35,18 @@
                                         <b>@((16 - round).ToString())</b>
                                     }
                                 </td>
-                                @for (var playerIndex = 0; playerIndex < _game.Players.Length; playerIndex++)
+                                @for (var playerIndex = 0; playerIndex < game.Players.Length; playerIndex++)
                                 {
-                                    var player = _game.Players[playerIndex];
-                                    @if (round < _game.CurrentRound || _game.GameOver)
+                                    var player = game.Players[playerIndex];
+                                    @if (round < game.CurrentRound || game.GameOver)
                                     {
-                                        <td style="background-color:@(_game.Rounds[round].Winners[GameUtils.GetPlayerId(player.Id)] ? "lightgreen" : "lightcoral")">
-                                            @(_game.Rounds[round].Scores[GameUtils.GetPlayerId(player.Id)].ToString())
+                                        <td style="background-color:@(game.Rounds[round].Winners[GameUtils.GetPlayerId(player.Id)] ? "lightgreen" : "lightcoral")">
+                                            @(game.Rounds[round].Scores[GameUtils.GetPlayerId(player.Id)].ToString())
                                         </td>
                                     }
                                     else
                                     {
-                                        <td>@(_game.Rounds[round].Scores[GameUtils.GetPlayerId(player.Id)].ToString())</td>
+                                        <td>@(game.Rounds[round].Scores[GameUtils.GetPlayerId(player.Id)].ToString())</td>
                                     }
                                 }
                             </tr>
@@ -61,13 +61,13 @@
 @code {
 
     [Parameter]
-    public Game _game { get; set; }
+    public Game game { get; set; }
     [Parameter]
-    public string _selectedPlayer { get; set; }
+    public string selectedPlayer { get; set; }
     [Parameter]
-    public string _modalClass { get; set; }
+    public string modalClass { get; set; }
     [Parameter]
-    public string _modalDisplay { get; set; }
+    public string modalDisplay { get; set; }
 
     [Parameter]
     public EventCallback<int> OnCloseCallback { get; set; }
@@ -81,11 +81,11 @@
 
     private bool IsGameController()
     {
-        return _game.IsGameController(GameUtils.GetPlayerId(_selectedPlayer));
+        return game.IsGameController(GameUtils.GetPlayerId(selectedPlayer));
     }
 
     private bool IsGameController(string player)
     {
-        return _game.IsGameController(GameUtils.GetPlayerId(player));
+        return game.IsGameController(GameUtils.GetPlayerId(player));
     }
 }

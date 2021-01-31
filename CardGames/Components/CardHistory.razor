@@ -2,7 +2,7 @@
 @using CardGames.Shared;
 @inject IStringLocalizer<UIStrings> L;
 
-<div class="modal @_modalClass" role="dialog" style="display: @_modalDisplay; overflow: auto">
+<div class="modal @modalClass" role="dialog" style="display: @modalDisplay; overflow: auto">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -16,7 +16,7 @@
                     <tr>
                         <td>Round</td>
                         <td>Card</td>
-                        @foreach (var player in _game.Players)
+                        @foreach (var player in game.Players)
                         {
 
                             <td>
@@ -25,7 +25,7 @@
                         }
                     </tr>
 
-                    @foreach (var gameRounds in _game.Rounds)
+                    @foreach (var gameRounds in game.Rounds)
                     {
                         foreach (var roundHistory in gameRounds.PlayHistory)
                         {
@@ -51,13 +51,13 @@
 
 @code {
     [Parameter]
-    public Game _game { get; set; }
+    public Game game { get; set; }
     [Parameter]
-    public string _selectedPlayer { get; set; }
+    public string selectedPlayer { get; set; }
     [Parameter]
-    public string _modalClass { get; set; }
+    public string modalClass { get; set; }
     [Parameter]
-    public string _modalDisplay { get; set; }
+    public string modalDisplay { get; set; }
 
     [Parameter]
     public EventCallback<int> OnCloseCallback { get; set; }
