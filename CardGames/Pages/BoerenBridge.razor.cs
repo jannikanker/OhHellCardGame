@@ -304,27 +304,6 @@ namespace CardGames.Pages
             StateHasChanged();
         }
 
-        public void CreateScoreGraphDataSets()
-        {
-            var xAxisLabelsArray = new string[_game.Rounds.Length + 1];
-            for (int l = 0; l <= _game.Rounds.Length; l++)
-            {
-                xAxisLabelsArray[l] = l.ToString();
-            }
-
-            foreach (var player in _game.Players)
-            {
-                for (int r = 0; r <= _game.CurrentRound + 1; r++)
-                {
-                    if (r > 0)
-                        _inputSeries[GameUtils.GetPlayerId(player.Id)][r] = _game.Rounds[r - 1].Scores[GameUtils.GetPlayerId(player.Id)].ToString();
-                }
-            }
-
-            //create inputs for graph
-            _xAxisLabels = string.Join(",", xAxisLabelsArray);
-        }
-
         protected async Task<string> GetAccessToken()
         {
             var authState = await authenticationStateTask;
@@ -348,7 +327,7 @@ namespace CardGames.Pages
             return token;
         }
 
-        protected async Task PlaceBet(MouseEventArgs e, string bet)
+        protected async Task PlaceBet(string bet)
         {
             if (!_inprogress)
             {

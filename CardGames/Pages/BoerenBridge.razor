@@ -27,6 +27,7 @@
             @if (_selectedPlayer.ToLower() == "view")
             {
                 <header>
+                    <CardGames.Components.TrumpCardSideView game="@_game" sideView="@_sideView" />
                     <p>@L["NotAuthorized"]</p>
                     <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
                 </header>
@@ -40,13 +41,9 @@
             else
             {
                 <header>
-                    <div style="position: absolute; top: 148px; right: 16px;">
-                        <div style="display:@_sideView">
-                            <img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="80" />
-                        </div>
-                    </div>
-                    <h3>@L["Welcome", @context.User.Identity.Name.Split(" ")[0]] @(IsGameController(_selectedPlayer) ? "✏️" : "")</h3>
+                    <CardGames.Components.TrumpCardSideView game="@_game" sideView="@_sideView" />
                     <h5 class="active">@_game.Status</h5>
+
                     <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
                     <button class="btn btn-success" @onclick="() => OpenTopScoreBoard()">Top Scores</button>
                     <button class="btn btn-success" disabled="@(!_game.GameOver)" @onclick="() => OpenGamePlayedCards()">History</button>
@@ -82,55 +79,8 @@
                     </button>
 
                     <br />
-                    @if (!_game.Rounds[_game.CurrentRound].AllBetsPlaced)
-                    {
-                        for (int bet = 0; bet <= _game.Rounds[_game.CurrentRound].NrCards; bet++)
-                        {
-                            //Define if player is last and what bet is not allowed
-                            var lastBetter = _game.PlayerToStart - 1;
-                            if (lastBetter < 0)
-                                lastBetter = _game.NrPlayers - 1;
-
-                            var notAllowed = false;
-
-                            if (_game.CurrentPlayer == lastBetter)
-                            {
-                                var sum = 0;
-                                for (int b = 0; b < _game.NrPlayers; b++)
-                                {
-                                    if (_game.Rounds[_game.CurrentRound].Bets[b] > -1)
-                                    {
-                                        sum += _game.Rounds[_game.CurrentRound].Bets[b];
-                                    }
-                                }
-                                var betNotAllowed = _game.Rounds[_game.CurrentRound].NrCards - sum;
-                                if (bet == betNotAllowed)
-                                {
-                                    notAllowed = true;
-                                }
-                            }
-
-                            var localBetVar = bet;
-                            <button class=@(notAllowed && _game.CurrentPlayerObj.Id == _selectedPlayer ? "btn btn-outline-danger" : "btn btn-outline-success")
-                                    disabled="@(notAllowed || !_game.Shuffled || _game.Rounds[_game.CurrentRound].Bets[GameUtils.GetPlayerId(_selectedPlayer)] > -1 || (_game.CurrentPlayerObj.Id != _selectedPlayer))"
-                                    @onclick="@(e => PlaceBet(e, localBetVar.ToString()))">
-                                @(notAllowed && _game.CurrentPlayerObj.Id == _selectedPlayer ? "X" : bet.ToString())
-                            </button>
-                        }
-                    }
-
-                    @if (string.IsNullOrEmpty(_selectedPlayer))
-                    {
-                        <select @bind="_selectedPlayer" disabled="@(_playerSelected)">
-                            <option value="" selected>Select Player</option>
-                            @foreach (var p in _playerSelections)
-                            {
-                                <option selected="@(p.Id == _selectedPlayer ? true : false)" value="@p.Id">@p.Name</option>
-                            };
-                        </select>
-                        <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@GetAvailablePlayers">Refresh Players</button>
-                        <button disabled="@(_playerSelected)" class="btn btn-success" @onclick="@SelectPlayer">Select Player</button>
-                    }
+                
+                    <CardGames.Components.SetBets game="@_game" selectedPlayer="@_selectedPlayer" OnPlaceBet="PlaceBet" />
 
                     @if (IsGameController(_selectedPlayer) && !_game.GameStarted)
                     {
@@ -154,7 +104,7 @@
         }
     </Authorized>
     <NotAuthorized>
-        <a href="AzureADB2C/Account/SignIn">@L["Login"]</a>
+        <a href="MicrosoftIdentity/Account/SignIn">@L["Login"]</a>
     </NotAuthorized>
 </AuthorizeView>
 

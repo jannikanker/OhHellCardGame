@@ -18,6 +18,11 @@ legend.scheduler-border {
     border-bottom: none;
 }
 
+legend.playedCard {
+    font-size: 1em !important;
+    font-weight: bold !important;
+}
+
 div.gallery {
     margin: 10px;
     border: 2px solid #ffffff;

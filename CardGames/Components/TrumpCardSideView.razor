@@ -1,0 +1,16 @@
+﻿@using CardGames.Shared.Models
+
+<div style="position: absolute; top: 148px; right: 16px;">
+    <div style="display:@sideView">
+        <img class="playingColor" src="/CardImages/@(game.PlayingCard.Face.ToString() + ".png")" width="80" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Game game { get; set; }
+
+    [Parameter]
+    public string sideView { get; set; }
+
+}

@@ -1,0 +1,54 @@
+﻿@using CardGames.Shared.Models
+@using CardGames.Shared;
+
+@if (!game.Rounds[game.CurrentRound].AllBetsPlaced)
+{
+    for (int bet = 0; bet <= game.Rounds[game.CurrentRound].NrCards; bet++)
+    {
+        //Define if player is last and what bet is not allowed
+        var lastBetter = game.PlayerToStart - 1;
+        if (lastBetter < 0)
+            lastBetter = game.NrPlayers - 1;
+
+        var notAllowed = false;
+
+        if (game.CurrentPlayer == lastBetter)
+        {
+            var sum = 0;
+            for (int b = 0; b < game.NrPlayers; b++)
+            {
+                if (game.Rounds[game.CurrentRound].Bets[b] > -1)
+                {
+                    sum += game.Rounds[game.CurrentRound].Bets[b];
+                }
+            }
+            var betNotAllowed = game.Rounds[game.CurrentRound].NrCards - sum;
+            if (bet == betNotAllowed)
+            {
+                notAllowed = true;
+            }
+        }
+
+        var localBetVar = bet;
+        <button class=@(notAllowed && game.CurrentPlayerObj.Id == selectedPlayer ? "btn btn-outline-danger" : "btn btn-outline-success")
+                disabled="@(notAllowed || !game.Shuffled || game.Rounds[game.CurrentRound].Bets[GameUtils.GetPlayerId(selectedPlayer)] > -1 || (game.CurrentPlayerObj.Id != selectedPlayer))"
+                @onclick="@(e => PlaceBet(e, localBetVar.ToString()))">
+            @(notAllowed && game.CurrentPlayerObj.Id == selectedPlayer ? "X" : bet.ToString())
+        </button>
+    }
+}
+
+@code {
+    [Parameter]
+    public Game game { get; set; }
+    [Parameter]
+    public string selectedPlayer { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnPlaceBet { get; set; }
+
+    protected void PlaceBet(MouseEventArgs e, string bet)
+    {
+        OnPlaceBet.InvokeAsync(bet);
+    }
+}
