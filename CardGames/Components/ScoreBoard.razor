@@ -41,7 +41,9 @@
                                     @if (round < game.CurrentRound || game.GameOver)
                                     {
                                         <td style="background-color:@(game.Rounds[round].Winners[GameUtils.GetPlayerId(player.Id)] ? "lightgreen" : "lightcoral")">
-                                            @(game.Rounds[round].Scores[GameUtils.GetPlayerId(player.Id)].ToString())
+                                            @(game.Rounds[round].Scores[GameUtils.GetPlayerId(player.Id)].ToString()) | 
+                                            🎰@(game.Rounds[round].Bets[GameUtils.GetPlayerId(player.Id)].ToString())
+                                            🏆@(game.Rounds[round].Wins[GameUtils.GetPlayerId(player.Id)].ToString())
                                         </td>
                                     }
                                     else

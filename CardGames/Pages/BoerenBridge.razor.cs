@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -10,8 +9,8 @@ using CardGames.Shared;
 using CardGames.Shared.Models;
 using Microsoft.Identity.Web;
 using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
+using CardGames.Components;
 
 namespace CardGames.Pages
 {
@@ -24,12 +23,12 @@ namespace CardGames.Pages
         [Inject] protected IStringLocalizer<UIStrings> L { get; set; }
 
         [Parameter]
-        public string _selectedPlayer { get; set; }
+        public string SelectedPlayer { get; set; }
         [Parameter]
-        public string _selectedGame { get; set; }
+        public string SelectedGame { get; set; }
 
         [CascadingParameter]
-        protected Task<AuthenticationState> authenticationStateTask { get; set; }
+        protected Task<AuthenticationState> AuthenticationStateTask { get; set; }
 
         protected HubConnection _hubConnection;
         protected bool _playerSelected;
@@ -74,7 +73,7 @@ namespace CardGames.Pages
 
             _hubConnection.On<Game, List<GameScore>>("JoinedGame", (game, topScores) =>
             {
-                if (_selectedPlayer.ToLower() == "view")
+                if (SelectedPlayer.ToLower() == "view")
                 {
                     return;
                 }
@@ -82,12 +81,12 @@ namespace CardGames.Pages
                 _inprogress = false;
                 _game = game;
                 _topScores = topScores;
-                _cardsWidth = 482 + (game.Players[GameUtils.GetPlayerId(_selectedPlayer)].Cards.Count() > 4 ? (_cardIncrease * (game.Players[GameUtils.GetPlayerId(_selectedPlayer)].Cards.Count() - 4)) : 0);
+                _cardsWidth = 482 + (game.Players[GameUtils.GetPlayerId(SelectedPlayer)].Cards.Count() > 4 ? (_cardIncrease * (game.Players[GameUtils.GetPlayerId(SelectedPlayer)].Cards.Count() - 4)) : 0);
                 if (game != null)
                 {
-                    if (!string.IsNullOrEmpty(_selectedPlayer))
+                    if (!string.IsNullOrEmpty(SelectedPlayer))
                     {
-                        _cards = _game.Players[GameUtils.GetPlayerId(_selectedPlayer)].Cards;
+                        _cards = _game.Players[GameUtils.GetPlayerId(SelectedPlayer)].Cards;
                     }
                     _inputSeries = new string[_game.Players.Length][];
                     for (int p = 0; p < _game.Players.Length; p++)
@@ -119,7 +118,7 @@ namespace CardGames.Pages
             _hubConnection.On<Game>("GameResetted", (game) =>
             {
                 _game = game;
-                _cards = _game.Players[GameUtils.GetPlayerId(_selectedPlayer)].Cards;
+                _cards = _game.Players[GameUtils.GetPlayerId(SelectedPlayer)].Cards;
                 StateHasChanged();
             });
 
@@ -138,7 +137,7 @@ namespace CardGames.Pages
                 if (index > 0)
                     _playerSelections.RemoveAt(index);
 
-                if (_selectedPlayer == signedInPlayerID)
+                if (SelectedPlayer == signedInPlayerID)
                 {
                     _cards = _game.Players[GameUtils.GetPlayerId(signedInPlayerID)].Cards;
                 }
@@ -212,11 +211,11 @@ namespace CardGames.Pages
                 StateHasChanged();
             });
 
-            var authState = await authenticationStateTask;
+            var authState = await AuthenticationStateTask;
             if (authState.User.Identity.IsAuthenticated)
             {
                 await _hubConnection.StartAsync();
-                if (_selectedPlayer.ToLower() == "view")
+                if (SelectedPlayer.ToLower() == "view")
                     await ViewGame();
                 else
                     await JoinGame();
@@ -306,7 +305,7 @@ namespace CardGames.Pages
 
         protected async Task<string> GetAccessToken()
         {
-            var authState = await authenticationStateTask;
+            var authState = await AuthenticationStateTask;
             var user = authState.User;
 
             var token = "";
@@ -331,33 +330,33 @@ namespace CardGames.Pages
         {
             if (!_inprogress)
             {
-                await _hubConnection.SendAsync("PlaceBet", _selectedGame, _selectedPlayer, bet);
+                await _hubConnection.SendAsync("PlaceBet", SelectedGame, SelectedPlayer, bet);
                 _inprogress = true;
             }
         }
 
         protected async Task JoinGame()
         {
-            var authState = await authenticationStateTask;
+            var authState = await AuthenticationStateTask;
             var user = authState.User;
 
-            if (!string.IsNullOrEmpty(_selectedGame))
+            if (!string.IsNullOrEmpty(SelectedGame))
                 if (!_inprogress)
                 {
-                    await _hubConnection.SendAsync("JoinGame", _selectedGame, _selectedPlayer, user.Identity.Name);
+                    await _hubConnection.SendAsync("JoinGame", SelectedGame, SelectedPlayer, user.Identity.Name);
                     _inprogress = true;
                 }
         }
 
         protected async Task ViewGame()
         {
-            var authState = await authenticationStateTask;
+            var authState = await AuthenticationStateTask;
             var user = authState.User;
 
-            if (!string.IsNullOrEmpty(_selectedGame))
+            if (!string.IsNullOrEmpty(SelectedGame))
                 if (!_inprogress)
                 {
-                    await _hubConnection.SendAsync("ViewGame", _selectedGame);
+                    await _hubConnection.SendAsync("ViewGame", SelectedGame);
                     _inprogress = true;
                 }
         }
@@ -373,7 +372,7 @@ namespace CardGames.Pages
 
         protected async Task StartGame()
         {
-            if (!String.IsNullOrEmpty(_selectedPlayer))
+            if (!String.IsNullOrEmpty(SelectedPlayer))
             {
                 if (!_inprogress)
                 {
@@ -405,7 +404,7 @@ namespace CardGames.Pages
         {
             if (!_inprogress)
             {
-                _hubConnection.SendAsync("PlayCard", _game.Id, _selectedPlayer, card);
+                _hubConnection.SendAsync("PlayCard", _game.Id, SelectedPlayer, card);
                 _inprogress = true;
             }
         }
@@ -424,7 +423,7 @@ namespace CardGames.Pages
             if (!_inprogress)
             {
                 _playerSelected = true;
-                await _hubConnection.SendAsync("JoinGame", _game.Id, _selectedPlayer);
+                await _hubConnection.SendAsync("JoinGame", _game.Id, SelectedPlayer);
                 _inprogress = true;
             }
         }
@@ -438,10 +437,9 @@ namespace CardGames.Pages
             }
         }
 
-
         protected async Task<string> GetUserEmail()
         {
-            var authState = await authenticationStateTask;
+            var authState = await AuthenticationStateTask;
             var user = authState.User;
 
             if (user.Identity.IsAuthenticated)
@@ -478,7 +476,23 @@ namespace CardGames.Pages
                 default:
                     return "";
             }
-            return "";
+        }
+
+        protected string NumberOfCards()
+        {
+            if(_game.CurrentRound< 8)
+            {
+                return (_game.CurrentRound + 1).ToString();
+            }
+            else
+            {
+                return (16 - _game.CurrentRound).ToString();
+            }
+        }
+
+        protected bool CannotShuffle()
+        {
+            return (!_game.GameStarted || _game.Playing || _game.Shuffled || _game.GameOver) || (_game.PlayerToStartObj.Id != SelectedPlayer);
         }
     }
 

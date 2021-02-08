@@ -33,7 +33,7 @@
         <button class=@(notAllowed && game.CurrentPlayerObj.Id == selectedPlayer ? "btn btn-outline-danger" : "btn btn-outline-success")
                 disabled="@(notAllowed || !game.Shuffled || game.Rounds[game.CurrentRound].Bets[GameUtils.GetPlayerId(selectedPlayer)] > -1 || (game.CurrentPlayerObj.Id != selectedPlayer))"
                 @onclick="@(e => PlaceBet(e, localBetVar.ToString()))">
-            @(notAllowed && game.CurrentPlayerObj.Id == selectedPlayer ? "X" : bet.ToString())
+            @(notAllowed ? "X" : bet.ToString())
         </button>
     }
 }

@@ -1,5 +1,6 @@
-﻿@page "/boerenbridge/{_selectedGame}/{_selectedPlayer}"
+﻿@page "/boerenbridge/{SelectedGame}/{SelectedPlayer}"
 @inherits BoerenBridgeBase
+@using CardGames.Components 
 
 <link href="css/desktop.css" rel="stylesheet" />
 <style>
@@ -20,11 +21,11 @@
     <Authorized>
         @if (_game == null)
         {
-            <p>@L["GameStartingUp", @_selectedGame]</p>
+            <p>@L["GameStartingUp", @SelectedGame]</p>
         }
         else
         {
-            @if (_selectedPlayer.ToLower() == "view")
+            @if (SelectedPlayer.ToLower() == "view")
             {
                 <header>
                     <CardGames.Components.TrumpCardSideView game="@_game" sideView="@_sideView" />
@@ -33,46 +34,32 @@
                 </header>
                 <hr />
                 <section>
-                    <CardGames.Components.PlayedCards game="@_game" selectedPlayer="@_selectedPlayer" OnWinner="@Winner" />
+                    <PlayedCards game="@_game" selectedPlayer="@SelectedPlayer" OnWinner="@Winner" />
                 </section>
-                <CardGames.Components.ScoreBoard game="@_game" selectedPlayer="@_selectedPlayer" modalClass="@_modalClass" modalDisplay="@_modalDisplay" OnCloseCallback="@CloseScoreBoard" />
+                <ScoreBoard game="@_game" selectedPlayer="@SelectedPlayer" modalClass="@_modalClass" modalDisplay="@_modalDisplay" OnCloseCallback="@CloseScoreBoard" />
 
             }
             else
             {
                 <header>
-                    <CardGames.Components.TrumpCardSideView game="@_game" sideView="@_sideView" />
+                    <TrumpCardSideView game="@_game" sideView="@_sideView" />
                     <h5 class="active">@_game.Status</h5>
 
                     <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
                     <button class="btn btn-success" @onclick="() => OpenTopScoreBoard()">Top Scores</button>
-                    <button class="btn btn-success" disabled="@(!_game.GameOver)" @onclick="() => OpenGamePlayedCards()">History</button>
+                    <button class="btn btn-success" @onclick="() => OpenGamePlayedCards()" disabled="@(!_game.GameOver)">History</button>
                     <button class="btn btn-success" @onclick="() => OpenLastPlayedCards()">Last</button>
                     <button class="btn btn-success" @onclick="() => OpenTrump()">@(GetColourChar(_game.PlayingCard.Colour.ToString()))</button>
-                    <button id="btnShuffle"
-                            disabled="@((!_game.GameStarted || _game.Playing || _game.Shuffled || _game.GameOver) || (_game.PlayerToStartObj.Id != _selectedPlayer))"
-                            class="btn btn-success"
-                            @onclick="@(e => Shuffle())">
-                        @L["Shuffle"]
-                        @if (_game.CurrentRound < 8)
-                        {
-                            <b> ( @((_game.CurrentRound + 1).ToString()) )</b>
-                        }
-                        else
-                        {
-                            <b> ( @((16 - _game.CurrentRound).ToString()) )</b>
-                        }
-                    </button>
-
+                    <button class="btn btn-success" @onclick="@(e => Shuffle())" disabled="@(CannotShuffle())">@L["Shuffle"] (@NumberOfCards())</button>
                     <button class="btn btn-success" @onclick="@ToggleSideView"><img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="10" /></button>
-                    <button style="display:@(IsGameController(_selectedPlayer) ? "inline" : "none")"
-                            disabled="@(!_game.CleanTable || !IsGameController(_selectedPlayer))"
-                            class="btn btn-success" @onclick="@CleanTable"
+                    <button class="btn btn-success" @onclick="@CleanTable" 
+                            style="display:@(IsGameController(SelectedPlayer) ? "inline" : "none")"
+                            disabled="@(!_game.CleanTable || !IsGameController(SelectedPlayer))"      
                             title="@L["CleanTableText"]">
                         @L["CleanTable"]
                     </button>
-                    <button style="display: @(IsGameController(_selectedPlayer) ? "inline" : "none")"
-                            disabled="@(!_game.RoundReady || _game.GameOver || !IsGameController(_selectedPlayer))"
+                    <button style="display: @(IsGameController(SelectedPlayer) ? "inline" : "none")"
+                            disabled="@(!_game.RoundReady || _game.GameOver || !IsGameController(SelectedPlayer))"
                             class="btn btn-success" @onclick="@NextRound"
                             title="@L["NextRoundText"]">
                         @L["NextRound"]
@@ -80,9 +67,9 @@
 
                     <br />
                 
-                    <CardGames.Components.SetBets game="@_game" selectedPlayer="@_selectedPlayer" OnPlaceBet="PlaceBet" />
+                    <SetBets game="@_game" selectedPlayer="@SelectedPlayer" OnPlaceBet="PlaceBet" />
 
-                    @if (IsGameController(_selectedPlayer) && !_game.GameStarted)
+                    @if (IsGameController(SelectedPlayer) && !_game.GameStarted)
                     {
                         <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn)" class="btn btn-success" @onclick="@StartGame">Start</button>
                     }
@@ -90,16 +77,16 @@
 
                 <hr />
                 <section>
-                    <CardGames.Components.PlayedCards game="@_game" selectedPlayer="@_selectedPlayer" OnWinner="@Winner" />
+                    <PlayedCards game="@_game" selectedPlayer="@SelectedPlayer" OnWinner="@Winner" />
                     <hr />
-                    <CardGames.Components.PlayerCards game="@_game" selectedPlayer="@_selectedPlayer" cards="_cards" OnPlayCard="@Play"/>
+                    <PlayerCards game="@_game" selectedPlayer="@SelectedPlayer" cards="_cards" OnPlayCard="@Play"/>
                 </section>
 
-                <CardGames.Components.ScoreBoard game="@_game" selectedPlayer="@_selectedPlayer" modalClass="@_modalClass" modalDisplay="@_modalDisplay" OnCloseCallback="@CloseScoreBoard" />
-                <CardGames.Components.Trump game="@_game" selectedPlayer="@_selectedPlayer" modalClass="@_modalClassTrump" modalDisplay="@_modalDisplayTrump" OnCloseCallback="@CloseTrump" />
-                <CardGames.Components.TopScores topScores="@_topScores" modalClass="@_modalClassTopscores" modalDisplay="@_modalDisplayTopscores" OnCloseCallback="@CloseTopScoreBoard" />
-                <CardGames.Components.LastPlayedCards game="@_game" modalClass="@_modalClassLastCards" modalDisplay="@_modalDisplayLastCards" OnCloseCallback="@CloseLastPlayedCards" />
-                <CardGames.Components.CardHistory game="@_game" selectedPlayer="@_selectedPlayer" modalClass="@_modalClassGameCards" modalDisplay="@_modalDisplayGameCards" OnCloseCallback="@CloseGamePlayedCards" />
+                <ScoreBoard game="@_game" selectedPlayer="@SelectedPlayer" modalClass="@_modalClass" modalDisplay="@_modalDisplay" OnCloseCallback="@CloseScoreBoard" />
+                <Trump game="@_game" selectedPlayer="@SelectedPlayer" modalClass="@_modalClassTrump" modalDisplay="@_modalDisplayTrump" OnCloseCallback="@CloseTrump" />
+                <TopScores topScores="@_topScores" modalClass="@_modalClassTopscores" modalDisplay="@_modalDisplayTopscores" OnCloseCallback="@CloseTopScoreBoard" />
+                <LastPlayedCards game="@_game" modalClass="@_modalClassLastCards" modalDisplay="@_modalDisplayLastCards" OnCloseCallback="@CloseLastPlayedCards" />
+                <CardHistory game="@_game" selectedPlayer="@SelectedPlayer" modalClass="@_modalClassGameCards" modalDisplay="@_modalDisplayGameCards" OnCloseCallback="@CloseGamePlayedCards" />
             }
         }
     </Authorized>
