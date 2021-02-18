@@ -36,6 +36,8 @@ namespace CardGames.Pages
         protected List<Card> _cards = new List<Card>();
         protected List<PlayerSelection> _playerSelections = new List<PlayerSelection>();
         protected List<GameScore> _topScores;
+        protected List<GameScore> _gameResults;
+
         protected bool _inprogress = false;
 
         protected string _modalClass = "";
@@ -45,6 +47,8 @@ namespace CardGames.Pages
         protected string _modalDisplayTrump = "none;";
         protected string _modalClassTopscores = "";
         protected string _modalDisplayTopscores = "none;";
+        protected string _modalClassGameResults = "";
+        protected string _modalDisplayGameResults = "none;";
         protected string _modalClassLastCards = "";
         protected string _modalDisplayLastCards = "none;";
         protected string _modalClassGameCards = "";
@@ -80,7 +84,8 @@ namespace CardGames.Pages
 
                 _inprogress = false;
                 _game = game;
-                _topScores = topScores;
+                _topScores = topScores.OrderByDescending(g => g.Score).Take(10).ToList();
+                _gameResults = topScores;
                 _cardsWidth = 482 + (game.Players[GameUtils.GetPlayerId(SelectedPlayer)].Cards.Count() > 4 ? (_cardIncrease * (game.Players[GameUtils.GetPlayerId(SelectedPlayer)].Cards.Count() - 4)) : 0);
                 if (game != null)
                 {
@@ -102,7 +107,8 @@ namespace CardGames.Pages
             {
                 _inprogress = false;
                 _game = game;
-                _topScores = topScores;
+                _topScores = topScores.OrderByDescending(g => g.Score).Take(10).ToList();
+                _gameResults = topScores;
 
                 StateHasChanged();
             });
@@ -274,6 +280,19 @@ namespace CardGames.Pages
             StateHasChanged();
         }
 
+        public void OpenGameResults()
+        {
+            _modalDisplayGameResults = "block;";
+            _modalClassGameResults = "Show";
+            StateHasChanged();
+        }
+
+        public void CloseGameResults()
+        {
+            _modalDisplayGameResults = "none";
+            _modalClassGameResults = "";
+            StateHasChanged();
+        }
 
         public void OpenLastPlayedCards()
         {

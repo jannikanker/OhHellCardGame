@@ -39,7 +39,7 @@ namespace CardGamesHub.Server.Services
             List<GameScore> gameScores = new List<GameScore>();
             try
             {
-                var sqlQueryText = "SELECT g.Id, g.GameOverDateTime, p.Name, p.Score FROM Games g JOIN p in g.Players";
+                var sqlQueryText = "SELECT g.Id, g.GameOverDateTime, p.Name, p.FirstName, p.Score FROM Games g JOIN p in g.Players";
                 using (var client = new CosmosClient(_cosmosSettings.EndpointUrl, _cosmosSettings.Key))
                 {
                     var database = client.GetDatabase(_cosmosSettings.DatabaseName);
@@ -61,8 +61,7 @@ namespace CardGamesHub.Server.Services
             {
                 var msg = ex.Message;
             }
-
-            return gameScores.OrderByDescending(g => g.Score).Take(10).ToList();
+            return gameScores;
         }
 
         public Game NewGame(string gameId, int nrPlayers)
@@ -212,5 +211,6 @@ namespace CardGamesHub.Server.Services
         {
             return (_settings.SystemAdmin == GetUser());
         }
+
     }
 }

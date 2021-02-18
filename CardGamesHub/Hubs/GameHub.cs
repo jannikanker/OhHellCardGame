@@ -149,6 +149,7 @@ namespace CardGamesHub.Hubs
                 await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
 
                 var gameScores = await _gameService.GetTopScores();
+                gameScores = gameScores.OrderByDescending(g => g.Score).Take(10).ToList();
 
                 game.ViewerConnections.Add(Context.ConnectionId);
                 await _gameService.SaveGame(game);
@@ -189,7 +190,6 @@ namespace CardGamesHub.Hubs
                     }
 
                     var gameScores = await _gameService.GetTopScores();
-
                     await _gameService.SaveGame(game);
                     await Clients.Group(gameId).SendAsync("JoinedGame", game, gameScores);
                     _logger.LogInformation($"Player {name} joined Game {gameId}.");
