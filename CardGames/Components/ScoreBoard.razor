@@ -40,7 +40,7 @@
                                     var player = game.Players[playerIndex];
                                     @if (round < game.CurrentRound || game.GameOver)
                                     {
-                                        <td style="background-color:@(game.Rounds[round].Winners[GameUtils.GetPlayerId(player.Id)] ? "red" : "green"); text-align:center">
+                                        <td style="background-color:@(game.Rounds[round].Winners[GameUtils.GetPlayerId(player.Id)] ? "green" : "red"); text-align:center">
                                             @(game.Rounds[round].Scores[GameUtils.GetPlayerId(player.Id)].ToString()) | 
                                             🎰@(game.Rounds[round].Bets[GameUtils.GetPlayerId(player.Id)].ToString())
                                             🏆@(game.Rounds[round].Wins[GameUtils.GetPlayerId(player.Id)].ToString())
