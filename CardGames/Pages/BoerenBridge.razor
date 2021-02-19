@@ -41,40 +41,40 @@
             }
             else
             {
-    <header>
-        <TrumpCardSideView game="@_game" sideView="@_sideView" />
-        <h5 class="active">@_game.Status</h5>
+                <header>
+                    <TrumpCardSideView game="@_game" sideView="@_sideView" />
+                    <h5 class="active">@_game.Status</h5>
 
-        <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
-        <button class="btn btn-success" @onclick="() => OpenTopScoreBoard()">Top Scores</button>
-        <button class="btn btn-success" @onclick="() => OpenGameResults()">Game Results</button>
-        <button class="btn btn-success" @onclick="() => OpenGamePlayedCards()" disabled="@(!_game.GameOver)">History</button>
-        <button class="btn btn-success" @onclick="() => OpenLastPlayedCards()">Last</button>
-        <button class="btn btn-success" @onclick="() => OpenTrump()">@(GetColourChar(_game.PlayingCard.Colour.ToString()))</button>
-        <button class="btn btn-success" @onclick="@(e => Shuffle())" disabled="@(CannotShuffle())">@L["Shuffle"] (@NumberOfCards())</button>
-        <button class="btn btn-success" @onclick="@ToggleSideView"><img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="10" /></button>
-        <button class="btn btn-success" @onclick="@CleanTable"
-                style="display:@(IsGameController(SelectedPlayer) ? "inline" : "none")"
-                disabled="@(!_game.CleanTable || !IsGameController(SelectedPlayer))"
-                title="@L["CleanTableText"]">
-            @L["CleanTable"]
-        </button>
-        <button style="display: @(IsGameController(SelectedPlayer) ? "inline" : "none")"
-                disabled="@(!_game.RoundReady || _game.GameOver || !IsGameController(SelectedPlayer))"
-                class="btn btn-success" @onclick="@NextRound"
-                title="@L["NextRoundText"]">
-            @L["NextRound"]
-        </button>
+                    <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
+                    <button class="btn btn-success" @onclick="() => OpenTopScoreBoard()">Top Scores</button>
+                    <button class="btn btn-success" @onclick="() => OpenGameResults()">Game Results</button>
+                    <button class="btn btn-success" @onclick="() => OpenGamePlayedCards()" disabled="@(!_game.GameOver)">History</button>
+                    <button class="btn btn-success" @onclick="() => OpenLastPlayedCards()">Last</button>
+                    <button class="btn btn-success" @onclick="() => OpenTrump()">@(GetColourChar(_game.PlayingCard.Colour.ToString()))</button>
+                    <button class="btn btn-success" @onclick="@(e => Shuffle())" disabled="@(CannotShuffle())">@L["Shuffle"] (@NumberOfCards())</button>
+                    <button class="btn btn-success" @onclick="@ToggleSideView"><img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="10" /></button>
+                    <button class="btn btn-success" @onclick="@CleanTable"
+                            style="display:@(IsGameController(SelectedPlayer) ? "inline" : "none")"
+                            disabled="@(!_game.CleanTable || !IsGameController(SelectedPlayer))"
+                            title="@L["CleanTableText"]">
+                        @L["CleanTable"]
+                    </button>
+                    <button style="display: @(IsGameController(SelectedPlayer) ? "inline" : "none")"
+                            disabled="@(!_game.RoundReady || _game.GameOver || !IsGameController(SelectedPlayer))"
+                            class="btn btn-success" @onclick="@NextRound"
+                            title="@L["NextRoundText"]">
+                        @L["NextRound"]
+                    </button>
 
-        <br />
+                    <br />
 
-        <SetBets game="@_game" selectedPlayer="@SelectedPlayer" OnPlaceBet="PlaceBet" />
+                    <SetBets game="@_game" selectedPlayer="@SelectedPlayer" OnPlaceBet="PlaceBet" />
 
-        @if (IsGameController(SelectedPlayer) && !_game.GameStarted)
-        {
-            <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn)" class="btn btn-success" @onclick="@StartGame">Start</button>
-        }
-    </header>
+                    @if (IsGameController(SelectedPlayer) && !_game.GameStarted)
+                    {
+                        <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn)" class="btn btn-success" @onclick="@StartGame">Start</button>
+                    }
+                </header>
 
                 <hr />
                 <section>

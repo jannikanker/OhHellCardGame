@@ -2,7 +2,7 @@
 @using CardGames.Shared;
 
 <div class="modal @modalClass" role="dialog" style="display: @modalDisplay; overflow: auto">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">ScoreBoard</h5>
@@ -17,7 +17,7 @@
                             <td></td>
                             @foreach (var player in game.Players)
                             {
-                                <td><p style="color: @(IsGameController(player.Id) ? "red" : "black")">@(player.Name == null ? player.Id : player.Name.Split(" ")[0])</p></td>
+                                <td><p style="text-align: center; color: @(IsGameController(player.Id) ? "red" : "black")">@(player.Name == null ? player.Id : player.Name.Split(" ")[0])</p></td>
                             }
                         </tr>
                     </thead>
@@ -40,7 +40,7 @@
                                     var player = game.Players[playerIndex];
                                     @if (round < game.CurrentRound || game.GameOver)
                                     {
-                                        <td style="background-color:@(game.Rounds[round].Winners[GameUtils.GetPlayerId(player.Id)] ? "lightgreen" : "lightcoral")">
+                                        <td style="background-color:@(game.Rounds[round].Winners[GameUtils.GetPlayerId(player.Id)] ? "red" : "green"); text-align:center">
                                             @(game.Rounds[round].Scores[GameUtils.GetPlayerId(player.Id)].ToString()) | 
                                             🎰@(game.Rounds[round].Bets[GameUtils.GetPlayerId(player.Id)].ToString())
                                             🏆@(game.Rounds[round].Wins[GameUtils.GetPlayerId(player.Id)].ToString())

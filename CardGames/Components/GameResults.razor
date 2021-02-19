@@ -1,9 +1,9 @@
 ﻿@using CardGames.Shared.Models
 @using CardGames.Shared;
-
+@using System.Globalization;
 
 <div class="modal @modalClass" role="dialog" style="display: @modalDisplay; overflow: auto">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Game Results</h5>
@@ -16,23 +16,23 @@
                     <thead>
                         <tr>
                             <td>Date</td>
-                            <td>1</td>
-                            <td>2</td>
-                            <td>3</td>
-                            <td>4</td>
+                            <td>1<sup>ste</sup></td>
+                            <td>2<sup>ste</sup></td>
+                            <td>3<sup>ste</sup></td>
+                            <td>4<sup>ste</sup></td>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var game in topScores.Where(g => g.Id == gameId).OrderByDescending(g=> g.GameOverDateTime).GroupBy(g => g.GameOverDateTime))
+                        @foreach (var game in topScores.Where(g => g.Id == gameId).OrderByDescending(g => g.GameOverDateTime).GroupBy(g => g.GameOverDateTime))
                         {
-                        <tr>
-                            <td align="left">@(game.Key.ToShortDateString())</td>
-                            @foreach (var score in topScores.Where(g => g.GameOverDateTime == game.Key).OrderByDescending(g => g.Score))
-                            {
-                                <td align="left">@(score.FirstName) (@(score.Score))</td>
-                            }
-                        </tr>
-                         }
+                            <tr>
+                                <td align="left">@(game.Key.ToString("d", new CultureInfo("nl-NL")))</td>
+                                @foreach (var score in topScores.Where(g => g.GameOverDateTime == game.Key).OrderByDescending(g => g.Score))
+                                {
+                                    <td align="left">@(score.FirstName) (@(score.Score))</td>
+                                }
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>

@@ -1,9 +1,9 @@
 ﻿@using CardGames.Shared.Models
 @using CardGames.Shared;
-
+@using System.Globalization; 
 
 <div class="modal @modalClass" role="dialog" style="display: @modalDisplay; overflow: auto">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Top Scores</h5>
@@ -29,7 +29,7 @@
                                 <td>@(topScores.IndexOf(score) + 1)</td>
                                 <td align="left">@(score.Name)</td>
                                 <td align="left">@(score.Id)</td>
-                                <td align="left">@(score.GameOverDateTime.ToShortDateString())</td>
+                                <td align="left">@(score.GameOverDateTime.ToString("d", new CultureInfo("nl-NL")))</td>
                                 <td align="right">@(score.Score)</td>
                             </tr>
                         }
