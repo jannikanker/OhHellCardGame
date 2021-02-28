@@ -65,11 +65,6 @@
                             title="@L["NextRoundText"]">
                         @L["NextRound"]
                     </button>
-
-                    <br />
-
-                    <SetBets game="@_game" selectedPlayer="@SelectedPlayer" OnPlaceBet="PlaceBet" />
-
                     @if (IsGameController(SelectedPlayer) && !_game.GameStarted)
                     {
                         <button style="visibility:@(_game.GameStarted ? "hidden" : "visible")" disabled="@(!_game.AllPlayersSignedIn)" class="btn btn-success" @onclick="@StartGame">Start</button>
@@ -80,6 +75,7 @@
                 <section>
                     <PlayedCards game="@_game" selectedPlayer="@SelectedPlayer" OnWinner="@Winner" />
                     <hr />
+                    <SetBets game="@_game" selectedPlayer="@SelectedPlayer" OnPlaceBet="PlaceBet" />
                     <PlayerCards game="@_game" selectedPlayer="@SelectedPlayer" cards="_cards" OnPlayCard="@Play" />
                 </section>
 
