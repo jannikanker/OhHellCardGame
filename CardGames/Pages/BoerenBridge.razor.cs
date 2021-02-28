@@ -11,6 +11,7 @@ using Microsoft.Identity.Web;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using CardGames.Components;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace CardGames.Pages
 {
@@ -29,6 +30,7 @@ namespace CardGames.Pages
 
         [CascadingParameter]
         protected Task<AuthenticationState> AuthenticationStateTask { get; set; }
+        public object NavManager { get; private set; }
 
         protected HubConnection _hubConnection;
         protected bool _playerSelected;
@@ -54,6 +56,7 @@ namespace CardGames.Pages
         protected string _modalClassGameCards = "";
         protected string _modalDisplayGameCards = "none;";
         protected string _sideView = "show;";
+        protected bool _showPlayedCards = true;
 
         protected string _inputLabels = "";
         protected string[][] _inputSeries;
@@ -66,6 +69,15 @@ namespace CardGames.Pages
 
         protected override async Task OnInitializedAsync()
         {
+            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+            if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("spc", out var showPlayedCards))
+            {
+                if (showPlayedCards.ToString().ToLower() == "no")
+                    _showPlayedCards = false;
+                else
+                    _showPlayedCards = true;
+            }
+
             settings = GameSettings.Value;
             _hubConnection = new HubConnectionBuilder()
                 .WithUrl(settings.GameHubUrl, options =>

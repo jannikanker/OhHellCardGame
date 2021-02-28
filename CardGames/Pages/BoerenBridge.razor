@@ -34,7 +34,7 @@
                 </header>
                 <hr />
                 <section>
-                    <PlayedCards game="@_game" selectedPlayer="@SelectedPlayer" OnWinner="@Winner" />
+                    <PlayedCards game="@_game" selectedPlayer="@SelectedPlayer" OnWinner="@Winner" ShowPlayedCards="@_showPlayedCards"/>
                 </section>
                 <ScoreBoard game="@_game" selectedPlayer="@SelectedPlayer" modalClass="@_modalClass" modalDisplay="@_modalDisplay" OnCloseCallback="@CloseScoreBoard" />
 
@@ -73,7 +73,7 @@
 
                 <hr />
                 <section>
-                    <PlayedCards game="@_game" selectedPlayer="@SelectedPlayer" OnWinner="@Winner" />
+                    <PlayedCards Game="@_game" SelectedPlayer="@SelectedPlayer" OnWinner="@Winner" ShowPlayedCards="@_showPlayedCards"/>
                     <hr />
                     <SetBets game="@_game" selectedPlayer="@SelectedPlayer" OnPlaceBet="PlaceBet" />
                     <PlayerCards game="@_game" selectedPlayer="@SelectedPlayer" cards="_cards" OnPlayCard="@Play" />

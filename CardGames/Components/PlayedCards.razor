@@ -2,55 +2,60 @@
 @using CardGames.Shared;
 @inject IStringLocalizer<Pages.UIStrings> L;
 
-<fieldset class="scheduler-border-playedcards">
-    <legend>
-        @L["PlayedCards"]
-    </legend>
-    @foreach (var playedCard in game.Rounds[game.CurrentRound].PlayedCards)
-    {
-        <fieldset style="float:left">
-            <legend class="playedCard">
-                @(game.Players[GameUtils.GetPlayerId(playedCard.PlayerId)].FirstName)
-            </legend>
-            <div class=@(playedCard.Winner ? "galleryWon" : (playedCard.PlayerId == game.CurrentPlayerObj.Id ? "galleryCurrentPlayer" : "gallery"))>
-                <div class="desc">
-                    <p>
-                        🎰@(game.Rounds[game.CurrentRound].Bets[GameUtils.GetPlayerId(playedCard.PlayerId)] < 0 ? "?" :
-                                                            game.Rounds[game.CurrentRound].Bets[GameUtils.GetPlayerId(playedCard.PlayerId)].ToString())
-                        🏆@(game.Rounds[game.CurrentRound].Wins[GameUtils.GetPlayerId(playedCard.PlayerId)].ToString())
-                        <br />
-                        📈 @(game.Players[GameUtils.GetPlayerId(playedCard.PlayerId)].Score)
-                    </p>
+@if (ShowPlayedCards)
+{
+    <fieldset class="scheduler-border-playedcards">
+        <legend>
+            @L["PlayedCards"]
+        </legend>
+        @foreach (var playedCard in Game.Rounds[Game.CurrentRound].PlayedCards)
+        {
+            <fieldset style="float:left">
+                <legend class="playedCard">
+                    @(Game.Players[GameUtils.GetPlayerId(playedCard.PlayerId)].FirstName)
+                </legend>
+                <div class=@(playedCard.Winner ? "galleryWon" : (playedCard.PlayerId == Game.CurrentPlayerObj.Id ? "galleryCurrentPlayer" : "gallery"))>
+                    <div class="desc">
+                        <p>
+                            🎰@(Game.Rounds[Game.CurrentRound].Bets[GameUtils.GetPlayerId(playedCard.PlayerId)] < 0 ? "?" :
+                                                  Game.Rounds[Game.CurrentRound].Bets[GameUtils.GetPlayerId(playedCard.PlayerId)].ToString())
+                            🏆@(Game.Rounds[Game.CurrentRound].Wins[GameUtils.GetPlayerId(playedCard.PlayerId)].ToString())
+                            <br />
+                            📈 @(Game.Players[GameUtils.GetPlayerId(playedCard.PlayerId)].Score)
+                        </p>
 
-                    @if (playedCard.Card != null)
-                    {
-                        <div id="PlayCard_@(playedCard.PlayerId)">
-                            <img src="/CardImages/@(playedCard.Card == null ? "green_back" : playedCard.Card.Face).png" width="80" style="padding: 0px 0px 5px 0px;" />
-                        </div>
-                        @if (game.ChooseWinner && selectedPlayer != "view")
+                        @if (playedCard.Card != null)
                         {
-                            <button class="btn btn-outline-info" style="visibility:@(game.ChooseWinner ? "visible" : "hidden")"
-                                    disabled="@(!game.ChooseWinner || !game.IsGameController(GameUtils.GetPlayerId(selectedPlayer)))"
-                                    @onclick="@(e => Winner(e, playedCard))">
-                                @L["Won"]
-                            </button>
+                            <div id="PlayCard_@(playedCard.PlayerId)">
+                                <img src="/CardImages/@(playedCard.Card == null ? "green_back" : playedCard.Card.Face).png" width="80" style="padding: 0px 0px 5px 0px;" />
+                            </div>
+                            @if (Game.ChooseWinner && SelectedPlayer != "view")
+                            {
+                                <button class="btn btn-outline-info" style="visibility:@(Game.ChooseWinner ? "visible" : "hidden")"
+                                        disabled="@(!Game.ChooseWinner || !Game.IsGameController(GameUtils.GetPlayerId(SelectedPlayer)))"
+                                        @onclick="@(e => Winner(e, playedCard))">
+                                    @L["Won"]
+                                </button>
+                            }
                         }
-                    }
-                    else
-                    {
-                        <img src="/CardImages/green_back.png" width="80" />
-                    }
+                        else
+                        {
+                            <img src="/CardImages/green_back.png" width="80" />
+                        }
+                    </div>
                 </div>
-            </div>
-        </fieldset>
-    }
-</fieldset>
+            </fieldset>
+        }
+    </fieldset>
+}
 
 @code {
     [Parameter]
-    public Game game { get; set; }
+    public Game Game { get; set; }
     [Parameter]
-    public string selectedPlayer { get; set; }
+    public string SelectedPlayer { get; set; }
+    [Parameter]
+    public bool ShowPlayedCards { get; set; }
 
     [Parameter]
     public EventCallback<PlayedCard> OnWinner { get; set; }
