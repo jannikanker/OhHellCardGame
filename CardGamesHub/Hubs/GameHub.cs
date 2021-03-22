@@ -298,6 +298,11 @@ namespace CardGamesHub.Hubs
                 var pId = Player.GetPlayerId(pl.Id);
                 await Clients.Client(game.PlayerConnections[pId]).SendAsync("Shuffled", game.Players[pId].Cards, game);
             }
+
+            foreach (var connection in game.ViewerConnections)
+            {
+                await Clients.Client(connection).SendAsync("Shuffled", new System.Collections.Generic.List<Card>(), game);
+            }
         }
 
         public async Task NextRound(string gameId)

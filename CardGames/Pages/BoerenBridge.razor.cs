@@ -136,7 +136,8 @@ namespace CardGames.Pages
             _hubConnection.On<Game>("GameResetted", (game) =>
             {
                 _game = game;
-                _cards = _game.Players[GameUtils.GetPlayerId(SelectedPlayer)].Cards;
+                if(SelectedPlayer != "view")
+                        _cards = _game.Players[GameUtils.GetPlayerId(SelectedPlayer)].Cards;
                 StateHasChanged();
             });
 
