@@ -10,5 +10,7 @@ namespace CardGames.Shared.Models
         public string Key { get; set; }
         public string DatabaseName { get; set; }
         public string GamesContainer { get; set; }
+
+        public string GamesRegistryContainer { get; set; }
     }
 }

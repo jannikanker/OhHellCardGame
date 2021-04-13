@@ -64,14 +64,44 @@ namespace CardGamesHub.Server.Services
             return gameScores;
         }
 
-        public Game NewGame(string gameId, int nrPlayers)
+        public Game NewGameSet(GameRegistry gameRegistry)
         {
-            _logger.LogInformation($"Adding New Game with id: {gameId}.");
-            var game = new Game(gameId, nrPlayers);
-            _redisCacheClient.Db0.AddAsync(gameId, game).Wait();
-            //SaveGamePersistent(game, false).Wait();
+            _logger.LogInformation($"Adding New Game with id: {gameRegistry.Name}.");
+            var game = GetGame(gameRegistry.Name);
+            if (game != null)
+            {
+                RemoveGame(game.Id);
+            }
+            var players = new List<Player>();
+            foreach(var p in gameRegistry.Players)
+            {
+                players.Add(new Player { Id = p.Player, Name = p.Player, Email = p.Email, IsGameController = p.IsGameAdmin });
+            }
+            game = new Game(gameRegistry.Name, players.ToArray());
+            _redisCacheClient.Db0.AddAsync(gameRegistry.Name, game).Wait();
+            gameRegistry.GameState = GameStates.GameSetCreated;
+            SaveGameRegistryPersistent(gameRegistry,true).Wait();
             return game;
         }
+
+        public GameRegistry NewGameRegistry(string gameName, int nrPlayers)
+        {
+            _logger.LogInformation($"Adding New Game Registry with Name: {gameName}.");
+
+            var gameRegistry = new GameRegistry(gameName);
+            for (var p=0; p<nrPlayers; p++)
+            {
+                var userInGame = new GamePlayer();
+                userInGame.GameId = gameName;
+                userInGame.Player = "P" + (p + 1).ToString();
+                userInGame.Email = "";
+                userInGame.IsGameAdmin = p==0;
+                gameRegistry.Players.Add(userInGame);
+            }
+            SaveGameRegistryPersistent(gameRegistry).Wait();
+
+            return gameRegistry;
+        }             
 
         public async Task SaveGame(Game game)
         {
@@ -79,6 +109,30 @@ namespace CardGamesHub.Server.Services
             await _redisCacheClient.Db0.RemoveAsync(game.Id);
             await _redisCacheClient.Db0.AddAsync(game.Id, game);
             //await SaveGamePersistent(game, true);
+        }
+
+        public async Task SaveGameRegistryPersistent(GameRegistry gameRegistry, bool overwrite = false)
+        {
+            try
+            {
+                using (var client = new CosmosClient(_cosmosSettings.EndpointUrl, _cosmosSettings.Key))
+                {
+                    var database = await client.CreateDatabaseIfNotExistsAsync(_cosmosSettings.DatabaseName);
+                    var container = database.Database.GetContainer(_cosmosSettings.GamesRegistryContainer);
+                    if (overwrite)
+                    {
+                        await container.ReplaceItemAsync(gameRegistry, gameRegistry.id);
+                    }
+                    else
+                    {
+                        await container.CreateItemAsync<GameRegistry>(gameRegistry);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.Message;
+            }
         }
 
         public async Task SaveGamePersistent(Game game, bool overwrite = false)
@@ -111,9 +165,14 @@ namespace CardGamesHub.Server.Services
         public Game GetGame(string gameId)
         {
             var gameData = _redisCacheClient.Db0.Database.StringGetAsync(gameId).Result;
-            string result = System.Text.Encoding.UTF8.GetString(gameData);
-            var game = JsonSerializer.Deserialize<Game>(result);
-            return game;
+            if (gameData != StackExchange.Redis.RedisValue.Null)
+            {
+                string result = System.Text.Encoding.UTF8.GetString(gameData);
+                var game = JsonSerializer.Deserialize<Game>(result);
+                return game;
+            }
+            else
+                return null;
         }
 
         public Game StartGame(string gameId)
@@ -155,6 +214,23 @@ namespace CardGamesHub.Server.Services
             _redisCacheClient.Db0.RemoveAsync(gameId).Wait();
         }
 
+        public async Task RemoveGameRegistryPersitent(string gameRegistryId)
+        {
+            try
+            {
+                using (var client = new CosmosClient(_cosmosSettings.EndpointUrl, _cosmosSettings.Key))
+                {
+                    var database = await client.CreateDatabaseIfNotExistsAsync(_cosmosSettings.DatabaseName);
+                    var container = database.Database.GetContainer(_cosmosSettings.GamesRegistryContainer);
+                    await container.DeleteItemAsync<GameRegistry>(gameRegistryId, new PartitionKey(gameRegistryId));
+                }
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.Message;
+            }
+        }
+
         public Game NewGameSet(string gameId)
         {
             _logger.LogInformation($"New Game Set on Game with id: {gameId}.");
@@ -186,7 +262,110 @@ namespace CardGamesHub.Server.Services
                     }
                 }
             }
+
             return gameIds;
+        }
+
+        public async Task<List<GameRegistry>> GetGameRegistries()
+        {
+            var registries = new List<GameRegistry>();
+            try
+            {
+                using (var client = new CosmosClient(_cosmosSettings.EndpointUrl, _cosmosSettings.Key))
+                {
+                    var database = await client.CreateDatabaseIfNotExistsAsync(_cosmosSettings.DatabaseName);
+                    var container = database.Database.GetContainer(_cosmosSettings.GamesRegistryContainer);
+
+                    QueryDefinition queryDefinition = new QueryDefinition("select * from c");
+                    using (FeedIterator<GameRegistry> feedIterator = container.GetItemQueryIterator<GameRegistry>(
+                        queryDefinition,
+                        null,
+                        new QueryRequestOptions()))
+                    {
+                        while (feedIterator.HasMoreResults)
+                        {
+                            foreach (var item in await feedIterator.ReadNextAsync())
+                            {
+                                if ((item.Players.Where(p => p.Email == GetUser()).Count() > 0) || IsUserSystemAdmin())
+                                {
+                                    registries.Add(item);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.Message;
+            }
+            return registries;
+        }
+
+        public async Task<GameRegistry> GetGameRegistryByName(string GameName)
+        {
+            var registries = new List<GameRegistry>();
+            try
+            {
+                using (var client = new CosmosClient(_cosmosSettings.EndpointUrl, _cosmosSettings.Key))
+                {
+                    var database = await client.CreateDatabaseIfNotExistsAsync(_cosmosSettings.DatabaseName);
+                    var container = database.Database.GetContainer(_cosmosSettings.GamesRegistryContainer);
+
+                    QueryDefinition queryDefinition = new QueryDefinition($"SELECT * FROM c where c.Name = \"{GameName}\"");
+                    using (FeedIterator<GameRegistry> feedIterator = container.GetItemQueryIterator<GameRegistry>(
+                        queryDefinition,
+                        null,
+                        new QueryRequestOptions()))
+                    {
+                        while (feedIterator.HasMoreResults)
+                        {
+                            foreach (var item in await feedIterator.ReadNextAsync())
+                            {
+                                registries.Add(item);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.Message;
+            }
+            return registries.FirstOrDefault();
+        }
+
+        public async Task<GameRegistry> GetGameRegistryById(string GameRegistryId)
+        {
+            var registries = new List<GameRegistry>();
+            try
+            {
+                using (var client = new CosmosClient(_cosmosSettings.EndpointUrl, _cosmosSettings.Key))
+                {
+                    var database = await client.CreateDatabaseIfNotExistsAsync(_cosmosSettings.DatabaseName);
+                    var container = database.Database.GetContainer(_cosmosSettings.GamesRegistryContainer);
+
+                    QueryDefinition queryDefinition = new QueryDefinition($"SELECT * FROM c where c.id = \"{GameRegistryId}\"");
+                    using (FeedIterator<GameRegistry> feedIterator = container.GetItemQueryIterator<GameRegistry>(
+                        queryDefinition,
+                        null,
+                        new QueryRequestOptions()))
+                    {
+                        while (feedIterator.HasMoreResults)
+                        {
+                            foreach (var item in await feedIterator.ReadNextAsync())
+                            {
+                                registries.Add(item);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.Message;
+            }
+            return registries.FirstOrDefault();
         }
 
         private string GetUser()
@@ -201,8 +380,8 @@ namespace CardGamesHub.Server.Services
 
         private bool IsUserGameController(string gameId, string playerEmail)
         {
-            var game = GetGame(gameId);
-            var gamesControllers = game.Players.Where(p => p.Email == playerEmail && p.IsGameController);
+            var gameRegistry = GetGameRegistryByName(gameId).Result;
+            var gamesControllers = gameRegistry.Players.Where(p => p.Email == playerEmail && p.IsGameAdmin);
             var isController = gamesControllers.Count() > 0;
             return isController;
         }

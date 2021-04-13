@@ -73,16 +73,16 @@ namespace CardGames.Shared.Models
             //empty
         }
 
-        public Game(string gameId, int nrPlayers)
+        public Game(string gameId, Player[] Players)
         {
             this.Key = Guid.NewGuid().ToString();
             this.DBid = this.Key;
             this.Id = gameId;
-            this.NrPlayers = nrPlayers;
-            this.Players = new Player[NrPlayers];
+            this.NrPlayers = Players.Length;
+            this.Players = Players;
             this.PlayerConnections = new string[NrPlayers];
             this.ViewerConnections = new List<string>();
-            StartNewGame();
+            StartNewGame(true);
         }
 
         public void StartNewGame(bool keepPlayer = false)

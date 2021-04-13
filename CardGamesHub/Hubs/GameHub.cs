@@ -35,14 +35,33 @@ namespace CardGamesHub.Hubs
         }
 
 
+        //[Authorize(Policy = "IsAdmin")]
+        //public async Task NewGame(string name, string gameAdmin, int nrPlayers)
+        //{
+        //    var game = _gameService.NewGame(name, nrPlayers);
+        //    game.GameAdmin = gameAdmin;
+        //    var games = await _gameService.GetGameRegistries();
+        //    await Clients.Caller.SendAsync("NewGameCreated", games);
+        //    _logger.LogInformation($"New Game created with name: {name}.");
+        //}
+
         [Authorize(Policy = "IsAdmin")]
-        public async Task NewGame(string name, string gameAdmin, int nrPlayers)
+        public async Task NewGameRegistry(string name, string gameAdmin, int nrPlayers)
         {
-            var game = _gameService.NewGame(name, nrPlayers);
-            game.GameAdmin = gameAdmin;
-            var games = _gameService.GetPlayerGames();
-            await Clients.Caller.SendAsync("NewGameCreated", games);
-            _logger.LogInformation($"New Game created with name: {name}.");
+            var game = _gameService.NewGameRegistry(name, nrPlayers);
+            var gameRegistries = await _gameService.GetGameRegistries();
+            await Clients.Caller.SendAsync("NewGameRegistryCreated", gameRegistries);
+            _logger.LogInformation($"New GameRegistry created with name: {name}.");
+        }
+
+        [Authorize(Policy = "IsAdmin")]
+        public async Task NewGameSet(string gameRegistryId)
+        {
+            var gameRegistry = await _gameService.GetGameRegistryById(gameRegistryId);
+            var game = _gameService.NewGameSet(gameRegistry);
+            var games = await _gameService.GetGameRegistries();
+            game.Status = _localizer["NewGameSet"];
+            await Clients.Caller.SendAsync("NewGameSet", games);
         }
 
 
@@ -51,7 +70,7 @@ namespace CardGamesHub.Hubs
             if (_gameService.IsUserGameController(gameId) || _gameService.IsUserSystemAdmin())
             {
                 var game = _gameService.ResetGame(gameId);
-                var games = _gameService.GetPlayerGames();
+                var games = await _gameService.GetGameRegistries();
                 game.Status = _localizer["GameResetted", game.CurrentPlayerObj.FirstName];
                 await _gameService.SaveGame(game);
 
@@ -105,39 +124,29 @@ namespace CardGamesHub.Hubs
         [Authorize(Policy = "IsAdmin")]
         public async Task RemoveGame(string gameId)
         {
-            _gameService.RemoveGame(gameId);
-            var games = _gameService.GetPlayerGames();
+            //_gameService.RemoveGame(gameId);
+            await _gameService.RemoveGameRegistryPersitent(gameId);
+            var games = await _gameService.GetGameRegistries();
             await Clients.Caller.SendAsync("GameRemoved", games);
-        }
-
-        [Authorize(Policy = "IsAdmin")]
-        public async Task NewGameSet(string gameId)
-        {
-            var game = _gameService.NewGameSet(gameId);
-            var games = _gameService.GetPlayerGames();
-            game.Status = _localizer["NewGameSet"];
-            await _gameService.SaveGame(game);
-            //await Clients.Caller.SendAsync("NewGameSet", games);
-            await Clients.Group(gameId).SendAsync("NewGameSet", game);
         }
 
         public async Task GetRunningGames()
         {
-            var games = _gameService.GetPlayerGames();
-            await Clients.Caller.SendAsync("ReturnRunningGames", games);
+            var gameRegistries = await _gameService.GetGameRegistries();
+            await Clients.Caller.SendAsync("ReturnRunningGames", gameRegistries);
         }
 
         public async Task SaveGamePlayer(GamePlayer gamePlayer)
         {
             if (_gameService.IsUserGameController(gamePlayer.GameId) || _gameService.IsUserSystemAdmin())
             {
-                var game = _gameService.GetGame(gamePlayer.GameId);
-                game.Players[Player.GetPlayerId(gamePlayer.Player)].Email = gamePlayer.Email;
-                game.Players[Player.GetPlayerId(gamePlayer.Player)].IsGameController = gamePlayer.IsGameAdmin;
-                await _gameService.SaveGame(game);
+                var gameRegistry = await _gameService.GetGameRegistryByName(gamePlayer.GameId);
+                gameRegistry.Players[Player.GetPlayerId(gamePlayer.Player)].Email = gamePlayer.Email;
+                gameRegistry.Players[Player.GetPlayerId(gamePlayer.Player)].IsGameAdmin = gamePlayer.IsGameAdmin;
+                await _gameService.SaveGameRegistryPersistent(gameRegistry,true);
 
-                var games = _gameService.GetPlayerGames();
-                await Clients.Caller.SendAsync("SavedGamePlayer", games);
+                var gameRegistries = _gameService.GetGameRegistries();
+                await Clients.Caller.SendAsync("SavedGamePlayer", gameRegistries);
             }
         }
 

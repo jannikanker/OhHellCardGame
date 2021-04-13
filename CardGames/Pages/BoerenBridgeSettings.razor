@@ -23,35 +23,35 @@
             <input type="text" @bind="_newGameName" style="display:@ShowFor(UserRoles.Admin)" />
             <input type="Text" @bind="_newGameAdmin" style="display:@ShowFor(UserRoles.Admin)" />
             <input type="number" @bind="_nrPlayers" min="2" max="6" style="display:@ShowFor(UserRoles.Admin)" />
-            <button class="btn btn-danger" @onclick="@NewGame" style="display:@ShowFor(UserRoles.Admin)">New Game</button>
+            <button class="btn btn-danger" @onclick="@NewGameRegistry" style="display:@ShowFor(UserRoles.Admin)">New Registry</button>
             <br />
             
             <p>Games</p><button class="btn btn-danger" @onclick="@GetRunningGames"><span class="fa fa-refresh"></span></button>
             <select @bind="_selectedGame" style="display:@ShowFor(UserRoles.AdminOrController)">
                 <option value="">-select game-</option>
                 @{
-                    var games = _runningGames.GroupBy(g => g.GameId).ToList();
-                    foreach (var game in games)
+                    //var games = _gameRegistries.GroupBy(g => g.GameId).ToList();
+                    foreach (var gameRegistry in _gameRegistries)
                     {
-                        if (games.IndexOf(game) == 0)
+                        if (_gameRegistries.IndexOf(gameRegistry) == 0)
                         {
-                            <option selected value=@game.Key>@game.Key</option>
+                            <option selected value=@gameRegistry.id>@gameRegistry.Name</option>
                         }
                         else
                         {
-                            <option value=@game.Key>@game.Key</option>
+                            <option value=@gameRegistry.id>@gameRegistry.Name</option>
                         }
                     }
                 }
             </select>
             <p></p>
             <button class="btn btn-danger" @onclick="@RemoveGame" style="display:@ShowFor(UserRoles.Admin)">Remove Game</button>
-            <button class="btn btn-danger" @onclick="@ResetGame" style="display:@ShowFor(UserRoles.AdminOrController)">Reset Game</button>
-            <button class="btn btn-danger" @onclick="@ResetCurrentRound" style="display:@ShowFor(UserRoles.AdminOrController)">Reset Round</button>
             <button class="btn btn-danger" @onclick="@NewGameSet" style="display:@ShowFor(UserRoles.Admin)">New Set</button>
-            <button class="btn btn-danger" @onclick="@GetGameSettings" style="display:@ShowFor(UserRoles.Admin)">Get Game Settings</button>
-            <button class="btn btn-danger" @onclick="@SaveGameSettings" style="display:@ShowFor(UserRoles.Admin)">Save Game Settings</button>
-            <button class="btn btn-danger" @onclick="@GameSavedToDB" style="display:@ShowFor(UserRoles.Admin)">Save Game to DB</button>
+            <button class="btn btn-danger" disabled @onclick="@ResetGame" style="display:@ShowFor(UserRoles.AdminOrController)">Reset Game</button>
+            <button class="btn btn-danger" disabled @onclick="@ResetCurrentRound" style="display:@ShowFor(UserRoles.AdminOrController)">Reset Round</button>
+            <button class="btn btn-danger" disabled @onclick="@GetGameSettings" style="display:@ShowFor(UserRoles.Admin)">Get Game Settings</button>
+            <button class="btn btn-danger" disabled @onclick="@SaveGameSettings" style="display:@ShowFor(UserRoles.Admin)">Save Game Settings</button>
+            <button class="btn btn-danger" disabled @onclick="@GameSavedToDB" style="display:@ShowFor(UserRoles.Admin)">Save Game to DB</button>
             <button class="btn btn-danger" @onclick="@ShowAccessToken" style="display:@ShowFor(UserRoles.Admin)">Get AccessToken</button>
 
             <div class="form-group" style="display:@ShowFor(UserRoles.Admin)">
@@ -60,17 +60,20 @@
             </div>
 
             <p></p>
-            @foreach (var game in _runningGames.GroupBy(g => g.GameId))
+            @foreach (var registry in _gameRegistries)
             {
-                @game.Key<br />
-                @foreach (var row in _runningGames.Where(g => g.GameId == game.Key))
+                @registry.Name<br />
+                @foreach (var row in registry.Players)
                 {
                     <p>
                         @row.Player
                         <input @bind="row.Email" type="text" size="100" />
                         Admin <input type="checkbox" @bind="row.IsGameAdmin">
                         <button class="btn btn-success" @onclick="@(e => SavePlayer(e, row))">Save</button>
+                    @if (registry.GameState > GameStates.NoGameSet)
+                    {
                         <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, row))">Go To @row.GameId as @row.Player</button>
+                    }
                     </p>
                  }
                 <hr/>
@@ -79,11 +82,20 @@
         else
         {
             <p>Able to play in the following games as player</p>
-            @foreach (var game in _runningGames)
+            @foreach (var registry in _gameRegistries)
             {
-                <p>
-                    <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, game))">Go To @game.GameId</button>
-                </p>
+                @registry.Name<br />
+                @foreach (var row in registry.Players)
+                {
+                    <p>
+                        @row.Player
+                        @if (registry.GameState > GameStates.NoGameSet && (_gameUser.HasRole(UserRoles.Admin) || row.Email == _gameUser.Email))
+                        {
+                            <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, row))">Go To @row.GameId as @row.Player</button>
+                        }
+                    </p>
+                 }
+                <hr/>
             }
         }
     </Authorized>
@@ -98,6 +110,7 @@
 
     private HubConnection _hubConnection;
     private List<GamePlayer> _runningGames = new List<GamePlayer>();
+    private List<GameRegistry> _gameRegistries = new List<GameRegistry>();
     private string _newGameName = "game1";
     private string _newGameAdmin = "";
     private string _selectedGame;
@@ -120,10 +133,16 @@
         .WithAutomaticReconnect()
         .Build();
 
-        _hubConnection.On<List<GamePlayer>>("ReturnRunningGames", (gamePlayers) =>
+        _hubConnection.On<List<GameRegistry>>("ReturnRunningGames", (GameRegistries) =>
         {
-            _runningGames = gamePlayers;
+            _gameRegistries = GameRegistries;
             _gameUser = new GameUser(GetUserEmail().Result, IsSystemAdmin(), IsGameController());
+            StateHasChanged();
+        });
+
+        _hubConnection.On<List<GameRegistry>>("NewGameRegistryCreated", (GameRegistries) =>
+        {
+            _gameRegistries = GameRegistries;
             StateHasChanged();
         });
 
@@ -132,6 +151,8 @@
             _runningGames = gamePlayers;
             StateHasChanged();
         });
+
+
 
         _hubConnection.On<List<GamePlayer>>("CurrentRoundResetted", (gamePlayers) =>
         {
@@ -151,15 +172,21 @@
             StateHasChanged();
         });
 
-        _hubConnection.On<List<GamePlayer>>("GameRemoved", (gamePlayers) =>
+        _hubConnection.On<List<GameRegistry>>("GameRemoved", (gameRegistries) =>
         {
-            _runningGames = gamePlayers;
+            _gameRegistries = gameRegistries;
             StateHasChanged();
         });
 
-        _hubConnection.On<List<GamePlayer>>("SavedGamePlayer", (gamePlayers) =>
+        _hubConnection.On<List<GameRegistry>>("SavedGamePlayer", (gameRegistries) =>
         {
-            _runningGames = gamePlayers;
+            _gameRegistries = gameRegistries;
+            StateHasChanged();
+        });
+
+        _hubConnection.On<List<GameRegistry>>("NewGameSet", (gameRegistries) =>
+        {
+            _gameRegistries = gameRegistries;
             StateHasChanged();
         });
 
@@ -211,10 +238,19 @@
         return token;
     }
 
+    private async Task NewGameRegistry()
+    {
+        await _hubConnection.SendAsync("NewGameRegistry", _newGameName, _newGameAdmin, _nrPlayers);
+    }
 
     private async Task NewGame()
     {
         await _hubConnection.SendAsync("NewGame", _newGameName, _newGameAdmin, _nrPlayers);
+    }
+
+    private async Task NewGameSet()
+    {
+        await _hubConnection.SendAsync("NewGameSet", _selectedGame);
     }
 
     private async Task ResetGame()
@@ -246,11 +282,6 @@
     private async Task GameSavedToDB()
     {
         await _hubConnection.SendAsync("SaveGameToDb", _selectedGame);
-    }
-
-    private async Task NewGameSet()
-    {
-        await _hubConnection.SendAsync("NewGameSet", _selectedGame);
     }
 
     private async Task GetRunningGames()
