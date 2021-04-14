@@ -47,7 +47,6 @@ namespace CardGamesHub.Server.Services
                     QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
                     var scores = container.GetItemQueryIterator<GameScore>(queryDefinition);
 
-
                     while (scores.HasMoreResults)
                     {
                         foreach (var score in await scores.ReadNextAsync())

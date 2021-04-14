@@ -35,16 +35,6 @@ namespace CardGamesHub.Hubs
         }
 
 
-        //[Authorize(Policy = "IsAdmin")]
-        //public async Task NewGame(string name, string gameAdmin, int nrPlayers)
-        //{
-        //    var game = _gameService.NewGame(name, nrPlayers);
-        //    game.GameAdmin = gameAdmin;
-        //    var games = await _gameService.GetGameRegistries();
-        //    await Clients.Caller.SendAsync("NewGameCreated", games);
-        //    _logger.LogInformation($"New Game created with name: {name}.");
-        //}
-
         [Authorize(Policy = "IsAdmin")]
         public async Task NewGameRegistry(string name, string gameAdmin, int nrPlayers)
         {

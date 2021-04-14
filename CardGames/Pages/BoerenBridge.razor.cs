@@ -55,6 +55,8 @@ namespace CardGames.Pages
         protected string _modalDisplayLastCards = "none;";
         protected string _modalClassGameCards = "";
         protected string _modalDisplayGameCards = "none;";
+        protected string _modalClassCompetition = "";
+        protected string _modalDisplayCompetition = "none;";
         protected string _sideView = "show;";
         protected bool _showPlayedCards = true;
 
@@ -293,6 +295,13 @@ namespace CardGames.Pages
             StateHasChanged();
         }
 
+        public void OpenCompetitionBoard()
+        {
+            _modalDisplayCompetition = "block";
+            _modalClassCompetition = "show";
+            StateHasChanged();
+        }
+
         public void OpenGameResults()
         {
             _modalDisplayGameResults = "block;";
@@ -302,8 +311,15 @@ namespace CardGames.Pages
 
         public void CloseGameResults()
         {
-            _modalDisplayGameResults = "none";
-            _modalClassGameResults = "";
+            _modalDisplayCompetition = "none";
+            _modalClassCompetition = "";
+            StateHasChanged();
+        }
+
+        public void CloseGameCompetition()
+        {
+            _modalDisplayCompetition = "none";
+            _modalClassCompetition = "";
             StateHasChanged();
         }
 

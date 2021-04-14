@@ -47,6 +47,7 @@
 
                     <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
                     <button class="btn btn-success" @onclick="() => OpenTopScoreBoard()">Top Scores</button>
+                    <button class="btn btn-success" @onclick="() => OpenCompetitionBoard()">Competition</button>
                     <button class="btn btn-success" @onclick="() => OpenGameResults()">Game Results</button>
                     <button class="btn btn-success" @onclick="() => OpenGamePlayedCards()" disabled="@(!_game.GameOver)">History</button>
                     <button class="btn btn-success" @onclick="() => OpenLastPlayedCards()">Last</button>
@@ -85,6 +86,7 @@
                 <GameResults topScores="@_gameResults" modalClass="@_modalClassGameResults" modalDisplay="@_modalDisplayGameResults" gameId="@SelectedGame" OnCloseCallback="@CloseGameResults" />
                 <LastPlayedCards game="@_game" modalClass="@_modalClassLastCards" modalDisplay="@_modalDisplayLastCards" OnCloseCallback="@CloseLastPlayedCards" />
                 <CardHistory game="@_game" selectedPlayer="@SelectedPlayer" modalClass="@_modalClassGameCards" modalDisplay="@_modalDisplayGameCards" OnCloseCallback="@CloseGamePlayedCards" />
+                <Competition topScores="@_gameResults" modalClass="@_modalClassCompetition" modalDisplay="@_modalDisplayCompetition" gameId="@SelectedGame" OnCloseCallback="@CloseGameCompetition" />
             }
         }
     </Authorized>
