@@ -55,15 +55,22 @@ namespace CardGamesHub.Hubs
         }
 
         [Authorize(Policy = "IsAdmin")]
-        public async Task NewGameSet(string gameRegistryId)
+        public async Task NewGame(string gameRegistryId)
         {
             var gameRegistry = await _gameService.GetGameRegistryById(gameRegistryId);
-            var game = _gameService.NewGameSet(gameRegistry);
+            var game = _gameService.NewGame(gameRegistry);
             var games = await _gameService.GetGameRegistries();
-            game.Status = _localizer["NewGameSet"];
-            await Clients.Caller.SendAsync("NewGameSet", games);
+            await Clients.Caller.SendAsync("NewGameCreated", games);
         }
 
+        [Authorize(Policy = "IsAdmin")]
+        public async Task RemoveGame(string gameRegistryId)
+        {
+            var gameRegistry = await _gameService.GetGameRegistryById(gameRegistryId);
+            _gameService.RemoveGame(gameRegistry);
+            var games = await _gameService.GetGameRegistries();
+            await Clients.Caller.SendAsync("GameRemoved", games);
+        }
 
         public async Task ResetGame(string gameId)
         {
@@ -122,12 +129,12 @@ namespace CardGamesHub.Hubs
         }
 
         [Authorize(Policy = "IsAdmin")]
-        public async Task RemoveGame(string gameId)
+        public async Task RemoveGameRegistry(string gameId)
         {
             //_gameService.RemoveGame(gameId);
             await _gameService.RemoveGameRegistryPersitent(gameId);
             var games = await _gameService.GetGameRegistries();
-            await Clients.Caller.SendAsync("GameRemoved", games);
+            await Clients.Caller.SendAsync("GameRegistryRemoved", games);
         }
 
         public async Task GetRunningGames()

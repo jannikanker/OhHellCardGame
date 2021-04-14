@@ -6,10 +6,10 @@ namespace CardGames.Shared.Models
 {
     public enum GameStates
     {
-        NoGameSet,
-        GameSetCreated,
-        GameSetRunning,
-        GameSetGameOver
+        NoGame,
+        GameCreated,
+        GameRunning,
+        GameOver
     }
     public class GamePlayer
     {
@@ -29,7 +29,7 @@ namespace CardGames.Shared.Models
         public GameRegistry(string gameName)
         {
             this.id = Guid.NewGuid().ToString();
-            this.GameState = GameStates.NoGameSet;
+            this.GameState = GameStates.NoGame;
             this.Name = gameName;
             this.Players = new List<GamePlayer>();
         }

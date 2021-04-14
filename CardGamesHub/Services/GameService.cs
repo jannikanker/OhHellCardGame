@@ -64,13 +64,13 @@ namespace CardGamesHub.Server.Services
             return gameScores;
         }
 
-        public Game NewGameSet(GameRegistry gameRegistry)
+        public Game NewGame(GameRegistry gameRegistry)
         {
             _logger.LogInformation($"Adding New Game with id: {gameRegistry.Name}.");
             var game = GetGame(gameRegistry.Name);
             if (game != null)
             {
-                RemoveGame(game.Id);
+                RemoveGame(gameRegistry);
             }
             var players = new List<Player>();
             foreach(var p in gameRegistry.Players)
@@ -79,7 +79,7 @@ namespace CardGamesHub.Server.Services
             }
             game = new Game(gameRegistry.Name, players.ToArray());
             _redisCacheClient.Db0.AddAsync(gameRegistry.Name, game).Wait();
-            gameRegistry.GameState = GameStates.GameSetCreated;
+            gameRegistry.GameState = GameStates.GameCreated;
             SaveGameRegistryPersistent(gameRegistry,true).Wait();
             return game;
         }
@@ -208,10 +208,13 @@ namespace CardGamesHub.Server.Services
             return game;
         }
 
-        public void RemoveGame(string gameId)
+        public void RemoveGame(GameRegistry gameRegistry)
         {
-            _logger.LogInformation($"Removing Game with id: {gameId}.");
-            _redisCacheClient.Db0.RemoveAsync(gameId).Wait();
+            _logger.LogInformation($"Removing Game with id: {gameRegistry.Name}.");
+            _redisCacheClient.Db0.RemoveAsync(gameRegistry.Name).Wait();
+            gameRegistry.GameState = GameStates.NoGame;
+            SaveGameRegistryPersistent(gameRegistry, true).Wait();
+
         }
 
         public async Task RemoveGameRegistryPersitent(string gameRegistryId)
@@ -229,15 +232,6 @@ namespace CardGamesHub.Server.Services
             {
                 var msg = ex.Message;
             }
-        }
-
-        public Game NewGameSet(string gameId)
-        {
-            _logger.LogInformation($"New Game Set on Game with id: {gameId}.");
-            var game = GetGame(gameId);
-            game.NewGameSet();
-            SaveGame(game).Wait();
-            return game;
         }
 
         public List<GamePlayer> GetPlayerGames()

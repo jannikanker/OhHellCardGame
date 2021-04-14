@@ -45,8 +45,9 @@
                 }
             </select>
             <p></p>
+            <button class="btn btn-danger" @onclick="@RemoveGameRegistry" style="display:@ShowFor(UserRoles.Admin)">Remove Game Registry</button>
+            <button class="btn btn-danger" @onclick="@NewGame" style="display:@ShowFor(UserRoles.Admin)">New Game</button>
             <button class="btn btn-danger" @onclick="@RemoveGame" style="display:@ShowFor(UserRoles.Admin)">Remove Game</button>
-            <button class="btn btn-danger" @onclick="@NewGameSet" style="display:@ShowFor(UserRoles.Admin)">New Set</button>
             <button class="btn btn-danger" disabled @onclick="@ResetGame" style="display:@ShowFor(UserRoles.AdminOrController)">Reset Game</button>
             <button class="btn btn-danger" disabled @onclick="@ResetCurrentRound" style="display:@ShowFor(UserRoles.AdminOrController)">Reset Round</button>
             <button class="btn btn-danger" disabled @onclick="@GetGameSettings" style="display:@ShowFor(UserRoles.Admin)">Get Game Settings</button>
@@ -70,7 +71,7 @@
                         <input @bind="row.Email" type="text" size="100" />
                         Admin <input type="checkbox" @bind="row.IsGameAdmin">
                         <button class="btn btn-success" @onclick="@(e => SavePlayer(e, row))">Save</button>
-                    @if (registry.GameState > GameStates.NoGameSet)
+                    @if (registry.GameState > GameStates.NoGame)
                     {
                         <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, row))">Go To @row.GameId as @row.Player</button>
                     }
@@ -89,7 +90,7 @@
                 {
                     <p>
                         @row.Player
-                        @if (registry.GameState > GameStates.NoGameSet && (_gameUser.HasRole(UserRoles.Admin) || row.Email == _gameUser.Email))
+                        @if (registry.GameState > GameStates.NoGame && (_gameUser.HasRole(UserRoles.Admin) || row.Email == _gameUser.Email))
                         {
                             <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, row))">Go To @row.GameId as @row.Player</button>
                         }
@@ -146,13 +147,23 @@
             StateHasChanged();
         });
 
-        _hubConnection.On<List<GamePlayer>>("NewGameCreated", (gamePlayers) =>
+        _hubConnection.On<List<GameRegistry>>("GameRegistryRemoved", (gameRegistries) =>
         {
-            _runningGames = gamePlayers;
+            _gameRegistries = gameRegistries;
             StateHasChanged();
         });
 
+        _hubConnection.On<List<GameRegistry>>("NewGameCreated", (gameRegistries) =>
+        {
+            _gameRegistries = gameRegistries;
+            StateHasChanged();
+        });
 
+        _hubConnection.On<List<GameRegistry>>("GameRemoved", (gameRegistries) =>
+        {
+            _gameRegistries = gameRegistries;
+            StateHasChanged();
+        });
 
         _hubConnection.On<List<GamePlayer>>("CurrentRoundResetted", (gamePlayers) =>
         {
@@ -172,11 +183,7 @@
             StateHasChanged();
         });
 
-        _hubConnection.On<List<GameRegistry>>("GameRemoved", (gameRegistries) =>
-        {
-            _gameRegistries = gameRegistries;
-            StateHasChanged();
-        });
+
 
         _hubConnection.On<List<GameRegistry>>("SavedGamePlayer", (gameRegistries) =>
         {
@@ -184,11 +191,7 @@
             StateHasChanged();
         });
 
-        _hubConnection.On<List<GameRegistry>>("NewGameSet", (gameRegistries) =>
-        {
-            _gameRegistries = gameRegistries;
-            StateHasChanged();
-        });
+
 
         var authState = await authenticationStateTask;
         var user = authState.User;
@@ -243,14 +246,14 @@
         await _hubConnection.SendAsync("NewGameRegistry", _newGameName, _newGameAdmin, _nrPlayers);
     }
 
-    private async Task NewGame()
+    private async Task RemoveGameRegistry()
     {
-        await _hubConnection.SendAsync("NewGame", _newGameName, _newGameAdmin, _nrPlayers);
+        await _hubConnection.SendAsync("RemoveGameRegistry", _selectedGame);
     }
 
-    private async Task NewGameSet()
+    private async Task NewGame()
     {
-        await _hubConnection.SendAsync("NewGameSet", _selectedGame);
+        await _hubConnection.SendAsync("NewGame", _selectedGame);
     }
 
     private async Task ResetGame()
@@ -258,15 +261,17 @@
         await _hubConnection.SendAsync("ResetGame", _selectedGame);
     }
 
+    private async Task RemoveGame()
+    {
+        await _hubConnection.SendAsync("RemoveGame", _selectedGame);
+    }
+
     private async Task ResetCurrentRound()
     {
         await _hubConnection.SendAsync("ResetCurrentRound", _selectedGame);
     }
 
-    private async Task RemoveGame()
-    {
-        await _hubConnection.SendAsync("RemoveGame", _selectedGame);
-    }
+
 
     private async Task GetGameSettings()
     {
