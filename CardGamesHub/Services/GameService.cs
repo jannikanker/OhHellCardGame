@@ -76,6 +76,7 @@ namespace CardGamesHub.Server.Services
             {
                 players.Add(new Player { Id = p.Player, Name = p.Player, Email = p.Email, IsGameController = p.IsGameAdmin });
             }
+            
             game = new Game(gameRegistry.Name, players.ToArray());
             _redisCacheClient.Db0.AddAsync(gameRegistry.Name, game).Wait();
             gameRegistry.GameState = GameStates.GameCreated;
@@ -163,15 +164,22 @@ namespace CardGamesHub.Server.Services
 
         public Game GetGame(string gameId)
         {
-            var gameData = _redisCacheClient.Db0.Database.StringGetAsync(gameId).Result;
-            if (gameData != StackExchange.Redis.RedisValue.Null)
+            try
             {
-                string result = System.Text.Encoding.UTF8.GetString(gameData);
-                var game = JsonSerializer.Deserialize<Game>(result);
-                return game;
+                var gameData = _redisCacheClient.Db0.Database.StringGetAsync(gameId).Result;
+                if (gameData != StackExchange.Redis.RedisValue.Null)
+                {
+                    string result = System.Text.Encoding.UTF8.GetString(gameData);
+                    var game = JsonSerializer.Deserialize<Game>(result);
+                    return game;
+                }
+                else
+                    return null;
             }
-            else
+            catch(Exception)
+            {
                 return null;
+            }
         }
 
         public Game StartGame(string gameId)

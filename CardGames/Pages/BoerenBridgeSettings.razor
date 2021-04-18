@@ -50,7 +50,7 @@
             <button class="btn btn-danger" @onclick="@RemoveGame" style="display:@ShowFor(UserRoles.Admin)">Remove Game</button>
             <button class="btn btn-danger" disabled @onclick="@ResetGame" style="display:@ShowFor(UserRoles.AdminOrController)">Reset Game</button>
             <button class="btn btn-danger" disabled @onclick="@ResetCurrentRound" style="display:@ShowFor(UserRoles.AdminOrController)">Reset Round</button>
-            <button class="btn btn-danger" disabled @onclick="@GetGameSettings" style="display:@ShowFor(UserRoles.Admin)">Get Game Settings</button>
+            <button class="btn btn-danger" @onclick="@GetGameSettings" style="display:@ShowFor(UserRoles.Admin)">Get Game Settings</button>
             <button class="btn btn-danger" disabled @onclick="@SaveGameSettings" style="display:@ShowFor(UserRoles.Admin)">Save Game Settings</button>
             <button class="btn btn-danger" disabled @onclick="@GameSavedToDB" style="display:@ShowFor(UserRoles.Admin)">Save Game to DB</button>
             <button class="btn btn-danger" @onclick="@ShowAccessToken" style="display:@ShowFor(UserRoles.Admin)">Get AccessToken</button>
@@ -68,9 +68,9 @@
                 {
                     <p>
                         @row.Player
-                        <input @bind="row.Email" type="text" size="100" />
-                        Admin <input type="checkbox" @bind="row.IsGameAdmin">
-                        <button class="btn btn-success" @onclick="@(e => SavePlayer(e, row))">Save</button>
+                        <input @bind="row.Email" type="text" size="100" disabled="@(registry.GameState > GameStates.NoGame)"/>
+                        Admin <input type="checkbox" @bind="row.IsGameAdmin" disabled="@(registry.GameState > GameStates.NoGame)">
+                        <button class="btn btn-success" @onclick="@(e => SavePlayer(e, row))" disabled="@(registry.GameState > GameStates.NoGame)">Save</button>
                     @if (registry.GameState > GameStates.NoGame)
                     {
                         <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, row))">Go To @row.GameId as @row.Player</button>
