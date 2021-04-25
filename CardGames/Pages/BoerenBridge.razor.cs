@@ -311,8 +311,8 @@ namespace CardGames.Pages
 
         public void CloseGameResults()
         {
-            _modalDisplayCompetition = "none";
-            _modalClassCompetition = "";
+            _modalDisplayGameResults = "none";
+            _modalClassGameResults = "";
             StateHasChanged();
         }
 
