@@ -12,6 +12,7 @@ namespace CardGames.Shared.Models
         [Newtonsoft.Json.JsonProperty(PropertyName = "id")]
         public string DBid { get; set; }
         public string Id { get; set; }
+        public string CompetitionId { get; set; }
         public DateTime GameOverDateTime { get; set; }
         public string GameAdmin { get; set; }
         public Stock Stock { get; set; }
@@ -73,10 +74,11 @@ namespace CardGames.Shared.Models
             //empty
         }
 
-        public Game(string gameId, Player[] Players)
+        public Game(string competitionId, string gameId, Player[] Players)
         {
             this.Key = Guid.NewGuid().ToString();
             this.DBid = this.Key;
+            this.CompetitionId = competitionId;
             this.Id = gameId;
             this.NrPlayers = Players.Length;
             this.Players = Players;

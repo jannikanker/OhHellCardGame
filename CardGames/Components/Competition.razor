@@ -13,24 +13,30 @@
                 </button>
             </div>
             <div class="modal-body" style="text-align:center">
-                <table class="table table-sm table-striped">
-                    <thead>
-                        <tr>
-                            <td align="center">1e</td>
-                            <td align="center">2e</td>
-                            <td align="center">3e</td>
-                            <td align="center">4e</td>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            @foreach (var position in CreateCompetitionPositions())
-                            {
-                                <td align="center">@position.Key.ToString() (@position.Value.ToString())</td>
-                            }
-                        </tr>
-                    </tbody>
-                </table>
+                @foreach (var competition in CreateCompetitionPositions())
+                {
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <td align="center">Competition</td>
+                                <td align="center">1e</td>
+                                <td align="center">2e</td>
+                                <td align="center">3e</td>
+                                <td align="center">4e</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td align="left">@competition.Key</td>
+                                    @foreach (var position in (List<KeyValuePair<object,object>>) competition.Value)
+                                    {
+                                        <td align="center">@position.Key.ToString() (@position.Value.ToString())</td>
+                                    }
+
+                            </tr>
+                        </tbody>
+                    </table>
+                }
             </div>
         </div>
     </div>
@@ -51,29 +57,39 @@
 
     protected List<KeyValuePair<object,object>> CreateCompetitionPositions()
     {
-        var positions = new Hashtable();
+
+        var competitions = new Hashtable();
         var players = topScores.Where(g => g.Id == gameId).GroupBy(g => g.FirstName);
-        foreach(var p in players)
-        {
-            positions.Add(p.Key, 0);
-        }
 
-        foreach (var game in topScores.Where(g => g.Id == gameId).OrderByDescending(g => g.GameOverDateTime).GroupBy(g => g.GameOverDateTime))
+
+        foreach (var competition in topScores.Where(c => c.Id == gameId).GroupBy(c => c.CompetitionId))
         {
-            int i = 1;
-            foreach (var score in topScores.Where(g => g.GameOverDateTime == game.Key).OrderByDescending(g => g.Score))
+            var positions = new Hashtable();
+            foreach(var p in players)
             {
-                positions[score.FirstName] = (int)positions[score.FirstName] + (4 - i) * 3;
-                i++;
+                positions.Add(p.Key, 0);
             }
+
+            foreach (var game in topScores.Where(g => g.Id == gameId && g.CompetitionId == competition.Key).OrderByDescending(g => g.GameOverDateTime).GroupBy(g => g.GameOverDateTime))
+            {
+                int i = 1;
+                foreach (var score in topScores.Where(g => g.GameOverDateTime == game.Key).OrderByDescending(g => g.Score))
+                {
+                    positions[score.FirstName] = (int)positions[score.FirstName] + (4 - i) * 3;
+                    i++;
+                }
+            }
+            //sort
+            var pos = positions.Cast < DictionaryEntry > ()
+                          .ToDictionary(d => d.Key, d => d.Value)
+                          .OrderByDescending(e => e.Value);
+            competitions.Add(competition.Key, pos.ToList());
         }
 
-        //sort
-        var pos = positions.Cast < DictionaryEntry > ()
-          .ToDictionary(d => d.Key, d => d.Value)
-          .OrderByDescending(e => e.Value);
+        var comp = competitions.Cast<DictionaryEntry>()
+                .ToDictionary(d => d.Key, d => d.Value);
 
-        return pos.ToList();
+        return comp.ToList();
     }
 
     private void Close()

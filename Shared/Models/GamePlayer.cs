@@ -29,14 +29,17 @@ namespace CardGames.Shared.Models
         public GameRegistry(string gameName)
         {
             this.id = Guid.NewGuid().ToString();
+            this.CurrentCompetition = "1";
             this.GameState = GameStates.NoGame;
             this.Name = gameName;
             this.Players = new List<GamePlayer>();
         }
 
         public string id { get; set; }
+        public string CurrentCompetition { get; set; }
         public string Name { get; set; }
         public GameStates GameState { get; set; }
         public  List<GamePlayer> Players { get; set; }
+
     }
 }

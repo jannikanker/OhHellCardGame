@@ -39,7 +39,7 @@ namespace CardGamesHub.Server.Services
             List<GameScore> gameScores = new List<GameScore>();
             try
             {
-                var sqlQueryText = "SELECT g.Id, g.GameOverDateTime, p.Name, p.FirstName, p.Score FROM Games g JOIN p in g.Players";
+                var sqlQueryText = "SELECT g.Id, g.CompetitionId, g.GameOverDateTime, p.Name, p.FirstName, p.Score FROM Games g JOIN p in g.Players";
                 using (var client = new CosmosClient(_cosmosSettings.EndpointUrl, _cosmosSettings.Key))
                 {
                     var database = client.GetDatabase(_cosmosSettings.DatabaseName);
@@ -77,7 +77,7 @@ namespace CardGamesHub.Server.Services
                 players.Add(new Player { Id = p.Player, Name = p.Player, Email = p.Email, IsGameController = p.IsGameAdmin });
             }
             
-            game = new Game(gameRegistry.Name, players.ToArray());
+            game = new Game(gameRegistry.CurrentCompetition, gameRegistry.Name, players.ToArray());
             _redisCacheClient.Db0.AddAsync(gameRegistry.Name, game).Wait();
             gameRegistry.GameState = GameStates.GameCreated;
             SaveGameRegistryPersistent(gameRegistry,true).Wait();
