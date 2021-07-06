@@ -17,7 +17,6 @@
 <img src="/CardImages/back_cards-07.png" width="300" />
 <AuthorizeView>
     <Authorized>
-        <h1>Hello @context.User.Identity.Name</h1>
         @if (_gameUser.HasRole(UserRoles.AdminOrController))
         {
             <input type="text" @bind="_newGameName" style="display:@ShowFor(UserRoles.Admin)" />

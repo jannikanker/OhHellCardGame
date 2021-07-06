@@ -47,6 +47,8 @@
     public string selectedPlayer { get; set; }
     [Parameter]
     public EventCallback<Card> OnPlayCard { get; set; }
+    [Parameter]
+    public int viewSize { get; set; }
 
     private void Play(MouseEventArgs e, string player, Card card, bool canPlayCard)
     {

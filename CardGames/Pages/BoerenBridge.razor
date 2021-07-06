@@ -29,15 +29,11 @@
             {
                 <header>
                     <CardGames.Components.TrumpCardSideView game="@_game" sideView="@_sideView" />
-                    <p>@L["NotAuthorized"]</p>
-                    <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
                 </header>
                 <hr />
                 <section>
-                    <PlayedCards game="@_game" selectedPlayer="@SelectedPlayer" OnWinner="@Winner" ShowPlayedCards="@_showPlayedCards"/>
+                    <PlayedCards game="@_game" selectedPlayer="@SelectedPlayer" OnWinner="@Winner" ShowPlayedCards="@_showPlayedCards" viewSize="50"/>
                 </section>
-                <ScoreBoard game="@_game" selectedPlayer="@SelectedPlayer" modalClass="@_modalClass" modalDisplay="@_modalDisplay" OnCloseCallback="@CloseScoreBoard" />
-
             }
             else
             {
@@ -77,7 +73,7 @@
                     <PlayedCards Game="@_game" SelectedPlayer="@SelectedPlayer" OnWinner="@Winner" ShowPlayedCards="@_showPlayedCards"/>
                     <hr />
                     <SetBets game="@_game" selectedPlayer="@SelectedPlayer" OnPlaceBet="PlaceBet" />
-                    <PlayerCards game="@_game" selectedPlayer="@SelectedPlayer" cards="_cards" OnPlayCard="@Play" />
+                    <PlayerCards game="@_game" selectedPlayer="@SelectedPlayer" cards="_cards" OnPlayCard="@Play" viewSize="100" />
                 </section>
 
                 <ScoreBoard game="@_game" selectedPlayer="@SelectedPlayer" modalClass="@_modalClass" modalDisplay="@_modalDisplay" OnCloseCallback="@CloseScoreBoard" />
