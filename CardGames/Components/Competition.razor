@@ -67,18 +67,39 @@
             var positions = new Hashtable();
             foreach(var p in players)
             {
-                positions.Add(p.Key, 0);
+                positions.Add(p.Key, 0.0);
             }
 
             foreach (var game in topScores.Where(g => g.Id == gameId && g.CompetitionId == competition.Key).OrderByDescending(g => g.GameOverDateTime).GroupBy(g => g.GameOverDateTime))
             {
                 int i = 1;
-                foreach (var score in topScores.Where(g => g.GameOverDateTime == game.Key).OrderByDescending(g => g.Score))
+                var gameScores = topScores.Where(g => g.GameOverDateTime == game.Key).OrderByDescending(g => g.Score).ToArray(); ;
+                do
                 {
-                    positions[score.FirstName] = (int)positions[score.FirstName] + (4 - i) * 3;
-                    i++;
-                }
+                    var gameScore = gameScores[i-1];
+                    if(i == gameScores.Count()-1)
+                    {
+                        positions[gameScore.FirstName] = (double)positions[gameScore.FirstName] + 3;
+                        break;
+                    }
+
+
+                    if (gameScore.Score != gameScores[i].Score)
+                    {
+                        positions[gameScore.FirstName] = (double)positions[gameScore.FirstName] + (4 - i) * 3;
+                        i++;
+                    }
+                    else
+                    {
+                        var sharedScore = (((4 - i) * 3) + ((4 - (i + 1)) * 3)) / 2.0;
+                        positions[gameScore.FirstName] = (double)positions[gameScore.FirstName] + sharedScore;
+                        positions[gameScores[i].FirstName] = (double)positions[gameScores[i].FirstName] + sharedScore;
+                        i = i + 2;
+                    }
+                    
+                } while (i < gameScores.Count());
             }
+
             //sort
             var pos = positions.Cast < DictionaryEntry > ()
                           .ToDictionary(d => d.Key, d => d.Value)
