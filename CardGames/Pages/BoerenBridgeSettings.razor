@@ -29,17 +29,9 @@
             <select @bind="_selectedGame" style="display:@ShowFor(UserRoles.AdminOrController)">
                 <option value="">-select game-</option>
                 @{
-                    //var games = _gameRegistries.GroupBy(g => g.GameId).ToList();
                     foreach (var gameRegistry in _gameRegistries)
                     {
-                        if (_gameRegistries.IndexOf(gameRegistry) == 0)
-                        {
-                            <option selected value=@gameRegistry.id>@gameRegistry.Name</option>
-                        }
-                        else
-                        {
-                            <option value=@gameRegistry.id>@gameRegistry.Name</option>
-                        }
+                        <option value=@gameRegistry.id>@gameRegistry.Name</option>
                     }
                 }
             </select>

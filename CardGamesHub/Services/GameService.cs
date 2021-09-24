@@ -287,7 +287,7 @@ namespace CardGamesHub.Server.Services
                         {
                             foreach (var item in await feedIterator.ReadNextAsync())
                             {
-                                if ((item.Players.Where(p => p.Email == GetUser()).Count() > 0) || IsUserSystemAdmin())
+                                if ((item.Players.Where(p => p.Email.Trim() == GetUser()).Count() > 0) || IsUserSystemAdmin())
                                 {
                                     registries.Add(item);
                                 }

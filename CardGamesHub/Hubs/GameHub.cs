@@ -10,7 +10,7 @@ using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-
+using Microsoft.ApplicationInsights;
 
 namespace CardGamesHub.Hubs
 {
@@ -22,22 +22,26 @@ namespace CardGamesHub.Hubs
         private readonly ILogger _logger;
         private GameSettings _settings;
         private string _viewUser = "viewer";
+        private TelemetryClient _telemetry;
 
         public GameHub(GameService gameService,
                        IStringLocalizer<GameHubStrings> localizer,
                        ILogger<GameHub> logger,
-                       IOptions<GameSettings> settings)
+                       IOptions<GameSettings> settings,
+                       TelemetryClient telemetry)
         {
             _gameService = gameService;
             _localizer = localizer;
             _logger = logger;
             _settings = settings.Value;
+            _telemetry = telemetry;
         }
 
 
         [Authorize(Policy = "IsAdmin")]
         public async Task NewGameRegistry(string name, string gameAdmin, int nrPlayers)
         {
+
             var game = _gameService.NewGameRegistry(name, nrPlayers);
             var gameRegistries = await _gameService.GetGameRegistries();
             await Clients.Caller.SendAsync("NewGameRegistryCreated", gameRegistries);
@@ -47,6 +51,7 @@ namespace CardGamesHub.Hubs
         [Authorize(Policy = "IsAdmin")]
         public async Task NewGame(string gameRegistryId)
         {
+            _telemetry.TrackEvent($"New Game for {gameRegistryId}");
             var gameRegistry = await _gameService.GetGameRegistryById(gameRegistryId);
             var game = _gameService.NewGame(gameRegistry);
             var games = await _gameService.GetGameRegistries();
@@ -129,12 +134,14 @@ namespace CardGamesHub.Hubs
 
         public async Task GetRunningGames()
         {
+            _logger.LogInformation($"Getting running Games.");
             var gameRegistries = await _gameService.GetGameRegistries();
             await Clients.Caller.SendAsync("ReturnRunningGames", gameRegistries);
         }
 
         public async Task SaveGamePlayer(GamePlayer gamePlayer)
         {
+            _logger.LogInformation($"Saving Gameplayer {gamePlayer.Email}.");
             if (_gameService.IsUserGameController(gamePlayer.GameId) || _gameService.IsUserSystemAdmin())
             {
                 var gameRegistry = await _gameService.GetGameRegistryByName(gamePlayer.GameId);

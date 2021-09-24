@@ -245,6 +245,7 @@ namespace CardGames.Pages
 
         public void OpenTrump()
         {
+            Console.WriteLine($"{_playerSelected} opens Trump.");
             _modalDisplayTrump = "block;";
             _modalClassTrump = "Show";
             StateHasChanged();

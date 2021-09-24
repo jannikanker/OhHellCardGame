@@ -2,9 +2,11 @@
   <PropertyGroup>
      <TargetFramework>netcoreapp3.1</TargetFramework>
      <UserSecretsId>812fafb4-9fd6-4ec4-8849-560f6bd6b505</UserSecretsId>
+     <ApplicationInsightsResourceId>/subscriptions/96780d5f-a8ac-4699-8807-253388c3cfbc/resourceGroups/Games/providers/microsoft.insights/components/MindparkGames</ApplicationInsightsResourceId>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CacheManager.Microsoft.Extensions.Configuration" Version="1.2.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.15.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Cosmos" Version="1.0.0-preview5" />
     <PackageReference Include="Microsoft.Identity.Web" Version="1.*" />
     <PackageReference Include="Microsoft.Identity.Web.UI" Version="1.4.1" />
