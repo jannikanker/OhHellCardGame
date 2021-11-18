@@ -38,6 +38,7 @@ namespace CardGames.Pages
         protected List<Card> _cards = new List<Card>();
         protected List<PlayerSelection> _playerSelections = new List<PlayerSelection>();
         protected List<GameScore> _topScores;
+        protected List<GameScore> _lowScores;
         protected List<GameScore> _gameResults;
 
         protected bool _inprogress = false;
@@ -49,6 +50,8 @@ namespace CardGames.Pages
         protected string _modalDisplayTrump = "none;";
         protected string _modalClassTopscores = "";
         protected string _modalDisplayTopscores = "none;";
+        protected string _modalClassLowscores = "";
+        protected string _modalDisplayLowscores = "none;";
         protected string _modalClassGameResults = "";
         protected string _modalDisplayGameResults = "none;";
         protected string _modalClassLastCards = "";
@@ -99,6 +102,7 @@ namespace CardGames.Pages
                 _inprogress = false;
                 _game = game;
                 _topScores = topScores.OrderByDescending(g => g.Score).Take(10).ToList();
+                _lowScores = topScores.OrderBy(g => g.Score).Take(10).ToList();
                 _gameResults = topScores;
                 _cardsWidth = 482 + (game.Players[GameUtils.GetPlayerId(SelectedPlayer)].Cards.Count() > 4 ? (_cardIncrease * (game.Players[GameUtils.GetPlayerId(SelectedPlayer)].Cards.Count() - 4)) : 0);
                 if (game != null)
@@ -117,12 +121,13 @@ namespace CardGames.Pages
                 StateHasChanged();
             });
 
-            _hubConnection.On<Game, List<GameScore>>("ViewedGame", (game, topScores) =>
+            _hubConnection.On<Game, List<GameScore>>("ViewedGame", (game, scores) =>
             {
                 _inprogress = false;
                 _game = game;
-                _topScores = topScores.OrderByDescending(g => g.Score).Take(10).ToList();
-                _gameResults = topScores;
+                _topScores = scores.OrderByDescending(g => g.Score).Take(10).ToList();
+                _lowScores = scores.OrderBy(g => g.Score).Take(10).ToList();
+                _gameResults = scores;
 
                 StateHasChanged();
             });
@@ -285,6 +290,21 @@ namespace CardGames.Pages
         {
             _modalDisplayTopscores = "block;";
             _modalClassTopscores = "Show";
+            StateHasChanged();
+        }
+
+
+        public void CloseLowScoreBoard()
+        {
+            _modalDisplayLowscores = "none";
+            _modalClassLowscores = "";
+            StateHasChanged();
+        }
+
+        public void OpenLowScoreBoard()
+        {
+            _modalDisplayLowscores = "block;";
+            _modalClassLowscores = "Show";
             StateHasChanged();
         }
 

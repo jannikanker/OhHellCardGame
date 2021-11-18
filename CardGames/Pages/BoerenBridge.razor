@@ -42,9 +42,10 @@
                     <h5 class="active">@_game.Status</h5>
 
                     <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>
-                    <button class="btn btn-success" @onclick="() => OpenTopScoreBoard()">Top Scores</button>
+                    <button class="btn btn-success" @onclick="() => OpenTopScoreBoard()">Tops</button>
+                    <button class="btn btn-success" @onclick="() => OpenLowScoreBoard()">Lows</button>
                     <button class="btn btn-success" @onclick="() => OpenCompetitionBoard()">Competition</button>
-                    <button class="btn btn-success" @onclick="() => OpenGameResults()">Game Results</button>
+                    <button class="btn btn-success" @onclick="() => OpenGameResults()">Results</button>
                     <button class="btn btn-success" @onclick="() => OpenGamePlayedCards()" disabled="@(!_game.GameOver)">History</button>
                     <button class="btn btn-success" @onclick="() => OpenLastPlayedCards()">Last</button>
                     <button class="btn btn-success" @onclick="() => OpenTrump()">@(GetColourChar(_game.PlayingCard.Colour.ToString()))</button>
@@ -79,6 +80,7 @@
                 <ScoreBoard game="@_game" selectedPlayer="@SelectedPlayer" modalClass="@_modalClass" modalDisplay="@_modalDisplay" OnCloseCallback="@CloseScoreBoard" />
                 <Trump game="@_game" selectedPlayer="@SelectedPlayer" modalClass="@_modalClassTrump" modalDisplay="@_modalDisplayTrump" OnCloseCallback="@CloseTrump" />
                 <TopScores topScores="@_topScores" modalClass="@_modalClassTopscores" modalDisplay="@_modalDisplayTopscores" OnCloseCallback="@CloseTopScoreBoard" />
+                <TopScores topScores="@_lowScores" modalClass="@_modalClassLowscores" modalDisplay="@_modalDisplayLowscores" OnCloseCallback="@CloseLowScoreBoard" />
                 <GameResults topScores="@_gameResults" modalClass="@_modalClassGameResults" modalDisplay="@_modalDisplayGameResults" gameId="@SelectedGame" OnCloseCallback="@CloseGameResults" />
                 <LastPlayedCards game="@_game" modalClass="@_modalClassLastCards" modalDisplay="@_modalDisplayLastCards" OnCloseCallback="@CloseLastPlayedCards" />
                 <CardHistory game="@_game" selectedPlayer="@SelectedPlayer" modalClass="@_modalClassGameCards" modalDisplay="@_modalDisplayGameCards" OnCloseCallback="@CloseGamePlayedCards" />
