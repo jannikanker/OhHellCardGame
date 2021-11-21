@@ -15,6 +15,7 @@
                 <table class="table table-sm table-striped">
                     <thead>
                         <tr>
+                            <td>Competitie</td>
                             <td>Date</td>
                             <td>1e</td>
                             <td>2e</td>
@@ -26,7 +27,9 @@
                         @foreach (var game in topScores.Where(g => g.Id == gameId).OrderByDescending(g => g.GameOverDateTime).GroupBy(g => g.GameOverDateTime))
                         {
                             <tr>
-                                <td align="left">@(game.Key.ToString("d", new CultureInfo("nl-NL")))</td>
+                                <td align="center">@(game.First().CompetitionId)</td>
+                                <td align="center">@(game.Key.ToString("d", new CultureInfo("nl-NL")))</td>
+
                                 @foreach (var score in topScores.Where(g => g.GameOverDateTime == game.Key).OrderByDescending(g => g.Score))
                                 {
                                     <td align="left">@(score.FirstName) (@(score.Score))</td>

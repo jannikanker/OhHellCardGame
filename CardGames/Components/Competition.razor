@@ -27,11 +27,18 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td align="left">@competition.Key</td>
-                                    @foreach (var position in (List<KeyValuePair<object,object>>) competition.Value)
-                                    {
-                                        <td align="center">@position.Key.ToString() (@position.Value.ToString())</td>
-                                    }
+                                @{
+                                    var countScores = topScores.Where(c => c.CompetitionId == competition.Key.ToString()).ToList().Count;
+                                    var countPlayers = topScores.Where(g => g.Id == gameId).GroupBy(g => g.FirstName).ToList().Count;
+                                    var count = 0;
+                                    if(countPlayers > 0)
+                                        count = (int)countScores / countPlayers;
+                                }
+                                <td align="center">@competition.Key (@count games)</td>
+                                @foreach (var position in (List<KeyValuePair<object,object>>) competition.Value)
+                                {
+                                    <td align="center">@position.Key.ToString() (@position.Value.ToString())</td>
+                                }
 
                             </tr>
                         </tbody>
@@ -110,7 +117,7 @@
         var comp = competitions.Cast<DictionaryEntry>()
                 .ToDictionary(d => d.Key, d => d.Value);
 
-        return comp.ToList();
+        return comp.ToList().OrderByDescending(f => f.Key).ToList();
     }
 
     private void Close()
