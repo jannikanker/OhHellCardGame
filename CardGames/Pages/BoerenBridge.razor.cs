@@ -34,6 +34,7 @@ namespace CardGames.Pages
 
         protected HubConnection _hubConnection;
         protected bool _playerSelected;
+        protected string _authorized = "Unknown";
         protected Game _game;
         protected List<Card> _cards = new List<Card>();
         protected List<PlayerSelection> _playerSelections = new List<PlayerSelection>();
@@ -92,6 +93,14 @@ namespace CardGames.Pages
                 .WithAutomaticReconnect()
                 .Build();
 
+            _hubConnection.On("NotAllowToJoinGame", () =>
+            {
+                //user is not allowed to play as the with the selected player
+                _game = null;
+                _authorized = "NotAllowed";
+                StateHasChanged();
+            });
+
             _hubConnection.On<Game, List<GameScore>>("JoinedGame", (game, topScores) =>
             {
                 if (SelectedPlayer.ToLower() == "view")
@@ -99,6 +108,7 @@ namespace CardGames.Pages
                     return;
                 }
 
+                _authorized = "Authorized";
                 _inprogress = false;
                 _game = game;
                 _topScores = topScores.OrderByDescending(g => g.Score).Take(10).ToList();

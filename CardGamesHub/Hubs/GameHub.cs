@@ -182,30 +182,38 @@ namespace CardGamesHub.Hubs
             {
                 if (!string.IsNullOrEmpty(selectedPlayer))
                 {
-                    game.Players.Where(p => p.Id == selectedPlayer).First().SignedIn = true;
-                    game.Players.Where(p => p.Id == selectedPlayer).First().Name = name;
-                    if (!string.IsNullOrEmpty(game.PlayerConnections[Player.GetPlayerId(selectedPlayer)]))
+                    if (GetUser() == game.Players.Where(p => p.Id == selectedPlayer).First().Email)
                     {
-                        await Groups.RemoveFromGroupAsync(game.PlayerConnections[Player.GetPlayerId(selectedPlayer)], gameId);
-                    }
-                    game.PlayerConnections[Player.GetPlayerId(selectedPlayer)] = Context.ConnectionId;
-                    await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
+                        game.Players.Where(p => p.Id == selectedPlayer).First().SignedIn = true;
+                        game.Players.Where(p => p.Id == selectedPlayer).First().Name = name;
+                        if (!string.IsNullOrEmpty(game.PlayerConnections[Player.GetPlayerId(selectedPlayer)]))
+                        {
+                            await Groups.RemoveFromGroupAsync(game.PlayerConnections[Player.GetPlayerId(selectedPlayer)], gameId);
+                        }
+                        game.PlayerConnections[Player.GetPlayerId(selectedPlayer)] = Context.ConnectionId;
+                        await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
 
-                    var notsignedinplayer = "";
-                    foreach (var player in game.Players.Where(p => p.SignedIn == false))
+                        var notsignedinplayer = "";
+                        foreach (var player in game.Players.Where(p => p.SignedIn == false))
+                        {
+                            notsignedinplayer += player.Id + " ";
+                        }
+
+                        if (game.GameStarted != true)
+                        {
+                            game.Status = game.AllPlayersSignedIn ? _localizer["GameAdminStart"] : _localizer["WaitingSignIn", notsignedinplayer];
+                        }
+
+                        var gameScores = await _gameService.GetTopScores();
+                        await _gameService.SaveGame(game);
+                        await Clients.Group(gameId).SendAsync("JoinedGame", game, gameScores);
+                        _logger.LogInformation($"Player {name} joined Game {gameId}.");
+                    }
+                    else
                     {
-                        notsignedinplayer += player.Id + " ";
+                        _logger.LogInformation($"Player {name} wants to join game {gameId} as {selectedPlayer}. Not Allowed");
+                        await Clients.Caller.SendAsync("NotAllowToJoinGame");
                     }
-
-                    if (game.GameStarted != true)
-                    {
-                        game.Status = game.AllPlayersSignedIn ? _localizer["GameAdminStart"] : _localizer["WaitingSignIn", notsignedinplayer];
-                    }
-
-                    var gameScores = await _gameService.GetTopScores();
-                    await _gameService.SaveGame(game);
-                    await Clients.Group(gameId).SendAsync("JoinedGame", game, gameScores);
-                    _logger.LogInformation($"Player {name} joined Game {gameId}.");
                 }
             }
         }

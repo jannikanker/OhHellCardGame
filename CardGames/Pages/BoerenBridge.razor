@@ -21,7 +21,14 @@
     <Authorized>
         @if (_game == null)
         {
-            <p>@L["GameStartingUp", @SelectedGame]</p>
+            if(_authorized == "NotAllowed")
+            {
+                <p>@L["NotAuthorized"]</p>
+            }
+            else
+            {
+                <p>@L["GameStartingUp", @SelectedGame]</p>
+            }
         }
         else
         {
