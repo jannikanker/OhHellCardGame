@@ -40,7 +40,7 @@
             <button class="btn btn-danger" @onclick="@NewGame" style="display:@ShowFor(UserRoles.Admin)">New Game</button>
             <button class="btn btn-danger" @onclick="@RemoveGame" style="display:@ShowFor(UserRoles.Admin)">Remove Game</button>
             <button class="btn btn-danger" disabled @onclick="@ResetGame" style="display:@ShowFor(UserRoles.AdminOrController)">Reset Game</button>
-            <button class="btn btn-danger" disabled @onclick="@ResetCurrentRound" style="display:@ShowFor(UserRoles.AdminOrController)">Reset Round</button>
+            <button class="btn btn-danger" @onclick="@ResetCurrentRound" style="display:@ShowFor(UserRoles.AdminOrController)">Reset Round</button>
             <button class="btn btn-danger" @onclick="@GetGameSettings" style="display:@ShowFor(UserRoles.Admin)">Get Game Settings</button>
             <button class="btn btn-danger" disabled @onclick="@SaveGameSettings" style="display:@ShowFor(UserRoles.Admin)">Save Game Settings</button>
             <button class="btn btn-danger" disabled @onclick="@GameSavedToDB" style="display:@ShowFor(UserRoles.Admin)">Save Game to DB</button>
@@ -259,7 +259,8 @@
 
     private async Task ResetCurrentRound()
     {
-        await _hubConnection.SendAsync("ResetCurrentRound", _selectedGame);
+        var gameId = _gameRegistries.Where(g => g.id == _selectedGame).First().Name;
+        await _hubConnection.SendAsync("ResetCurrentRound", gameId);
     }
 
 
