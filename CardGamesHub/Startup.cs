@@ -1,21 +1,19 @@
+using CardGames.Shared.Models;
+using CardGamesHub.Hubs;
+using CardGamesHub.Server.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Azure.Cosmos.Fluent;
+using Microsoft.Extensions.Caching.Cosmos;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
-
-using CardGamesHub.Server.Services;
-using CardGames.Shared.Models;
 using StackExchange.Redis.Extensions.Core.Configuration;
 using StackExchange.Redis.Extensions.Newtonsoft;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.Caching.Cosmos;
-using Microsoft.Azure.Cosmos.Fluent;
-using Microsoft.Identity.Web;
-using Microsoft.Identity.Web.UI;
-using CardGamesHub.Hubs;
 
 namespace CardGamesHub
 {

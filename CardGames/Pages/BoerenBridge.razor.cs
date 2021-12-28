@@ -1,77 +1,336 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using CardGames.Shared;
+using CardGames.Shared.Models;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Localization;
+using Microsoft.Identity.Web;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.SignalR.Client;
-using CardGames.Shared;
-using CardGames.Shared.Models;
-using Microsoft.Identity.Web;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Localization;
-using CardGames.Components;
-using Microsoft.AspNetCore.WebUtilities;
 
 namespace CardGames.Pages
 {
     public class BoerenBridgeBase : ComponentBase
     {
-        [Inject] NavigationManager NavigationManager { get; set; }
-        [Inject] ITokenAcquisition TokenHandler { get; set; }
-        [Inject] IConfiguration  Configuration { get; set; }
-        [Inject] Microsoft.Extensions.Options.IOptions<GameSettings> GameSettings { get; set; }
-        [Inject] protected IStringLocalizer<UIStrings> L { get; set; }
+        protected string _authorized = "Unknown";
+        protected int _cardIncrease = 121;
+        protected List<Card> _cards = new List<Card>();
+        protected int _cardsWidth = 482;
+        protected Game _game;
+        protected List<GameScore> _gameResults;
+        protected HubConnection _hubConnection;
+        protected bool _inprogress = false;
+        protected string _inputLabels = "";
+        protected string[][] _inputSeries;
+        protected List<GameScore> _lowScores;
+        protected string _modalClass = "";
+        protected string _modalClassCompetition = "";
+        protected string _modalClassGameCards = "";
+        protected string _modalClassGameResults = "";
+        protected string _modalClassLastCards = "";
+        protected string _modalClassLowscores = "";
+        protected string _modalClassTopscores = "";
+        protected string _modalClassTrump = "";
+        protected string _modalDisplay = "none;";
+        protected string _modalDisplayCompetition = "none;";
+        protected string _modalDisplayGameCards = "none;";
+        protected string _modalDisplayGameResults = "none;";
+        protected string _modalDisplayLastCards = "none;";
+        protected string _modalDisplayLowscores = "none;";
+        protected string _modalDisplayTopscores = "none;";
+        protected string _modalDisplayTrump = "none;";
+        protected bool _playerSelected;
+        protected List<PlayerSelection> _playerSelections = new List<PlayerSelection>();
+        protected bool _showPlayedCards = true;
+        protected string _sideView = "show;";
+        protected List<GameScore> _topScores;
+        protected string _xAxisLabels;
+        protected GameSettings settings;
+        public object NavManager { get; private set; }
 
-        [Parameter]
-        public string SelectedPlayer { get; set; }
         [Parameter]
         public string SelectedGame { get; set; }
 
+        [Parameter]
+        public string SelectedPlayer { get; set; }
+
         [CascadingParameter]
         protected Task<AuthenticationState> AuthenticationStateTask { get; set; }
-        public object NavManager { get; private set; }
 
-        protected HubConnection _hubConnection;
-        protected bool _playerSelected;
-        protected string _authorized = "Unknown";
-        protected Game _game;
-        protected List<Card> _cards = new List<Card>();
-        protected List<PlayerSelection> _playerSelections = new List<PlayerSelection>();
-        protected List<GameScore> _topScores;
-        protected List<GameScore> _lowScores;
-        protected List<GameScore> _gameResults;
+        [Inject] protected IStringLocalizer<UIStrings> L { get; set; }
+        [Inject] private IConfiguration Configuration { get; set; }
+        [Inject] private Microsoft.Extensions.Options.IOptions<GameSettings> GameSettings { get; set; }
+        [Inject] private NavigationManager NavigationManager { get; set; }
+        [Inject] private ITokenAcquisition TokenHandler { get; set; }
 
-        protected bool _inprogress = false;
+        public void CloseGameCompetition()
+        {
+            _modalDisplayCompetition = "none";
+            _modalClassCompetition = "";
+            StateHasChanged();
+        }
 
-        protected string _modalClass = "";
-        protected string _modalDisplay = "none;";
+        public void CloseGamePlayedCards()
+        {
+            _modalClassGameCards = "none";
+            _modalDisplayGameCards = "";
+            StateHasChanged();
+        }
 
-        protected string _modalClassTrump = "";
-        protected string _modalDisplayTrump = "none;";
-        protected string _modalClassTopscores = "";
-        protected string _modalDisplayTopscores = "none;";
-        protected string _modalClassLowscores = "";
-        protected string _modalDisplayLowscores = "none;";
-        protected string _modalClassGameResults = "";
-        protected string _modalDisplayGameResults = "none;";
-        protected string _modalClassLastCards = "";
-        protected string _modalDisplayLastCards = "none;";
-        protected string _modalClassGameCards = "";
-        protected string _modalDisplayGameCards = "none;";
-        protected string _modalClassCompetition = "";
-        protected string _modalDisplayCompetition = "none;";
-        protected string _sideView = "show;";
-        protected bool _showPlayedCards = true;
+        public void CloseGameResults()
+        {
+            _modalDisplayGameResults = "none";
+            _modalClassGameResults = "";
+            StateHasChanged();
+        }
 
-        protected string _inputLabels = "";
-        protected string[][] _inputSeries;
-        protected string _xAxisLabels;
+        public void CloseLastPlayedCards()
+        {
+            _modalClassLastCards = "none";
+            _modalDisplayLastCards = "";
+            StateHasChanged();
+        }
 
-        protected int _cardsWidth = 482;
-        protected int _cardIncrease = 121;
-        protected GameSettings settings;
+        public void CloseLowScoreBoard()
+        {
+            _modalDisplayLowscores = "none";
+            _modalClassLowscores = "";
+            StateHasChanged();
+        }
 
+        public void CloseScoreBoard()
+        {
+            _modalDisplay = "none";
+            _modalClass = "";
+            StateHasChanged();
+        }
+
+        public void CloseTopScoreBoard()
+        {
+            _modalDisplayTopscores = "none";
+            _modalClassTopscores = "";
+            StateHasChanged();
+        }
+
+        public void CloseTrump()
+        {
+            _modalDisplayTrump = "none";
+            _modalClassTrump = "";
+            StateHasChanged();
+        }
+
+        public void OpenCompetitionBoard()
+        {
+            _modalDisplayCompetition = "block";
+            _modalClassCompetition = "show";
+            StateHasChanged();
+        }
+
+        public void OpenGamePlayedCards()
+        {
+            _modalDisplayGameCards = "block;";
+            _modalClassGameCards = "Show";
+            StateHasChanged();
+        }
+
+        public void OpenGameResults()
+        {
+            _modalDisplayGameResults = "block;";
+            _modalClassGameResults = "Show";
+            StateHasChanged();
+        }
+
+        public void OpenLastPlayedCards()
+        {
+            _modalDisplayLastCards = "block;";
+            _modalClassLastCards = "Show";
+            StateHasChanged();
+        }
+
+        public void OpenLowScoreBoard()
+        {
+            _modalDisplayLowscores = "block;";
+            _modalClassLowscores = "Show";
+            StateHasChanged();
+        }
+
+        public void OpenScoreBoard()
+        {
+            _modalDisplay = "block;";
+            _modalClass = "Show";
+            StateHasChanged();
+        }
+
+        public void OpenTopScoreBoard()
+        {
+            _modalDisplayTopscores = "block;";
+            _modalClassTopscores = "Show";
+            StateHasChanged();
+        }
+
+        public void OpenTrump()
+        {
+            Console.WriteLine($"{_playerSelected} opens Trump.");
+            _modalDisplayTrump = "block;";
+            _modalClassTrump = "Show";
+            StateHasChanged();
+        }
+
+        public void Play(Card card)
+        {
+            if (!_inprogress)
+            {
+                _hubConnection.SendAsync("PlayCard", _game.Id, SelectedPlayer, card);
+                _inprogress = true;
+            }
+        }
+
+        public void ToggleSideView()
+        {
+            if (_sideView == "show")
+                _sideView = "none";
+            else
+                _sideView = "show";
+            StateHasChanged();
+        }
+
+        public void Winner(PlayedCard winningCard)
+        {
+            if (!_inprogress)
+            {
+                _hubConnection.SendAsync("RoundWinner", _game.Id, winningCard.PlayerId);
+                _inprogress = true;
+            }
+        }
+
+        protected bool CannotShuffle()
+        {
+            return (!_game.GameStarted || _game.Playing || _game.Shuffled || _game.GameOver) || (_game.PlayerToStartObj.Id != SelectedPlayer);
+        }
+
+        protected async Task CleanTable()
+        {
+            if (!_inprogress)
+            {
+                await _hubConnection.SendAsync("CleanTable", _game.Id);
+                _inprogress = true;
+            }
+        }
+
+        protected async Task<string> GetAccessToken()
+        {
+            var authState = await AuthenticationStateTask;
+            var user = authState.User;
+
+            var token = "";
+            if (user.Identity.IsAuthenticated)
+            {
+                try
+                {
+                    var initialScopes = Configuration.GetValue<string>("DownstreamApi:Scopes")?.Split(' ');
+                    var userflow = Configuration.GetValue<string>("AzureAdB2C:SignUpSignInPolicyId");
+                    token = await TokenHandler.GetAccessTokenForUserAsync(initialScopes);
+                }
+                catch (Exception)
+                {
+                    //ConsentHandler.HandleException(ex);
+                    NavigationManager.NavigateTo("MicrosoftIdentity/Account/SignOut");
+                }
+            }
+            return token;
+        }
+
+        protected async Task GetAvailablePlayers()
+        {
+            if (!_inprogress)
+            {
+                await _hubConnection.SendAsync("GetAvailablePlayers", _game.Id);
+                _inprogress = true;
+            }
+        }
+
+        protected string GetColourChar(string colour)
+        {
+            switch (colour)
+            {
+                case "S":
+                    return "♠️";
+
+                case "H":
+                    return "♥️";
+
+                case "D":
+                    return "♦";
+
+                case "C":
+                    return "♣️";
+
+                default:
+                    return "";
+            }
+        }
+
+        protected async Task<string> GetUserEmail()
+        {
+            var authState = await AuthenticationStateTask;
+            var user = authState.User;
+
+            if (user.Identity.IsAuthenticated)
+            {
+                var email = ((System.Security.Claims.ClaimsIdentity)user.Identity).Claims.FirstOrDefault(c => c.Type == "emails");
+                if (email != null)
+                    return email.Value;
+                else
+                    return null;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        protected bool IsGameController(string player)
+        {
+            return _game.IsGameController(GameUtils.GetPlayerId(player));
+        }
+
+        protected async Task JoinGame()
+        {
+            var authState = await AuthenticationStateTask;
+            var user = authState.User;
+
+            if (!string.IsNullOrEmpty(SelectedGame))
+                if (!_inprogress)
+                {
+                    await _hubConnection.SendAsync("JoinGame", SelectedGame, SelectedPlayer, user.Identity.Name);
+                    _inprogress = true;
+                }
+        }
+
+        protected void NextRound()
+        {
+            if (!_inprogress)
+            {
+                _hubConnection.SendAsync("NextRound", _game.Id);
+                _inprogress = true;
+            }
+        }
+
+        protected string NumberOfCards()
+        {
+            if (_game.CurrentRound < 8)
+            {
+                return (_game.CurrentRound + 1).ToString();
+            }
+            else
+            {
+                return (16 - _game.CurrentRound).ToString();
+            }
+        }
 
         protected override async Task OnInitializedAsync()
         {
@@ -153,8 +412,8 @@ namespace CardGames.Pages
             _hubConnection.On<Game>("GameResetted", (game) =>
             {
                 _game = game;
-                if(SelectedPlayer != "view")
-                        _cards = _game.Players[GameUtils.GetPlayerId(SelectedPlayer)].Cards;
+                if (SelectedPlayer != "view")
+                    _cards = _game.Players[GameUtils.GetPlayerId(SelectedPlayer)].Cards;
                 StateHasChanged();
             });
 
@@ -258,153 +517,6 @@ namespace CardGames.Pages
             }
         }
 
-        public void OpenTrump()
-        {
-            Console.WriteLine($"{_playerSelected} opens Trump.");
-            _modalDisplayTrump = "block;";
-            _modalClassTrump = "Show";
-            StateHasChanged();
-        }
-
-        public void CloseTrump()
-        {
-            _modalDisplayTrump = "none";
-            _modalClassTrump = "";
-            StateHasChanged();
-        }
-
-        public void ToggleSideView()
-        {
-            if (_sideView == "show")
-                _sideView = "none";
-            else
-                _sideView = "show";
-            StateHasChanged();
-        }
-
-        public void OpenScoreBoard()
-        {
-            _modalDisplay = "block;";
-            _modalClass = "Show";
-            StateHasChanged();
-        }
-
-        public void CloseScoreBoard()
-        {
-            _modalDisplay = "none";
-            _modalClass = "";
-            StateHasChanged();
-        }
-
-        public void OpenTopScoreBoard()
-        {
-            _modalDisplayTopscores = "block;";
-            _modalClassTopscores = "Show";
-            StateHasChanged();
-        }
-
-
-        public void CloseLowScoreBoard()
-        {
-            _modalDisplayLowscores = "none";
-            _modalClassLowscores = "";
-            StateHasChanged();
-        }
-
-        public void OpenLowScoreBoard()
-        {
-            _modalDisplayLowscores = "block;";
-            _modalClassLowscores = "Show";
-            StateHasChanged();
-        }
-
-
-        public void CloseTopScoreBoard()
-        {
-            _modalDisplayTopscores = "none";
-            _modalClassTopscores = "";
-            StateHasChanged();
-        }
-
-        public void OpenCompetitionBoard()
-        {
-            _modalDisplayCompetition = "block";
-            _modalClassCompetition = "show";
-            StateHasChanged();
-        }
-
-        public void OpenGameResults()
-        {
-            _modalDisplayGameResults = "block;";
-            _modalClassGameResults = "Show";
-            StateHasChanged();
-        }
-
-        public void CloseGameResults()
-        {
-            _modalDisplayGameResults = "none";
-            _modalClassGameResults = "";
-            StateHasChanged();
-        }
-
-        public void CloseGameCompetition()
-        {
-            _modalDisplayCompetition = "none";
-            _modalClassCompetition = "";
-            StateHasChanged();
-        }
-
-        public void OpenLastPlayedCards()
-        {
-            _modalDisplayLastCards = "block;";
-            _modalClassLastCards = "Show";
-            StateHasChanged();
-        }
-
-        public void OpenGamePlayedCards()
-        {
-            _modalDisplayGameCards = "block;";
-            _modalClassGameCards = "Show";
-            StateHasChanged();
-        }
-
-        public void CloseGamePlayedCards()
-        {
-            _modalClassGameCards = "none";
-            _modalDisplayGameCards = "";
-            StateHasChanged();
-        }
-
-        public void CloseLastPlayedCards()
-        {
-            _modalClassLastCards = "none";
-            _modalDisplayLastCards = "";
-            StateHasChanged();
-        }
-
-        protected async Task<string> GetAccessToken()
-        {
-            var authState = await AuthenticationStateTask;
-            var user = authState.User;
-
-            var token = "";
-            if (user.Identity.IsAuthenticated)
-            {
-                try
-                {
-                    var initialScopes = Configuration.GetValue<string>("DownstreamApi:Scopes")?.Split(' ');
-                    var userflow = Configuration.GetValue<string>("AzureAdB2C:SignUpSignInPolicyId");
-                    token = await TokenHandler.GetAccessTokenForUserAsync(initialScopes);
-                }
-                catch (Exception)
-                {
-                    //ConsentHandler.HandleException(ex);
-                    NavigationManager.NavigateTo("MicrosoftIdentity/Account/SignOut");
-                }
-            }
-            return token;
-        }
-
         protected async Task PlaceBet(string bet)
         {
             if (!_inprogress)
@@ -414,37 +526,21 @@ namespace CardGames.Pages
             }
         }
 
-        protected async Task JoinGame()
-        {
-            var authState = await AuthenticationStateTask;
-            var user = authState.User;
-
-            if (!string.IsNullOrEmpty(SelectedGame))
-                if (!_inprogress)
-                {
-                    await _hubConnection.SendAsync("JoinGame", SelectedGame, SelectedPlayer, user.Identity.Name);
-                    _inprogress = true;
-                }
-        }
-
-        protected async Task ViewGame()
-        {
-            var authState = await AuthenticationStateTask;
-            var user = authState.User;
-
-            if (!string.IsNullOrEmpty(SelectedGame))
-                if (!_inprogress)
-                {
-                    await _hubConnection.SendAsync("ViewGame", SelectedGame);
-                    _inprogress = true;
-                }
-        }
-
-        protected async Task CleanTable()
+        protected async Task SelectPlayer()
         {
             if (!_inprogress)
             {
-                await _hubConnection.SendAsync("CleanTable", _game.Id);
+                _playerSelected = true;
+                await _hubConnection.SendAsync("JoinGame", _game.Id, SelectedPlayer);
+                _inprogress = true;
+            }
+        }
+
+        protected void Shuffle()
+        {
+            if (!_inprogress)
+            {
+                _hubConnection.SendAsync("Shuffle", _game.Id);
                 _inprogress = true;
             }
         }
@@ -461,117 +557,17 @@ namespace CardGames.Pages
             }
         }
 
-        protected void NextRound()
-        {
-            if (!_inprogress)
-            {
-                _hubConnection.SendAsync("NextRound", _game.Id);
-                _inprogress = true;
-            }
-        }
-
-        protected void Shuffle()
-        {
-            if (!_inprogress)
-            {
-                _hubConnection.SendAsync("Shuffle", _game.Id);
-                _inprogress = true;
-            }
-        }
-
-        public void Play(Card card)
-        {
-            if (!_inprogress)
-            {
-                _hubConnection.SendAsync("PlayCard", _game.Id, SelectedPlayer, card);
-                _inprogress = true;
-            }
-        }
-
-        public void Winner(PlayedCard winningCard)
-        {
-            if (!_inprogress)
-            {
-                _hubConnection.SendAsync("RoundWinner", _game.Id, winningCard.PlayerId);
-                _inprogress = true;
-            }
-        }
-
-        protected async Task SelectPlayer()
-        {
-            if (!_inprogress)
-            {
-                _playerSelected = true;
-                await _hubConnection.SendAsync("JoinGame", _game.Id, SelectedPlayer);
-                _inprogress = true;
-            }
-        }
-
-        protected async Task GetAvailablePlayers()
-        {
-            if (!_inprogress)
-            {
-                await _hubConnection.SendAsync("GetAvailablePlayers", _game.Id);
-                _inprogress = true;
-            }
-        }
-
-        protected async Task<string> GetUserEmail()
+        protected async Task ViewGame()
         {
             var authState = await AuthenticationStateTask;
             var user = authState.User;
 
-            if (user.Identity.IsAuthenticated)
-            {
-                var email = ((System.Security.Claims.ClaimsIdentity)user.Identity).Claims.FirstOrDefault(c => c.Type == "emails");
-                if (email != null)
-                    return email.Value;
-                else
-                    return null;
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        protected bool IsGameController(string player)
-        {
-            return _game.IsGameController(GameUtils.GetPlayerId(player));
-        }
-
-        protected string GetColourChar(string colour)
-        {
-            switch (colour)
-            {
-                case "S":
-                    return "♠️";
-                case "H":
-                    return "♥️";
-                case "D":
-                    return "♦";
-                case "C":
-                    return "♣️";
-                default:
-                    return "";
-            }
-        }
-
-        protected string NumberOfCards()
-        {
-            if(_game.CurrentRound< 8)
-            {
-                return (_game.CurrentRound + 1).ToString();
-            }
-            else
-            {
-                return (16 - _game.CurrentRound).ToString();
-            }
-        }
-
-        protected bool CannotShuffle()
-        {
-            return (!_game.GameStarted || _game.Playing || _game.Shuffled || _game.GameOver) || (_game.PlayerToStartObj.Id != SelectedPlayer);
+            if (!string.IsNullOrEmpty(SelectedGame))
+                if (!_inprogress)
+                {
+                    await _hubConnection.SendAsync("ViewGame", SelectedGame);
+                    _inprogress = true;
+                }
         }
     }
 

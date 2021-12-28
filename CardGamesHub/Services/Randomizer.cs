@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace CardGames.Services
 {
@@ -10,7 +11,7 @@ namespace CardGames.Services
 
             // For each spot in the array, pick
             // a random item to swap into that spot.
-            for (int i = 0; i < items.Length - 1; i++)
+            for (var i = 0; i < items.Length - 1; i++)
             {
                 int j = rand.Next(i, items.Length);
                 T temp = items[i];
@@ -19,6 +20,19 @@ namespace CardGames.Services
             }
 
             return items;
+        }
+
+        public static List<T> Randomize<T>(List<T> list)
+        {
+            var randomizedList = new List<T>();
+            var rnd = new Random();
+            while (list.Count > 0)
+            {
+                var index = rnd.Next(0, list.Count); //pick a random item from the master list
+                randomizedList.Add(list[index]); //place it at the end of the randomized list
+                list.RemoveAt(index);
+            }
+            return randomizedList;
         }
     }
 }

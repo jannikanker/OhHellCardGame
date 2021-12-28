@@ -36,6 +36,7 @@
                 }
             </select>
             <p></p>
+            <button class="btn btn-danger" @onclick="@ShufflePlayers" style="display:@ShowFor(UserRoles.Admin)">Shuffle Players</button>
             <button class="btn btn-danger" @onclick="@RemoveGameRegistry" style="display:@ShowFor(UserRoles.Admin)">Remove Game Registry</button>
             <button class="btn btn-danger" @onclick="@NewGame" style="display:@ShowFor(UserRoles.Admin)">New Game</button>
             <button class="btn btn-danger" @onclick="@RemoveGame" style="display:@ShowFor(UserRoles.Admin)">Remove Game</button>
@@ -133,6 +134,12 @@
         });
 
         _hubConnection.On<List<GameRegistry>>("NewGameRegistryCreated", (GameRegistries) =>
+        {
+            _gameRegistries = GameRegistries;
+            StateHasChanged();
+        });
+
+        _hubConnection.On<List<GameRegistry>>("PlayersShuffled", (GameRegistries) =>
         {
             _gameRegistries = GameRegistries;
             StateHasChanged();
@@ -242,6 +249,11 @@
         await _hubConnection.SendAsync("RemoveGameRegistry", _selectedGame);
     }
 
+    private async Task ShufflePlayers()
+    {
+        await _hubConnection.SendAsync("ShufflePlayers", _selectedGame);
+    }
+
     private async Task NewGame()
     {
         await _hubConnection.SendAsync("NewGame", _selectedGame);
@@ -259,7 +271,7 @@
 
     private async Task ResetCurrentRound()
     {
-        var gameId = _gameRegistries.Where(g => g.id == _selectedGame).First().Name;
+        var gameId = _gameRegistries.First(g => g.id == _selectedGame).Name;
         await _hubConnection.SendAsync("ResetCurrentRound", gameId);
     }
 
@@ -323,7 +335,7 @@
     {
         if (_runningGames != null && _gameUser != null)
         {
-            var isController = _runningGames.Where(p => p.Email == _gameUser.Email && p.IsGameAdmin).Count() > 0;
+            var isController = _runningGames.Any(p => p.Email == _gameUser.Email && p.IsGameAdmin);
             return isController;
         }
         else

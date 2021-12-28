@@ -1,16 +1,15 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using CardGames.Shared.Models;
-using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Logging;
-using StackExchange.Redis.Extensions.Core.Abstractions;
-using System.Text.Json;
-using Microsoft.Azure.Cosmos;
-using System;
-using System.Threading.Tasks;
+﻿using CardGames.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Cosmos;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using StackExchange.Redis.Extensions.Core.Abstractions;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
 using CardGames.Services;
 
 namespace CardGamesHub.Server.Services
@@ -72,15 +71,15 @@ namespace CardGamesHub.Server.Services
                 RemoveGame(gameRegistry);
             }
             var players = new List<Player>();
-            foreach(var p in gameRegistry.Players)
+            foreach (var p in gameRegistry.Players)
             {
                 players.Add(new Player { Id = p.Player, Name = p.Player, Email = p.Email, IsGameController = p.IsGameAdmin });
             }
-            
+
             game = new Game(gameRegistry.CurrentCompetition, gameRegistry.Name, players.ToArray());
             _redisCacheClient.Db0.AddAsync(gameRegistry.Name, game).Wait();
             gameRegistry.GameState = GameStates.GameCreated;
-            SaveGameRegistryPersistent(gameRegistry,true).Wait();
+            SaveGameRegistryPersistent(gameRegistry, true).Wait();
             return game;
         }
 
@@ -89,19 +88,19 @@ namespace CardGamesHub.Server.Services
             _logger.LogInformation($"Adding New Game Registry with Name: {gameName}.");
 
             var gameRegistry = new GameRegistry(gameName);
-            for (var p=0; p<nrPlayers; p++)
+            for (var p = 0; p < nrPlayers; p++)
             {
                 var userInGame = new GamePlayer();
                 userInGame.GameId = gameName;
                 userInGame.Player = "P" + (p + 1).ToString();
                 userInGame.Email = "";
-                userInGame.IsGameAdmin = p==0;
+                userInGame.IsGameAdmin = p == 0;
                 gameRegistry.Players.Add(userInGame);
             }
             SaveGameRegistryPersistent(gameRegistry).Wait();
 
             return gameRegistry;
-        }             
+        }
 
         public async Task SaveGame(Game game)
         {
@@ -152,11 +151,11 @@ namespace CardGamesHub.Server.Services
                     }
                     else
                     {
-                        await container.CreateItemAsync<Game>(game); 
+                        await container.CreateItemAsync<Game>(game);
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 var msg = ex.Message;
             }
@@ -176,7 +175,7 @@ namespace CardGamesHub.Server.Services
                 else
                     return null;
             }
-            catch(Exception)
+            catch (Exception)
             {
                 return null;
             }
@@ -201,7 +200,7 @@ namespace CardGamesHub.Server.Services
             var nrPlayers = GetGame(gameId).NrPlayers;
 
             game.StartNewGame(true);
-            _redisCacheClient.Db0.ReplaceAsync(gameId,game).Wait();
+            _redisCacheClient.Db0.ReplaceAsync(gameId, game).Wait();
 
             return game;
         }
@@ -222,6 +221,16 @@ namespace CardGamesHub.Server.Services
             gameRegistry.GameState = GameStates.NoGame;
             SaveGameRegistryPersistent(gameRegistry, true).Wait();
 
+        }
+
+        public void ShufflePlayers(GameRegistry gameRegistry)
+        {
+            if (gameRegistry.GameState == GameStates.NoGame)
+            {
+                var list = Randomizer.Randomize(gameRegistry.Players);
+                gameRegistry.Players = list;
+                SaveGameRegistryPersistent(gameRegistry, true).Wait();
+            }
         }
 
         public async Task RemoveGameRegistryPersitent(string gameRegistryId)
