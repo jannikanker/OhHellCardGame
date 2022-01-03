@@ -228,6 +228,12 @@ namespace CardGamesHub.Server.Services
             if (gameRegistry.GameState == GameStates.NoGame)
             {
                 var list = Randomizer.Randomize(gameRegistry.Players);
+                int playerId = 1;
+                foreach(var player in list)
+                {
+                    player.Player = $"P{playerId.ToString()}";
+                    playerId++;
+                }
                 gameRegistry.Players = list;
                 SaveGameRegistryPersistent(gameRegistry, true).Wait();
             }
