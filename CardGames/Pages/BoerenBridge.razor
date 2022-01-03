@@ -46,6 +46,7 @@
             {
                 <header>
                     <TrumpCardSideView game="@_game" sideView="@_sideView" />
+                    <h5 class="active">Competition @_game.CompetitionId, Game @_gameNr</h5>
                     <h5 class="active">@_game.Status</h5>
 
                     <button class="btn btn-success" @onclick="() => OpenScoreBoard()">Score</button>

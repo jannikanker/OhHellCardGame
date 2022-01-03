@@ -16,6 +16,7 @@ namespace CardGames.Pages
 {
     public class BoerenBridgeBase : ComponentBase
     {
+        protected string _gameNr = "1";
         protected string _authorized = "Unknown";
         protected int _cardIncrease = 121;
         protected List<Card> _cards = new List<Card>();
@@ -372,6 +373,7 @@ namespace CardGames.Pages
                 _game = game;
                 _topScores = topScores.OrderByDescending(g => g.Score).Take(10).ToList();
                 _lowScores = topScores.OrderBy(g => g.Score).Take(10).ToList();
+                _gameNr = (_topScores.Count(g => g.CompetitionId == game.CompetitionId)+1).ToString();
                 _gameResults = topScores;
                 _cardsWidth = 482 + (game.Players[GameUtils.GetPlayerId(SelectedPlayer)].Cards.Count() > 4 ? (_cardIncrease * (game.Players[GameUtils.GetPlayerId(SelectedPlayer)].Cards.Count() - 4)) : 0);
                 if (game != null)
