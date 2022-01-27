@@ -23,7 +23,7 @@ namespace CardGamesHub.Hubs
         private GameSettings _settings;
         private TelemetryClient _telemetry;
         private string _viewUser = "viewer";
-        public GameHub(IGameService gameService,
+        public GameHub(GameService gameService,
                        IStringLocalizer<GameHubStrings> localizer,
                        ILogger<GameHub> logger,
                        IOptions<GameSettings> settings,
