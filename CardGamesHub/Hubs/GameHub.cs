@@ -18,12 +18,12 @@ namespace CardGamesHub.Hubs
     public class GameHub : Hub
     {
         private readonly ILogger _logger;
-        private GameService _gameService;
+        private IGameService _gameService;
         private IStringLocalizer<GameHubStrings> _localizer;
         private GameSettings _settings;
         private TelemetryClient _telemetry;
         private string _viewUser = "viewer";
-        public GameHub(GameService gameService,
+        public GameHub(IGameService gameService,
                        IStringLocalizer<GameHubStrings> localizer,
                        ILogger<GameHub> logger,
                        IOptions<GameSettings> settings,

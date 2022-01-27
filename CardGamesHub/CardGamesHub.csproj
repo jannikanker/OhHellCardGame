@@ -6,12 +6,13 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CacheManager.Microsoft.Extensions.Configuration" Version="1.2.0" />
-    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.15.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Cosmos" Version="1.0.0-preview5" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.20.0" />
+    <PackageReference Include="Microsoft.Azure.SignalR" Version="1.4.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Cosmos" Version="1.1.0" />
     <PackageReference Include="Microsoft.Identity.Web" Version="1.*" />
     <PackageReference Include="Microsoft.Identity.Web.UI" Version="1.4.1" />
-    <PackageReference Include="StackExchange.Redis.Extensions.AspNetCore" Version="7.0.0-pre" />
-    <PackageReference Include="StackExchange.Redis.Extensions.Core" Version="7.0.0-pre" />
+    <PackageReference Include="StackExchange.Redis.Extensions.AspNetCore" Version="7.0.0" />
+    <PackageReference Include="StackExchange.Redis.Extensions.Core" Version="7.0.0" />
     <PackageReference Include="StackExchange.Redis.Extensions.Newtonsoft" Version="6.3.6" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.5.1" />
   </ItemGroup>

@@ -15,7 +15,7 @@ using CardGames.Services;
 namespace CardGamesHub.Server.Services
 {
     [Authorize]
-    public class GameService
+    public class GameService : IGameService
     {
         private GameSettings _settings;
         private ILogger<GameService> _logger;
@@ -229,7 +229,7 @@ namespace CardGamesHub.Server.Services
             {
                 var list = Randomizer.Randomize(gameRegistry.Players);
                 int playerId = 1;
-                foreach(var player in list)
+                foreach (var player in list)
                 {
                     player.Player = $"P{playerId.ToString()}";
                     playerId++;
