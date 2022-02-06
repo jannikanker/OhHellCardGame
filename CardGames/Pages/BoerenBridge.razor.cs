@@ -51,6 +51,7 @@ namespace CardGames.Pages
         protected List<GameScore> _topScores;
         protected string _xAxisLabels;
         protected GameSettings settings;
+
         public object NavManager { get; private set; }
 
         [Parameter]
@@ -68,6 +69,7 @@ namespace CardGames.Pages
         [Inject] private NavigationManager NavigationManager { get; set; }
         [Inject] private ITokenAcquisition TokenHandler { get; set; }
 
+        #region Component callbacks
         public void CloseGameCompetition()
         {
             _modalDisplayCompetition = "none";
@@ -180,6 +182,8 @@ namespace CardGames.Pages
             _modalClassTrump = "Show";
             StateHasChanged();
         }
+
+        #endregion
 
         public void Play(Card card)
         {
