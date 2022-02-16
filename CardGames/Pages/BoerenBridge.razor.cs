@@ -183,6 +183,13 @@ namespace CardGames.Pages
             StateHasChanged();
         }
 
+        public void ToggleSplitView()
+        {
+            Console.WriteLine("Toggled Split View");
+            _showPlayedCards = !_showPlayedCards;
+            StateHasChanged();
+        }
+
         #endregion
 
         public void Play(Card card)
