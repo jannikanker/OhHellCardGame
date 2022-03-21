@@ -18,6 +18,7 @@
     <link href="css/site.css" rel="stylesheet" />
     <link rel="shortcut icon" href="AD.png" />
 </head>
+
 <body>
     <app>
         <component type="typeof(App)" render-mode="ServerPrerendered" />
@@ -33,6 +34,15 @@
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
     </div>
+    <script>
+        window.getWindowSize = () =>
+        {
+            return {
+                width: window.innerWidth,
+                height: window.innerHeight
+            };
+        };
+    </script>
     <script src="_framework/blazor.server.js"></script>
 
 </body>

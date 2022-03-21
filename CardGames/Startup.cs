@@ -1,3 +1,4 @@
+using CardGames.Services;
 using CardGames.Shared.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -59,6 +60,8 @@ namespace CardGames
 
             services.AddHttpContextAccessor();
             services.AddApplicationInsightsTelemetry(Configuration["APPINSIGHTS_CONNECTIONSTRING"]);
+
+            services.AddScoped<BrowserService>(); // scoped service
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

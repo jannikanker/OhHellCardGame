@@ -66,6 +66,7 @@
                     @if (registry.GameState > GameStates.NoGame)
                     {
                         <button class="btn btn-outline-success" @onclick="@(e => NavigateToGame(e, row))">Go To @row.GameId as @row.Player</button>
+                        <button class="btn btn-outline-success" @onclick="@(e => ViewGame(e, row))">Go To @row.GameId as Viewer</button>
                     }
                     </p>
                  }
@@ -306,6 +307,11 @@
     private void NavigateToGame(MouseEventArgs e, GamePlayer gamePlayer)
     {
         NavigationManager.NavigateTo(String.Format("/BoerenBridge/{0}/{1}", gamePlayer.GameId, gamePlayer.Player));
+    }
+
+    private void ViewGame(MouseEventArgs e, GamePlayer gamePlayer)
+    {
+        NavigationManager.NavigateTo(String.Format("/BoerenBridge/{0}/view", gamePlayer.GameId));
     }
 
 

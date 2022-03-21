@@ -1,4 +1,5 @@
-﻿using CardGames.Shared;
+﻿using CardGames.Services;
+using CardGames.Shared;
 using CardGames.Shared.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using Microsoft.Identity.Web;
+using Microsoft.JSInterop;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +16,12 @@ using System.Threading.Tasks;
 
 namespace CardGames.Pages
 {
+    public class WindowDimensions
+    {
+        public int Width { get; set; }
+        public int Height { get; set; }
+    }
+
     public class BoerenBridgeBase : ComponentBase
     {
         protected string _gameNr = "1";
@@ -51,6 +59,9 @@ namespace CardGames.Pages
         protected List<GameScore> _topScores;
         protected string _xAxisLabels;
         protected GameSettings settings;
+        protected int Height { get; set; }
+        protected int Width { get; set; }
+
 
         public object NavManager { get; private set; }
 
@@ -60,6 +71,7 @@ namespace CardGames.Pages
         [Parameter]
         public string SelectedPlayer { get; set; }
 
+
         [CascadingParameter]
         protected Task<AuthenticationState> AuthenticationStateTask { get; set; }
 
@@ -68,6 +80,8 @@ namespace CardGames.Pages
         [Inject] private Microsoft.Extensions.Options.IOptions<GameSettings> GameSettings { get; set; }
         [Inject] private NavigationManager NavigationManager { get; set; }
         [Inject] private ITokenAcquisition TokenHandler { get; set; }
+        [Inject] private IJSRuntime JSRuntime { get; set; }
+        [Inject] private BrowserService browserService { get; set; }
 
         #region Component callbacks
         public void CloseGameCompetition()
@@ -344,6 +358,12 @@ namespace CardGames.Pages
             }
         }
 
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if(firstRender)
+                await GetDimensions();
+        }
+
         protected override async Task OnInitializedAsync()
         {
             var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
@@ -519,6 +539,7 @@ namespace CardGames.Pages
                 StateHasChanged();
             });
 
+
             var authState = await AuthenticationStateTask;
             if (authState.User.Identity.IsAuthenticated)
             {
@@ -528,6 +549,13 @@ namespace CardGames.Pages
                 else
                     await JoinGame();
             }
+        }
+
+        async Task GetDimensions()
+        {
+            var dimension = await browserService.GetDimensions();
+            Height = dimension.Height;
+            Width = dimension.Width;
         }
 
         protected async Task PlaceBet(string bet)

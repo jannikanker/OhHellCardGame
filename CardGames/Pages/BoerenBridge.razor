@@ -57,7 +57,10 @@
                     <button class="btn btn-success" @onclick="() => OpenGamePlayedCards()" disabled="@(!_game.GameOver)">History</button>
                     <button class="btn btn-success" @onclick="() => OpenLastPlayedCards()">Last</button>
                     <button class="btn btn-success" @onclick="() => OpenTrump()">@(GetColourChar(_game.PlayingCard.Colour.ToString()))</button>
-                    <button class="btn btn-success" @onclick="() => ToggleSplitView()">Split View</button>
+                    <button class="btn btn-success" 
+                            style="display: @(IsGameController(SelectedPlayer) ? "inline" : "none")"
+                            @onclick="() => ToggleSplitView()">Split View
+                    </button>
                     <button class="btn btn-success" @onclick="@(e => Shuffle())" disabled="@(CannotShuffle())">@L["Shuffle"] (@NumberOfCards())</button>
                     <button class="btn btn-success" @onclick="@ToggleSideView"><img class="playingColor" src="/CardImages/@(_game.PlayingCard.Face.ToString() + ".png")" width="10" /></button>
                     <button class="btn btn-success" @onclick="@CleanTable"
